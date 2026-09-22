@@ -25,3 +25,5 @@ dist-ssr
 
 # Pasta de trabalho / imagens-fonte (assets usados já ficam em public/)
 prints/
+.vercel
+.env*

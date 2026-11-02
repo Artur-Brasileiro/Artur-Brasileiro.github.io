@@ -37,7 +37,7 @@ export const featuredProjects: FeaturedProject[] = [
     category: "Software",
     description:
       "Plataforma de aprendizado de idiomas e SaaS de gestão para professores: registro de aulas, controle de pagamentos e atribuição de atividades criadas dentro da própria plataforma.",
-    image: "atlasfluencylogo.svg",
+    image: "atlasfluency-logo.svg",
     logoCover: true,
     tags: ["React", "TypeScript", "Tailwind CSS"],
     demoLink: "https://atlasfluency.com.br",

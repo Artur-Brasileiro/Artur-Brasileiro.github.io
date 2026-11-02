@@ -8,6 +8,8 @@ const DEVICON = "https://cdn.jsdelivr.net/gh/devicons/devicon/icons";
 export const GITHUB_URL = "https://github.com/Artur-Brasileiro";
 export const LINKEDIN_URL = "https://www.linkedin.com/in/artur-brasileiro/";
 export const EMAIL = "arturbrasileiro00@gmail.com";
+export const WHATSAPP = "+55 62 99843-7904";
+export const WHATSAPP_URL = "https://wa.me/5562998437904";
 export const FORMSPREE_ENDPOINT = "https://formspree.io/f/xyzokkee";
 
 export const profile = {

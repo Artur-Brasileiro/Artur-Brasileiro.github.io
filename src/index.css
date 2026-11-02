@@ -3,65 +3,71 @@
 @tailwind utilities;
 
 /* =====================================================================
-   Sistema de design — corporativo, tema claro único.
-   Neutros em slate (cinza frio): cinza puro lê como wireframe, slate lê
-   como software corporativo. Azul #1D4ED8 como única cor de marca.
+   Sistema de design — "prancheta", tema claro único.
+   Folha de desenho técnico: papel quente, tinta quase preta e o ouro dos
+   pads ENIG da placa do macropad como único acento.
+   Contraste sobre o papel: tinta 15,9:1 · cinza 5,1:1 · ouro 4,7:1.
+   O ouro claro (2,3:1) é só decoração — nunca carrega texto.
    ===================================================================== */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --background: 50 18.7% 93.7%; /* #f2f1ec papel */
+    --foreground: 216 10.6% 9.2%; /* #15171a tinta */
 
-    /* Faixa alternada entre seções — o "papel" do documento. */
-    --surface: 210 40% 98%;
+    /* Faixa alternada entre seções — o papel um tom abaixo. */
+    --surface: 48 10.2% 90.4%; /* #e9e8e4 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 48 23.8% 95.9%; /* #f7f6f2 */
+    --card-foreground: 216 10.6% 9.2%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 48 23.8% 95.9%;
+    --popover-foreground: 216 10.6% 9.2%;
 
-    /* #1D4ED8 — 6.7:1 sobre branco (AA em qualquer tamanho). */
-    --primary: 224 76% 48%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 226 71% 40%;
+    /* Ação primária é tinta: botão escuro com texto papel. */
+    --primary: 216 10.6% 9.2%;
+    --primary-foreground: 50 18.7% 93.7%;
+    --primary-hover: 210 3.9% 20%;
 
-    --secondary: 210 40% 98%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 48 10.2% 90.4%;
+    --secondary-foreground: 216 10.6% 9.2%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%; /* 6.3:1 sobre branco */
+    --muted: 48 10.2% 90.4%;
+    --muted-foreground: 218.2 5.3% 40.6%; /* #62666d */
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 48 10.2% 90.4%;
+    --accent-foreground: 216 10.6% 9.2%;
 
-    --destructive: 0 74% 42%; /* 6.4:1 — legível como texto, não só como fundo */
+    --destructive: 0 74% 42%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 142 72% 26%;
     --success-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 224 76% 48%;
+    /* Tinta a 12% sobre o papel, já opaca: o shadcn compõe hsl(var(--border)). */
+    --border: 60 4.8% 83.5%; /* #d7d7d3 */
+    --input: 60 4.8% 83.5%;
+    --ring: 216 10.6% 9.2%;
+
+    --gold: 36.5 81.6% 32%; /* #94600f */
+    --gold-soft: 37.6 53.8% 54.1%; /* #c99a4b — só decoração */
 
     --radius: 0.5rem;
 
-    /* Sombras tingidas de slate. Sombra preta pura suja tema claro. */
-    --shadow-sm: 0 1px 2px hsl(215 25% 27% / 0.06);
-    --shadow-md: 0 4px 12px -2px hsl(215 25% 27% / 0.08), 0 2px 4px -2px hsl(215 25% 27% / 0.04);
-    --shadow-lg: 0 12px 32px -8px hsl(215 25% 27% / 0.12), 0 4px 8px -4px hsl(215 25% 27% / 0.06);
+    /* Sombras tingidas de tinta. Sombra preta pura suja o papel. */
+    --shadow-sm: 0 1px 2px hsl(216 10.6% 9.2% / 0.06);
+    --shadow-md: 0 4px 12px -2px hsl(216 10.6% 9.2% / 0.08), 0 2px 4px -2px hsl(216 10.6% 9.2% / 0.04);
+    --shadow-lg: 0 12px 32px -8px hsl(216 10.6% 9.2% / 0.14), 0 4px 8px -4px hsl(216 10.6% 9.2% / 0.06);
 
     /* Consumidas por components/ui/sidebar.tsx. */
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 224 76% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 224 76% 48%;
+    --sidebar-background: 48 10.2% 90.4%;
+    --sidebar-foreground: 216 10.6% 9.2%;
+    --sidebar-primary: 216 10.6% 9.2%;
+    --sidebar-primary-foreground: 50 18.7% 93.7%;
+    --sidebar-accent: 48 10.2% 90.4%;
+    --sidebar-accent-foreground: 216 10.6% 9.2%;
+    --sidebar-border: 60 4.8% 83.5%;
+    --sidebar-ring: 216 10.6% 9.2%;
   }
 }
 
@@ -79,7 +85,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     overflow-x: clip;
-    font-feature-settings: "liga" 1, "calt" 1, "cv11" 1;
+    font-feature-settings: "liga" 1, "calt" 1;
   }
 
   /* Números tabulares onde alinhamento vertical importa (métricas, períodos). */
@@ -107,7 +113,7 @@
   }
 
   ::selection {
-    background-color: hsl(var(--primary) / 0.15);
+    background-color: hsl(var(--gold-soft) / 0.3);
     color: hsl(var(--foreground));
   }
 }
@@ -122,14 +128,25 @@
     @apply mx-auto w-full max-w-6xl px-6 sm:px-8 lg:border-x lg:border-border lg:px-12;
   }
 
-  /* Rótulo numerado que abre cada seção. */
+  /* Rótulo numerado que abre cada seção — mono, em ouro, como cota de desenho. */
   .eyebrow {
-    @apply text-xs font-semibold uppercase tracking-[0.14em] text-primary;
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-gold;
+  }
+
+  /* Grade milimetrada da folha: atrás do modelo 3D e dos logos nos cards. */
+  .bg-grid {
+    background-color: hsl(var(--background));
+    background-image:
+      linear-gradient(rgba(21, 23, 26, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(21, 23, 26, 0.045) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }
 
 @layer utilities {
+  /* Títulos em mono: a interface inteira fala a língua do desenho técnico. */
   .font-display {
+    font-family: theme("fontFamily.mono");
     letter-spacing: -0.03em;
   }
 }

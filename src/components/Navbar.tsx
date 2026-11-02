@@ -2,41 +2,31 @@ import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
-import { getLenis } from "./motion/SmoothScroll";
 import { profile } from "@/data/profile";
+import { scrollWithOffset } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 
+/** Seções numeradas da home — os mesmos números dos rótulos de cada seção. */
 const navItems = [
-  { name: "Sobre", href: "#sobre", id: "sobre" },
-  { name: "Projetos", href: "#projetos", id: "projetos" },
-  { name: "Formação", href: "#educacao", id: "educacao" },
-  { name: "Contato", href: "#contato", id: "contato" },
+  { n: "01", name: "sobre", id: "sobre" },
+  { n: "02", name: "projetos", id: "projetos" },
+  { n: "03", name: "formação", id: "formacao" },
+  { n: "04", name: "contato", id: "contato" },
 ];
 
-const scrollWithOffset = (el: HTMLElement) => {
-  const lenis = getLenis();
-  if (lenis) {
-    lenis.scrollTo(el, { offset: -80 });
-  } else {
-    const yCoordinate = el.getBoundingClientRect().top + window.pageYOffset;
-    window.scrollTo({ top: yCoordinate - 80, behavior: "smooth" });
-  }
-};
-
-/** Monograma da marca — quadrado azul, o único bloco sólido de cor da barra. */
+/** Marca: o nome como um caminho de arquivo, com o cursor do terminal em ouro. */
 const Brand = ({ onClick }: { onClick?: () => void }) => (
   <HashLink
     smooth
     to="/#"
     scroll={scrollWithOffset}
     onClick={onClick}
-    className="flex shrink-0 items-center gap-3"
+    aria-label={`${profile.name} — início`}
+    className="shrink-0 font-mono text-[14px] font-medium tracking-tight text-foreground"
   >
-    <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-semibold tracking-tight text-primary-foreground">
-      {profile.initials}
-    </span>
-    <span className="text-[15px] font-semibold tracking-tight text-foreground">
-      {profile.name}
+    {profile.name.toLowerCase().replace(" ", ".")}
+    <span aria-hidden className="text-gold">
+      ▋
     </span>
   </HashLink>
 );
@@ -106,34 +96,35 @@ const Navbar = () => {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md transition-shadow duration-300",
+        "fixed inset-x-0 top-0 z-50 border-b border-border bg-background/[0.82] backdrop-blur-md transition-shadow duration-300",
         isScrolled && "shadow-soft-sm",
       )}
     >
-      <div className="rail flex h-16 items-center justify-between">
+      <div className="frame flex h-14 items-center justify-between font-mono">
         <Brand onClick={() => setIsMobileMenuOpen(false)} />
 
         {/* Navegação desktop — indicador ancorado na borda inferior da barra. */}
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav aria-label="Seções" className="hidden items-center gap-6 md:flex">
           {navItems.map((item) => {
             const active = activeSection === item.id;
             return (
               <HashLink
-                key={item.name}
+                key={item.id}
                 smooth
-                to={`/${item.href}`}
+                to={`/#${item.id}`}
                 scroll={scrollWithOffset}
                 aria-current={active ? "true" : undefined}
                 className={cn(
-                  "relative flex h-16 items-center text-sm font-medium transition-colors",
-                  active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                  "relative flex h-14 items-center gap-1.5 text-[11px] transition-colors",
+                  active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
+                <span className="text-gold">{item.n}</span>
                 {item.name}
                 <span
                   aria-hidden
                   className={cn(
-                    "absolute inset-x-0 bottom-0 h-0.5 origin-left bg-primary transition-transform duration-300",
+                    "absolute inset-x-0 bottom-0 h-px origin-left bg-foreground transition-transform duration-300",
                     active ? "scale-x-100" : "scale-x-0",
                   )}
                 />
@@ -143,61 +134,50 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <HashLink
-            smooth
-            to="/#contato"
-            scroll={scrollWithOffset}
-            className="hidden h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover md:inline-flex"
-          >
-            Fale comigo
-          </HashLink>
+          <span title={profile.availability} className="hidden items-center gap-2 text-[11px] text-muted-foreground sm:flex">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold-soft shadow-[0_0_8px_hsl(var(--gold-soft))]" />
+            disponível
+          </span>
 
           <button
             type="button"
             aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={isMobileMenuOpen}
             onClick={() => setIsMobileMenuOpen((open) => !open)}
-            className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground transition-colors hover:bg-surface md:hidden"
+            className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-[6px] text-foreground transition-colors hover:bg-surface md:hidden"
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* Painel mobile — ancorado na barra, largura total, sem flutuar. */}
+      {/* Painel mobile — ancorado na barra, largura total. */}
       {isMobileMenuOpen && (
         <div className="border-t border-border bg-background md:hidden">
-          <nav className="rail flex flex-col py-2">
+          <nav aria-label="Seções" className="frame flex flex-col py-2 font-mono">
             {navItems.map((item) => {
               const active = activeSection === item.id;
               return (
                 <HashLink
-                  key={item.name}
+                  key={item.id}
                   smooth
-                  to={`/${item.href}`}
+                  to={`/#${item.id}`}
                   scroll={scrollWithOffset}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    "border-l-2 py-3 pl-4 text-sm font-medium transition-colors",
-                    active
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
+                    "flex gap-3 border-l-2 py-3 pl-4 text-[13px] transition-colors",
+                    active ? "border-gold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
+                  <span className="text-gold">{item.n}</span>
                   {item.name}
                 </HashLink>
               );
             })}
-
-            <HashLink
-              smooth
-              to="/#contato"
-              scroll={scrollWithOffset}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="my-3 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
-            >
-              Fale comigo
-            </HashLink>
+            <span className="flex items-center gap-2 py-3 pl-4 text-[11px] text-muted-foreground sm:hidden">
+              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold-soft" />
+              {profile.availability.toLowerCase()}
+            </span>
           </nav>
         </div>
       )}

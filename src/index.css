@@ -128,6 +128,11 @@
     @apply mx-auto w-full max-w-6xl px-6 sm:px-8 lg:border-x lg:border-border lg:px-12;
   }
 
+  /* Largura da folha: barra, home e rodapé alinham pela mesma margem. */
+  .frame {
+    @apply mx-auto w-full max-w-[1240px] px-6 md:px-12;
+  }
+
   /* Rótulo numerado que abre cada seção — mono, em ouro, como cota de desenho. */
   .eyebrow {
     @apply font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-gold;

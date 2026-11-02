@@ -8,14 +8,7 @@ import {
   PlayCircle,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { useLenisLock } from "@/components/motion/useLenisLock";
+import DemoVideoDialog, { type DemoVideo } from "@/components/DemoVideoDialog";
 import { Reveal } from "@/components/motion/Reveal";
 import { projectData, projectCategories, type ProjectItem } from "@/data/projects";
 
@@ -26,19 +19,21 @@ const ProjectsPage = () => {
       ? projectData[category as keyof typeof projectData]
       : undefined;
 
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // Trava o scroll de fundo (Lenis) enquanto o vídeo está aberto.
-  useLenisLock(isDialogOpen);
+  // o modal de vídeo trava o Lenis por conta própria
+  const [video, setVideo] = useState<DemoVideo | null>(null);
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [category]);
 
-  const handleOpenVideo = (videoId: string) => {
-    setSelectedVideo(videoId);
-    setIsDialogOpen(true);
+  const handleOpenVideo = (project: ProjectItem) => {
+    if (!project.youtubeId) return;
+    setVideo({
+      title: project.name,
+      youtubeId: project.youtubeId,
+      summary: project.longDescription ?? project.description,
+      github: project.technicalLink,
+    });
   };
 
   if (!categoryData) {
@@ -143,7 +138,7 @@ const ProjectsPage = () => {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => handleOpenVideo(project.youtubeId || "")}
+                          onClick={() => handleOpenVideo(project)}
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
                         >
                           <PlayCircle className="h-4 w-4" />
@@ -284,26 +279,7 @@ const ProjectsPage = () => {
         </div>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="overflow-hidden border-border bg-background p-0 sm:max-w-4xl">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Demonstração do projeto</DialogTitle>
-            <DialogDescription>Vídeo demonstrativo do hardware funcionando.</DialogDescription>
-          </DialogHeader>
-
-          {selectedVideo && (
-            <div className="relative aspect-video w-full bg-black">
-              <iframe
-                className="h-full w-full"
-                src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&rel=0`}
-                title="Demonstração do projeto"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <DemoVideoDialog video={video} onClose={() => setVideo(null)} />
     </div>
   );
 };

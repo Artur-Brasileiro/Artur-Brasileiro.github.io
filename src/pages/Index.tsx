@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import SheetsHero from "@/components/home/SheetsHero";
+import AboutSection from "@/components/home/AboutSection";
+import ProjectsSection from "@/components/home/ProjectsSection";
+import EducationSection from "@/components/home/EducationSection";
 import SiteFooter from "@/components/SiteFooter";
 import { NAV_OFFSET } from "@/lib/scroll";
 
@@ -41,8 +44,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SheetsHero />
-      <main />
+      <main>
+        <SheetsHero />
+        <div className="frame">
+          <AboutSection />
+          <ProjectsSection />
+          <EducationSection />
+        </div>
+      </main>
       <SiteFooter />
     </div>
   );

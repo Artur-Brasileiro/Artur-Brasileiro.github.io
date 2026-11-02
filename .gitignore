@@ -27,3 +27,6 @@ dist-ssr
 prints/
 .vercel
 .env*
+
+# Pacotes de material recebidos (zip) — os assets usados já ficam em public/
+*.zip

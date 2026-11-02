@@ -156,19 +156,6 @@
   }
 }
 
-/* Marquee infinito — o conteúdo é duplicado, então -50% fecha o ciclo. */
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.animate-marquee {
-  animation: marquee linear infinite;
-}
-
 /* Scrollbar discreta */
 ::-webkit-scrollbar {
   width: 10px;

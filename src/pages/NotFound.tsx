@@ -10,11 +10,11 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 pt-16">
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 pt-14">
       <div className="w-full max-w-md text-center">
         <p className="eyebrow">Erro 404</p>
 
-        <h1 className="font-display mt-4 text-display-lg font-semibold">Página não encontrada</h1>
+        <h1 className="font-display mt-4 text-display-lg font-medium">Página não encontrada</h1>
 
         <p className="mt-4 leading-relaxed text-muted-foreground">
           O endereço <span className="font-mono text-sm text-foreground">{location.pathname}</span>{" "}

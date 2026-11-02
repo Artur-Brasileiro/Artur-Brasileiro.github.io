@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import SiteFooter from "@/components/SiteFooter";
 import { macropad, type TimelineStatus } from "@/data/projects";
 import { cn } from "@/lib/utils";
 
@@ -60,7 +61,7 @@ const MacropadPage = () => {
   useLenisLock(!!maximizedMedia);
 
   return (
-    <div className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background pt-14">
       {/* Cabeçalho */}
       <div className="border-b border-border bg-surface">
         <div className="rail py-12 md:py-16">
@@ -93,7 +94,7 @@ const MacropadPage = () => {
                 </span>
               </div>
 
-              <h1 className="font-display mt-5 text-display-xl font-bold">{macropad.title}</h1>
+              <h1 className="font-display mt-5 text-display-xl font-medium">{macropad.title}</h1>
 
               <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
                 {macropad.summary}
@@ -139,7 +140,7 @@ const MacropadPage = () => {
         <div className="rail grid gap-10 py-16 md:py-20 lg:grid-cols-[1fr_2fr] lg:gap-16">
           <div>
             <p className="eyebrow">Contexto</p>
-            <h2 className="font-display mt-5 text-display-lg font-semibold lg:sticky lg:top-24">
+            <h2 className="font-display mt-5 text-display-lg font-medium lg:sticky lg:top-24">
               A ideia do projeto
             </h2>
           </div>
@@ -157,7 +158,7 @@ const MacropadPage = () => {
       {/* Roadmap */}
       <div className="rail py-16 md:py-20">
         <p className="eyebrow">Execução</p>
-        <h2 className="font-display mt-5 text-display-lg font-semibold">Roadmap do projeto</h2>
+        <h2 className="font-display mt-5 text-display-lg font-medium">Roadmap do projeto</h2>
 
         <ol className="mt-12">
           {macropad.timeline.map((item, index) => {
@@ -317,6 +318,8 @@ const MacropadPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <SiteFooter />
     </div>
   );
 };

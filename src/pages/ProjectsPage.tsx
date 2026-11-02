@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import DemoVideoDialog, { type DemoVideo } from "@/components/DemoVideoDialog";
+import SiteFooter from "@/components/SiteFooter";
 import { Reveal } from "@/components/motion/Reveal";
 import { projectData, projectCategories, type ProjectItem } from "@/data/projects";
 
@@ -38,10 +39,10 @@ const ProjectsPage = () => {
 
   if (!categoryData) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-6 pt-16">
+      <div className="flex min-h-screen items-center justify-center bg-background px-6 pt-14">
         <div className="max-w-md text-center">
           <p className="eyebrow">Erro 404</p>
-          <h1 className="font-display mt-4 text-display-lg font-semibold">
+          <h1 className="font-display mt-4 text-display-lg font-medium">
             Categoria não encontrada
           </h1>
           <p className="mt-4 text-muted-foreground">
@@ -63,7 +64,7 @@ const ProjectsPage = () => {
   const otherCategory = projectCategories.find((c) => c.to !== `/${categoryData.slug}`)!;
 
   return (
-    <div className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background pt-14">
       {/* Cabeçalho da página */}
       <div className="border-b border-border bg-surface">
         <div className="rail py-12 md:py-16">
@@ -90,7 +91,7 @@ const ProjectsPage = () => {
               <Icon className="h-5 w-5" />
             </span>
             <div>
-              <h1 className="font-display text-display-lg font-semibold">{categoryData.title}</h1>
+              <h1 className="font-display text-display-lg font-medium">{categoryData.title}</h1>
               <p className="mt-3 max-w-2xl text-lg leading-relaxed text-muted-foreground">
                 {categoryData.lead}
               </p>
@@ -279,6 +280,7 @@ const ProjectsPage = () => {
         </div>
       </div>
 
+      <SiteFooter />
       <DemoVideoDialog video={video} onClose={() => setVideo(null)} />
     </div>
   );

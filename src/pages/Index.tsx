@@ -5,6 +5,7 @@ import SheetsHero from "@/components/home/SheetsHero";
 import AboutSection from "@/components/home/AboutSection";
 import ProjectsSection from "@/components/home/ProjectsSection";
 import EducationSection from "@/components/home/EducationSection";
+import ContactSection from "@/components/home/ContactSection";
 import SiteFooter from "@/components/SiteFooter";
 import { NAV_OFFSET } from "@/lib/scroll";
 
@@ -50,6 +51,7 @@ const Index = () => {
           <AboutSection />
           <ProjectsSection />
           <EducationSection />
+          <ContactSection />
         </div>
       </main>
       <SiteFooter />

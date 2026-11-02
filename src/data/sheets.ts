@@ -16,6 +16,8 @@ export type Sheet = {
   config?: string;
   /** estudo de caso do projeto, se houver */
   caseUrl?: string;
+  /** uma frase sobre o projeto, na faixa logo abaixo da vista explodida */
+  summary?: string;
 };
 
 export const sheets: Sheet[] = [
@@ -25,6 +27,9 @@ export const sheets: Sheet[] = [
     full: "Macropad ESP32-C3",
     config: "/projetos/macropad/parts.json",
     caseUrl: "/projeto/macropad",
+    summary:
+      "Desenhei o esquemático, roteei a placa, soldei os componentes e modelei a case. " +
+      "O firmware em C++ e o app em Python são a próxima etapa.",
   },
   { n: "02", name: "CNC Plotter", full: "CNC Plotter" },
 ];

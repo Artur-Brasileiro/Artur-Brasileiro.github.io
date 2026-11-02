@@ -6,8 +6,9 @@
  * desmontagem começa), legenda da figura, lista de materiais montada do
  * parts.json, marcas de corte e o carimbo com etapa, folha e progresso.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { getLenis } from "@/components/motion/SmoothScroll";
 import ExplodedView from "@/components/three/ExplodedView";
 import { isGroupOut, ramp, type ExplodedState, type Shift } from "@/components/three/explode";
 import { sheets, type Sheet } from "@/data/sheets";
@@ -168,15 +169,29 @@ function Hud({ sheet, index, onSelect, desktop, state }: { sheet: Sheet; index: 
 export default function SheetsHero() {
   const desktop = useMediaQuery("(min-width: 1024px)");
   const [index, setIndex] = useState(0);
+  const track = useRef<HTMLElement>(null);
   const sheet = sheets[index];
   const frame = desktop ? DESKTOP : MOBILE;
+
+  // trocar de folha volta ao começo da trilha: o modelo novo chega montado e a
+  // pessoa o vê desmontar desde o início, em vez de cair no meio da explosão
+  const selectSheet = (i: number) => {
+    if (i === index) return;
+    const el = track.current;
+    setIndex(i);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const lenis = getLenis();
+    if (lenis) lenis.scrollTo(top);
+    else window.scrollTo({ top, behavior: "smooth" });
+  };
 
   return (
     <>
       {sheet.config && (
-        // key: trocar de folha recomeça a montagem do zero
-        <ExplodedView key={sheet.config} configUrl={sheet.config} trackVh={460} className="bg-grid" zoom={frame.zoom} shift={frame.shift}>
-          {(state) => <Hud sheet={sheet} index={index} onSelect={setIndex} desktop={desktop} state={state} />}
+        // key: cada folha monta o próprio canvas, com o próprio modelo
+        <ExplodedView ref={track} key={sheet.config} configUrl={sheet.config} trackVh={460} className="bg-grid" zoom={frame.zoom} shift={frame.shift}>
+          {(state) => <Hud sheet={sheet} index={index} onSelect={selectSheet} desktop={desktop} state={state} />}
         </ExplodedView>
       )}
 

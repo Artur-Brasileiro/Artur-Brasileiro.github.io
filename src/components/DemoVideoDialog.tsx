@@ -20,6 +20,11 @@ const DemoVideoDialog = ({ video, onClose }: { video: DemoVideo | null; onClose:
   // sem isso o Lenis rola a página por trás do modal
   useLenisLock(!!video);
   const box = useRef<HTMLDivElement>(null);
+  // o último vídeo continua desenhado enquanto o modal anima a saída; só o
+  // player sai na hora, para o som parar junto com o clique em fechar
+  const last = useRef(video);
+  if (video) last.current = video;
+  const shown = video ?? last.current;
 
   return (
     <Dialog open={!!video} onOpenChange={(open) => !open && onClose()}>
@@ -34,28 +39,30 @@ const DemoVideoDialog = ({ video, onClose }: { video: DemoVideo | null; onClose:
         }}
         className="max-w-4xl gap-0 overflow-hidden rounded-[10px] border-foreground bg-background p-0 outline-none sm:rounded-[10px]"
       >
-        {video && (
+        {shown && (
           <>
             <div className="flex items-baseline gap-3 border-b border-border py-3.5 pl-5 pr-12 font-mono">
-              {video.code && <span className="text-[11px] tracking-[0.08em] text-gold">{video.code}</span>}
-              <DialogTitle className="text-[15px] font-medium leading-tight tracking-tight">{video.title}</DialogTitle>
+              {shown.code && <span className="text-[11px] tracking-[0.08em] text-gold">{shown.code}</span>}
+              <DialogTitle className="text-[15px] font-medium leading-tight tracking-tight">{shown.title}</DialogTitle>
             </div>
             <div className="aspect-video w-full bg-black">
-              <iframe
-                className="h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`}
-                title={`Demonstração: ${video.title}`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              {video && (
+                <iframe
+                  className="h-full w-full"
+                  src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`}
+                  title={`Demonstração: ${video.title}`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
             </div>
             <div className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between md:gap-8">
               <DialogDescription className="line-clamp-2 max-w-[72ch] text-[13px] leading-relaxed">
-                {video.summary ?? "Demonstração do projeto funcionando."}
+                {shown.summary ?? "Demonstração do projeto funcionando."}
               </DialogDescription>
-              {video.github && (
+              {shown.github && (
                 <a
-                  href={video.github}
+                  href={shown.github}
                   target="_blank"
                   rel="noreferrer"
                   className="shrink-0 rounded-[7px] border border-foreground px-4 py-2.5 font-mono text-[12px] transition-colors hover:bg-foreground hover:text-background"

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Check, Copy } from "lucide-react";
 import { EMAIL, FORMSPREE_ENDPOINT, GITHUB_URL, LINKEDIN_URL, WHATSAPP, WHATSAPP_URL } from "@/data/profile";
 import SectionLabel from "./SectionLabel";
@@ -13,12 +13,24 @@ type Status = "idle" | "loading" | "success" | "error";
 const ContactSection = () => {
   const [status, setStatus] = useState<Status>("idle");
   const [copied, setCopied] = useState(false);
+  // um timer de cada vez: um "volta ao normal" atrasado não pode reabilitar o
+  // botão no meio de um segundo envio, nem disparar depois que a seção saiu
+  const statusTimer = useRef<number>();
+  const copiedTimer = useRef<number>();
+  useEffect(
+    () => () => {
+      clearTimeout(statusTimer.current);
+      clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
 
   const copyEmail = async () => {
     try {
       await navigator.clipboard.writeText(EMAIL);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = window.setTimeout(() => setCopied(false), 2000);
     } catch {
       // área de transferência indisponível — o endereço segue visível na tela
     }
@@ -27,6 +39,7 @@ const ContactSection = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
+    clearTimeout(statusTimer.current);
     setStatus("loading");
     try {
       const response = await fetch(FORMSPREE_ENDPOINT, {
@@ -37,7 +50,7 @@ const ContactSection = () => {
       if (!response.ok) throw new Error(String(response.status));
       setStatus("success");
       form.reset();
-      setTimeout(() => setStatus("idle"), 5000);
+      statusTimer.current = window.setTimeout(() => setStatus("idle"), 5000);
     } catch {
       setStatus("error");
     }

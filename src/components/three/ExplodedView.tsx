@@ -3,13 +3,14 @@
  *
  * Esta é a parte leve: a trilha de scroll, a área fixa, o parts.json, o arrasto
  * e o HUD. O three.js mora no ExplodedCanvas, carregado sob demanda — então o
- * que a página desenha por cima (`children`) aparece antes do 3D, e continua lá
- * se o 3D falhar (WebGL indisponível, chunk que não baixou, GLB quebrado).
+ * que a página desenha por cima (`children`) aparece antes do 3D, e continua
+ * respondendo ao scroll se o 3D falhar (WebGL indisponível, chunk que não
+ * baixou, GLB quebrado).
  *
  * Um projeto novo com vista explodida é uma pasta em /public/projetos/<slug>/
  * com o .glb e o parts.json; nada aqui muda.
  */
-import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Component, forwardRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { EL_LIMIT, stageAt, type DragState, type ExplodedState, type PartsConfig, type Shift } from "./explode";
 
 const ExplodedCanvas = lazy(() => import("./ExplodedCanvas"));
@@ -35,40 +36,51 @@ type Props = {
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /** Se o 3D quebrar, some só o 3D: o HUD e a página seguem de pé. */
-class CanvasBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class CanvasBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
   componentDidCatch(error: unknown) {
     console.warn("vista explodida indisponível:", error);
+    this.props.onError();
   }
   render() {
     return this.state.failed ? null : this.props.children;
   }
 }
 
-export default function ExplodedView({
-  configUrl,
-  trackVh = 480,
-  className = "",
-  style,
-  studio = "light",
-  shift,
-  zoom = 1,
-  children,
-}: Props) {
+const ExplodedView = forwardRef<HTMLElement, Props>(function ExplodedView(
+  { configUrl, trackVh = 480, className = "", style, studio = "light", shift, zoom = 1, children },
+  ref,
+) {
   const [cfg, setCfg] = useState<PartsConfig | null>(null);
+  // sem parts.json não há o que desmontar: a trilha encolhe para uma tela
+  const [cfgFailed, setCfgFailed] = useState(false);
   const [q, setQ] = useState(0);
-  const track = useRef<HTMLElement>(null);
+  // a trilha está na tela (com folga)? Fora dela o canvas para de desenhar
+  const [onScreen, setOnScreen] = useState(true);
+  const track = useRef<HTMLElement | null>(null);
   const stick = useRef<HTMLDivElement>(null);
   const progress = useRef(0);
+  // quem move o HUD: o canvas (progresso suavizado) quando está rodando; o
+  // próprio scroll enquanto ele carrega ou se ele falhou
+  const canvasDriving = useRef(false);
   const drag = useRef<DragState>({ az: 0, el: 0, active: false, touched: false, baseEl: 0.52 });
   const pointer = useRef({ x: 0, y: 0 });
   // em ref: a função de deslocamento muda a cada render da página, e o
   // quadro do canvas só precisa ler a versão mais recente
   const shiftRef = useRef(shift);
   shiftRef.current = shift;
+
+  const setTrack = useCallback(
+    (el: HTMLElement | null) => {
+      track.current = el;
+      if (typeof ref === "function") ref(el);
+      else if (ref) ref.current = el;
+    },
+    [ref],
+  );
 
   const baseUrl = useMemo(() => configUrl.replace(/[^/]*$/, ""), [configUrl]);
 
@@ -82,29 +94,51 @@ export default function ExplodedView({
       .then((d) => {
         if (alive) setCfg(d as PartsConfig);
       })
-      // sem config não há modelo, mas a trilha e o HUD ficam: o hero nunca some
-      .catch((e) => console.warn("parts.json indisponível:", e));
+      .catch((e) => {
+        console.warn("parts.json indisponível:", e);
+        if (alive) setCfgFailed(true);
+      });
     return () => {
       alive = false;
     };
   }, [configUrl]);
 
-  useEffect(() => {
-    const onScroll = () => {
-      const t = track.current,
-        s = stick.current;
-      if (!t || !s) return;
-      const span = t.offsetHeight - s.offsetHeight;
-      progress.current = clamp01(span > 0 ? -t.getBoundingClientRect().top / span : 0);
-    };
-    onScroll();
-    addEventListener("scroll", onScroll, { passive: true });
-    addEventListener("resize", onScroll);
-    return () => {
-      removeEventListener("scroll", onScroll);
-      removeEventListener("resize", onScroll);
-    };
+  const readScroll = useCallback(() => {
+    const t = track.current,
+      s = stick.current;
+    if (!t || !s) return;
+    const span = t.offsetHeight - s.offsetHeight;
+    progress.current = clamp01(span > 0 ? -t.getBoundingClientRect().top / span : 0);
+    // milésimos bastam para o HUD e poupam renders a cada pixel rolado
+    if (!canvasDriving.current) setQ(Math.round(progress.current * 1000) / 1000);
   }, []);
+
+  useEffect(() => {
+    readScroll();
+    addEventListener("scroll", readScroll, { passive: true });
+    addEventListener("resize", readScroll);
+    return () => {
+      removeEventListener("scroll", readScroll);
+      removeEventListener("resize", readScroll);
+    };
+  }, [readScroll]);
+
+  useEffect(() => {
+    const t = track.current;
+    if (!t) return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin: "200px 0px" });
+    io.observe(t);
+    return () => io.disconnect();
+  }, []);
+
+  const onCanvasProgress = useCallback((v: number) => {
+    canvasDriving.current = true;
+    setQ(v);
+  }, []);
+  const onCanvasError = useCallback(() => {
+    canvasDriving.current = false;
+    readScroll();
+  }, [readScroll]);
 
   const onDown = (e: React.PointerEvent) => {
     // no toque, o dedo é do scroll da página; girar é coisa de mouse. E só o
@@ -131,7 +165,7 @@ export default function ExplodedView({
   const { stage, stageIndex } = useMemo(() => stageAt(cfg, q), [cfg, q]);
 
   return (
-    <section ref={track} className={`relative ${className}`} style={{ ...style, height: `${trackVh}vh` }}>
+    <section ref={setTrack} className={`relative ${className}`} style={{ ...style, height: `${cfgFailed ? 100 : trackVh}vh` }}>
       <div
         ref={stick}
         className="sticky top-0 h-[100svh] overflow-hidden"
@@ -142,17 +176,18 @@ export default function ExplodedView({
         onPointerCancel={onUp}
       >
         {cfg && (
-          <CanvasBoundary>
+          <CanvasBoundary onError={onCanvasError}>
             <Suspense fallback={null}>
               <ExplodedCanvas
                 cfg={cfg}
                 baseUrl={baseUrl}
                 studio={studio}
                 zoom={zoom}
+                active={onScreen}
                 progress={progress}
                 drag={drag}
                 shift={shiftRef}
-                onProgress={setQ}
+                onProgress={onCanvasProgress}
               />
             </Suspense>
           </CanvasBoundary>
@@ -162,4 +197,6 @@ export default function ExplodedView({
       </div>
     </section>
   );
-}
+});
+
+export default ExplodedView;

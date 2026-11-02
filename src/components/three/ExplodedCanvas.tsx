@@ -122,7 +122,9 @@ function Assembly({ cfg, baseUrl, studio, zoom, progress, drag, shift, onProgres
     return { root, parts, offsets, radius: box.getSize(new THREE.Vector3()).length() * 0.5, fullSpan: full.span };
   }, [gltf, cfg]);
 
-  const smooth = useRef(0);
+  // começa de onde o scroll já está: até o 3D chegar, o HUD andou com o scroll,
+  // e partir de zero faria tudo voltar ao início por um instante
+  const smooth = useRef(progress.current);
   const idle = useRef(0);
   const reported = useRef(-1);
   const center = useMemo(() => new THREE.Vector3(), []);
@@ -185,11 +187,14 @@ function Assembly({ cfg, baseUrl, studio, zoom, progress, drag, shift, onProgres
   return <primitive object={root} />;
 }
 
-export default function ExplodedCanvas(props: SceneProps) {
+export default function ExplodedCanvas({ active, ...props }: SceneProps & { active: boolean }) {
   const light = props.studio === "light";
   return (
     <Canvas
       className="!absolute inset-0 cursor-grab active:cursor-grabbing"
+      // fora da tela não desenha: sem isso a cena seguia a 60 fps (DPR 2 no
+      // celular) enquanto a pessoa lia o resto da página
+      frameloop={active ? "always" : "never"}
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: true }}
       camera={{ fov: 42 }}

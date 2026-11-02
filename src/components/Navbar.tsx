@@ -59,6 +59,16 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // E com Esc, como qualquer painel que abre por cima do conteúdo.
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isMobileMenuOpen]);
+
   // Scroll-spy via IntersectionObserver, só na home (as seções só existem lá).
   // Re-tenta até as seções aparecerem no DOM (Index é lazy/Suspense).
   useEffect(() => {
@@ -76,11 +86,18 @@ const Navbar = () => {
         raf = requestAnimationFrame(setup);
         return;
       }
+      // Quais seções cruzam a faixa do meio da tela agora. Guardar o conjunto (e
+      // não só o último "entrou") permite apagar o destaque quando nenhuma
+      // cruza — voltando ao hero de 460vh, "sobre" ficava aceso o caminho todo.
+      const inBand = new Set<string>();
       obs = new IntersectionObserver(
         (entries) => {
           entries.forEach((e) => {
-            if (e.isIntersecting) setActiveSection((e.target as HTMLElement).id);
+            const id = (e.target as HTMLElement).id;
+            if (e.isIntersecting) inBand.add(id);
+            else inBand.delete(id);
           });
+          setActiveSection(navItems.find((i) => inBand.has(i.id))?.id ?? "");
         },
         { rootMargin: "-45% 0px -50% 0px", threshold: 0 },
       );

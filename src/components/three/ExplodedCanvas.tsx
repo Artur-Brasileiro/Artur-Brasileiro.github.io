@@ -11,12 +11,16 @@ import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
-import { EL_LIMIT, explosionFrame, seg, type DragState, type PartsConfig, type Shift } from "./explode";
+import { boxShift, EL_LIMIT, explosionFrame, fitDistance, seg, type DragState, type FitBox, type PartsConfig, type Shift } from "./explode";
 
 type Studio = "light" | "dark";
 type Vec3 = [number, number, number];
 
 const DEFAULT_DIST: [number, number] = [2.6, 5.3];
+const FOV = 42;
+const TAN_HALF_FOV = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+/** elevação da câmera com o modelo montado (a mesma do início do lerp abaixo) */
+const EL_START = 0.52;
 
 const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -79,17 +83,19 @@ type SceneProps = {
   progress: MutableRefObject<number>;
   drag: MutableRefObject<DragState>;
   shift: MutableRefObject<Shift | undefined>;
+  /** caixa onde o modelo deve caber; quando existe, manda no enquadramento no lugar de `shift` */
+  fit: MutableRefObject<((q: number) => FitBox | null) | undefined>;
   onProgress: (q: number) => void;
 };
 
-function Assembly({ cfg, baseUrl, studio, zoom, progress, drag, shift, onProgress }: SceneProps) {
+function Assembly({ cfg, baseUrl, studio, zoom, progress, drag, shift, fit, onProgress }: SceneProps) {
   const gltf = useLoader(GLTFLoader, baseUrl + cfg.model, (loader) => {
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
   });
   const { camera, size } = useThree();
   useStudioEnvironment(studio);
 
-  const { root, parts, offsets, radius, fullSpan } = useMemo(() => {
+  const { root, parts, offsets, radius, fullSpan, halfW0, halfH0 } = useMemo(() => {
     const byId = new Map(cfg.groups.map((g) => [g.id, g]));
     const root = gltf.scene.clone(true);
     const parts: { obj: THREE.Object3D; base: THREE.Vector3; vec: THREE.Vector3; stage: [number, number] }[] = [];
@@ -119,7 +125,20 @@ function Assembly({ cfg, baseUrl, studio, zoom, progress, drag, shift, onProgres
       parts.map((p): Vec3 => [p.vec.x, p.vec.y, p.vec.z]),
       0,
     );
-    return { root, parts, offsets, radius: box.getSize(new THREE.Vector3()).length() * 0.5, fullSpan: full.span };
+    const sz = box.getSize(new THREE.Vector3());
+    // meia-largura e meia-altura do conjunto montado como a câmera o vê: de
+    // quina (a diagonal da planta) e de cima a ~30°. É o que precisa caber na
+    // caixa; a esfera envolvente desperdiçaria espaço num objeto achatado
+    const plan = Math.hypot(sz.x, sz.z) / 2;
+    return {
+      root,
+      parts,
+      offsets,
+      radius: sz.length() * 0.5,
+      fullSpan: full.span,
+      halfW0: plan,
+      halfH0: (sz.y / 2) * Math.cos(EL_START) + plan * Math.sin(EL_START),
+    };
   }, [gltf, cfg]);
 
   // começa de onde o scroll já está: até o 3D chegar, o HUD andou com o scroll,
@@ -161,15 +180,31 @@ function Assembly({ cfg, baseUrl, studio, zoom, progress, drag, shift, onProgres
     if (!drag.current.touched && !still) idle.current += dt * 0.085;
     const dists = cfg.camera?.dist ?? DEFAULT_DIST;
     const az = -0.95 + q * 1.15 + drag.current.az + idle.current;
-    drag.current.baseEl = THREE.MathUtils.lerp(0.52, 0.34, q);
+    drag.current.baseEl = THREE.MathUtils.lerp(EL_START, 0.34, q);
     const el = Math.max(-EL_LIMIT, Math.min(EL_LIMIT, drag.current.baseEl + drag.current.el));
-    const dist = radius * zoom * THREE.MathUtils.lerp(dists[0], dists[1], frame.spread);
+
+    // Duas formas de enquadrar. Com caixa (celular): o modelo cabe inteiro no
+    // retângulo livre da página, na largura e na altura, somando ao conjunto
+    // montado o quanto a explosão já abriu. Sem caixa (desktop): distância pelo
+    // parts.json e deslocamento ajustado à mão por quem usa o componente.
+    const box = fit.current?.(q) ?? null;
+    let dist: number;
+    let sx: number;
+    let sy: number;
+    if (box) {
+      const halfW = halfW0 + Math.hypot(frame.size[0], frame.size[2]) / 2;
+      const halfH = halfH0 + frame.size[1] / 2;
+      dist = zoom * fitDistance(halfW, halfH, box, size.width / size.height, TAN_HALF_FOV);
+      [sx, sy] = boxShift(box);
+    } else {
+      dist = radius * zoom * THREE.MathUtils.lerp(dists[0], dists[1], frame.spread);
+      const s = shift.current;
+      [sx, sy] = typeof s === "function" ? s(q) : s ?? [0, 0];
+    }
     camera.position.set(Math.cos(el) * Math.sin(az) * dist, Math.sin(el) * dist, Math.cos(el) * Math.cos(az) * dist).add(center);
     camera.lookAt(center);
 
     // desloca o centro de projeção sem mexer na órbita — o modelo anda na tela
-    const s = shift.current;
-    const [sx, sy] = typeof s === "function" ? s(q) : s ?? [0, 0];
     const persp = camera as THREE.PerspectiveCamera;
     if (sx === 0 && sy === 0) {
       if (persp.view?.enabled) persp.clearViewOffset();
@@ -197,7 +232,7 @@ export default function ExplodedCanvas({ active, ...props }: SceneProps & { acti
       frameloop={active ? "always" : "never"}
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: true }}
-      camera={{ fov: 42 }}
+      camera={{ fov: FOV }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = light ? 1.0 : 0.92;

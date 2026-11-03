@@ -11,7 +11,7 @@
  * com o .glb e o parts.json; nada aqui muda.
  */
 import { Component, forwardRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { EL_LIMIT, stageAt, type DragState, type ExplodedState, type PartsConfig, type Shift } from "./explode";
+import { EL_LIMIT, stageAt, type DragState, type ExplodedState, type FitBox, type PartsConfig, type Shift } from "./explode";
 
 const ExplodedCanvas = lazy(() => import("./ExplodedCanvas"));
 
@@ -29,6 +29,12 @@ type Props = {
   shift?: Shift;
   /** multiplica a distância da câmera: >1 afasta, <1 aproxima */
   zoom?: number;
+  /**
+   * Caixa (frações da área fixa) onde o modelo deve caber inteiro, na largura e
+   * na altura. Quando devolve uma caixa, ela manda no enquadramento e `shift` é
+   * ignorado — é o modo do celular, onde o espaço livre muda de aparelho a aparelho.
+   */
+  fit?: (q: number) => FitBox | null;
   /** HUD desenhado por cima do canvas, dentro da área fixa */
   children?: (s: ExplodedState) => ReactNode;
 };
@@ -51,7 +57,7 @@ class CanvasBoundary extends Component<{ children: ReactNode; onError: () => voi
 }
 
 const ExplodedView = forwardRef<HTMLElement, Props>(function ExplodedView(
-  { configUrl, trackVh = 480, className = "", style, studio = "light", shift, zoom = 1, children },
+  { configUrl, trackVh = 480, className = "", style, studio = "light", shift, zoom = 1, fit, children },
   ref,
 ) {
   const [cfg, setCfg] = useState<PartsConfig | null>(null);
@@ -72,6 +78,8 @@ const ExplodedView = forwardRef<HTMLElement, Props>(function ExplodedView(
   // quadro do canvas só precisa ler a versão mais recente
   const shiftRef = useRef(shift);
   shiftRef.current = shift;
+  const fitRef = useRef(fit);
+  fitRef.current = fit;
 
   const setTrack = useCallback(
     (el: HTMLElement | null) => {
@@ -187,6 +195,7 @@ const ExplodedView = forwardRef<HTMLElement, Props>(function ExplodedView(
                 progress={progress}
                 drag={drag}
                 shift={shiftRef}
+                fit={fitRef}
                 onProgress={onCanvasProgress}
               />
             </Suspense>

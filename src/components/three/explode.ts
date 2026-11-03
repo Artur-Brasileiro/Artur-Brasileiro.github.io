@@ -76,7 +76,10 @@ export function stageAt(cfg: PartsConfig | null, q: number): { stage: string; st
  * explosão completa; `center` é o meio da caixa. Nos três eixos: um modelo que
  * abre para os lados precisa de enquadramento tanto quanto um que abre para cima.
  */
-export function explosionFrame(offsets: Vec3[], fullSpan: number): { span: number; spread: number; center: Vec3 } {
+export function explosionFrame(
+  offsets: Vec3[],
+  fullSpan: number,
+): { span: number; spread: number; center: Vec3; size: Vec3 } {
   const lo: Vec3 = [0, 0, 0];
   const hi: Vec3 = [0, 0, 0];
   for (const o of offsets) {
@@ -85,10 +88,30 @@ export function explosionFrame(offsets: Vec3[], fullSpan: number): { span: numbe
       hi[i] = Math.max(hi[i], o[i]);
     }
   }
-  const span = Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
+  const size: Vec3 = [hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]];
+  const span = Math.hypot(...size);
   return {
     span,
     spread: fullSpan > 0 ? span / fullSpan : 0,
     center: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2],
+    size,
   };
 }
+
+/** Retângulo da área fixa onde o modelo deve caber, em frações (origem no canto superior esquerdo). */
+export type FitBox = { x: number; y: number; w: number; h: number };
+
+/**
+ * Distância da câmera para um modelo de meia-largura `halfW` e meia-altura
+ * `halfH` (unidades do mundo) caber inteiro na caixa — a que for mais exigente,
+ * largura ou altura. No celular em pé quem manda costuma ser a largura: o
+ * enquadramento só pela altura era o que cortava o modelo nas laterais.
+ */
+export function fitDistance(halfW: number, halfH: number, box: FitBox, aspect: number, tanHalfFov: number, margin = 1.08) {
+  const byHeight = (halfH * margin) / (tanHalfFov * box.h);
+  const byWidth = (halfW * margin) / (tanHalfFov * aspect * box.w);
+  return Math.max(byHeight, byWidth);
+}
+
+/** Deslocamento do centro de projeção que põe o modelo no meio da caixa. */
+export const boxShift = (b: FitBox): [number, number] => [b.x + b.w / 2 - 0.5, b.y + b.h / 2 - 0.5];

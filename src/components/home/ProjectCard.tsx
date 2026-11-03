@@ -19,14 +19,16 @@ const ProjectCard = ({ p, wide, onPlay }: { p: HomeProject; wide: boolean; onPla
     "grid h-9 w-9 shrink-0 place-items-center rounded-[6px] border border-foreground text-foreground transition-colors group-hover:bg-foreground group-hover:text-background";
 
   const media = (
-    // logos sobre a grade milimetrada; fotos ocupam a área inteira
-    <div className={cn("relative overflow-hidden border-b border-border", wide ? "aspect-[21/8]" : "aspect-[16/10]", p.logo ? "bg-grid" : "bg-surface")}>
+    // logos sobre a grade milimetrada; fotos ocupam a área inteira. O card largo
+    // só é largo com duas colunas: no celular, 21:8 com o respiro do logo deixava
+    // 18px de altura para o ViewCongresso
+    <div className={cn("relative overflow-hidden border-b border-border", wide ? "aspect-[16/10] md:aspect-[21/8]" : "aspect-[16/10]", p.logo ? "bg-grid" : "bg-surface")}>
       {p.image && (
         <img
           src={`${import.meta.env.BASE_URL}${p.image}`}
           alt=""
           loading="lazy"
-          className={cn("h-full w-full transition-transform duration-700 group-hover:scale-[1.03]", p.logo ? "object-contain p-14" : "object-cover")}
+          className={cn("h-full w-full transition-transform duration-700 group-hover:scale-[1.03]", p.logo ? "object-contain p-8 md:p-14" : "object-cover")}
         />
       )}
       <span className="absolute left-3 top-3 border border-border bg-card/90 px-2 py-0.5 font-mono text-[10px] tracking-[0.08em] text-gold">

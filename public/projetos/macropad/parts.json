@@ -116,7 +116,7 @@
       "explode": [
         0,
         0,
-        -95
+        -37
       ],
       "stage": [
         0.66,
@@ -125,13 +125,14 @@
     }
   ],
   "_explode_nota": "vetor em milimetro, nos eixos do Blender (Z para cima). O visualizador converte para os eixos do glTF (Y para cima) no carregamento: (x, y, z) vira (x, z, -y).",
+  "_vao_nota": "Os vaos entre camadas na vista explodida completa ficam em ~20 mm: keycap-switch 19,1, switch-moldura 20,4, moldura-placa 22,4, placa-bandeja 21,0. A bandeja desce 37 e nao 95 porque a parede dela comeca 8 mm acima da base da placa: com 95 o vao ficava em 79 mm e parecia que ela descia duas camadas.",
   "_camada_nota": "Dois grupos com o MESMO explode e o MESMO stage formam uma CAMADA so: eles se movem juntos e continuam listados separadamente no painel. E assim que PCB, OLED, soquetes e ESP32-C3 formam um conjunto so, parado.",
   "_stage_nota": "faixa do scroll em que o grupo se separa, de 0 a 1. Faixas que se sobrepoem fazem as camadas sairem em cascata em vez de uma de cada vez.",
   "_ordem_nota": "A ordem respeita a desmontagem real. So quatro pecas se movem: keycaps, switches, moldura e bandeja. Tudo que e soldado no PCB - OLED, soquetes Kailh e o ESP32-C3 - fica parado junto com ele, porque numa desmontagem de verdade nada disso sai sem ferro de solda. Dois vinculos fisicos a respeitar se voce mexer nas faixas: (1) o switch termina ACIMA da moldura (84 contra 42) e sai antes dela - se a moldura subisse mais alto ela teria de atravessar o switch, e o colar de 15,60 nao passa pelo furo de 14,20 da placa de encaixe; (2) a OLED nao pode subir pela moldura - a abertura tem 27,0 x 17,4 e o modulo tem 29,6 x 28,0, que e justamente o que esconde os pinos. Rode scripts/sweep_choreo.py depois de qualquer mudanca.",
   "camera": {
     "dist": [
       2.6,
-      5.3
+      4.9
     ],
     "lift": 0.15,
     "_nota": "dist e multiplicador do raio do modelo, do montado ao explodido; lift sobe o alvo da camera conforme explode, porque a pilha cresce mais para cima que para baixo"

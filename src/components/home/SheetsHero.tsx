@@ -10,6 +10,7 @@ import { forwardRef, useLayoutEffect, useRef, useState, type MutableRefObject } 
 import { Link } from "react-router-dom";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import ExplodedView from "@/components/three/ExplodedView";
+import { preloadExplodedView } from "@/components/three/preload";
 import { isGroupOut, ramp, type ExplodedState, type FitBox, type Shift } from "@/components/three/explode";
 import { sheets, type Sheet } from "@/data/sheets";
 import { heroLead } from "@/data/home";
@@ -20,6 +21,11 @@ import { cn } from "@/lib/utils";
    perto do centro quando o título sai. No celular não há ajuste fixo — o modelo
    cabe na caixa medida entre o texto e o carimbo (veja o Hud). */
 const DESKTOP: { zoom: number; shift: Shift } = { zoom: 1.08, shift: (q) => [0.15 - 0.1 * ramp(q, 0.03, 0.16), 0.04] };
+
+// a folha que abre a home já começa a baixar quando este módulo é avaliado,
+// em paralelo com o primeiro render da página, e não depois dele
+const firstSheet = sheets.find((s) => s.config);
+if (firstSheet?.config) preloadExplodedView(firstSheet.config);
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -35,25 +41,35 @@ function CropMarks() {
   );
 }
 
-/** Lista de materiais: cada linha acende quando a peça já saiu do conjunto. */
+/**
+ * Lista de materiais: cada linha acende quando a peça já saiu do conjunto.
+ *
+ * Ela desce do topo e o carimbo sobe do pé, na mesma coluna. Em tela baixa
+ * (notebook de 768 px menos as barras do navegador) as duas se encontravam e o
+ * carimbo tampava as últimas linhas. Então: larga o bastante para nenhuma
+ * especificação quebrar em duas linhas; abaixo de 680 px de altura some a
+ * especificação e fica só referência e nome; abaixo de 520 px some a lista.
+ */
 function PartsList({ cfg, q }: Pick<ExplodedState, "cfg" | "q">) {
   if (!cfg) return null;
   return (
     <div
-      className="absolute right-12 top-28 hidden w-[260px] border-l border-border pl-4 lg:block"
+      className="absolute right-12 top-28 hidden w-[320px] border-l border-border pl-4 lg:block [@media(max-height:680px)]:top-24 [@media(max-height:520px)]:!hidden"
       style={{ opacity: ramp(q, 0.05, 0.14) }}
     >
       <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">lista de materiais</p>
       {cfg.groups.map((g) => (
         <div
           key={g.id}
-          className="grid grid-cols-[64px_1fr] gap-2 py-[5px] transition-opacity duration-300"
+          className="grid grid-cols-[64px_1fr] gap-2 py-[5px] transition-opacity duration-300 [@media(max-height:680px)]:py-[3px]"
           style={{ opacity: isGroupOut(g, q) ? 1 : 0.32 }}
         >
           <span className="text-[10px] tracking-[0.06em] text-gold">{g.ref}</span>
           <span className="font-sans text-[12px] leading-tight text-foreground">
             {g.name}
-            {g.spec && <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">{g.spec}</span>}
+            {g.spec && (
+              <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground [@media(max-height:680px)]:hidden">{g.spec}</span>
+            )}
           </span>
         </div>
       ))}

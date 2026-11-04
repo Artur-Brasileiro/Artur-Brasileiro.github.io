@@ -12,8 +12,9 @@
  */
 import { Component, forwardRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { EL_LIMIT, stageAt, type DragState, type ExplodedState, type FitBox, type PartsConfig, type Shift } from "./explode";
+import { loadCanvas, loadConfig } from "./preload";
 
-const ExplodedCanvas = lazy(() => import("./ExplodedCanvas"));
+const ExplodedCanvas = lazy(loadCanvas);
 
 type Props = {
   /** caminho do parts.json; o modelo é buscado na mesma pasta */
@@ -94,13 +95,9 @@ const ExplodedView = forwardRef<HTMLElement, Props>(function ExplodedView(
 
   useEffect(() => {
     let alive = true;
-    fetch(configUrl)
-      .then((r) => {
-        if (!r.ok) throw new Error(`${r.status} ${configUrl}`);
-        return r.json();
-      })
+    loadConfig(configUrl)
       .then((d) => {
-        if (alive) setCfg(d as PartsConfig);
+        if (alive) setCfg(d);
       })
       .catch((e) => {
         console.warn("parts.json indisponível:", e);

@@ -14,23 +14,23 @@
         116
       ],
       "stage": [
-        0.03,
-        0.22
+        0.04,
+        0.3
       ]
     },
     {
       "id": "case_top",
       "ref": "CT1",
       "name": "Moldura + placa",
-      "spec": "placa de encaixe de 1,50 mm",
+      "spec": "placa de 1,50 mm · moldura da OLED",
       "explode": [
         0,
         0,
         42
       ],
       "stage": [
-        0.32,
-        0.54
+        0.44,
+        0.74
       ]
     },
     {
@@ -44,23 +44,23 @@
         84
       ],
       "stage": [
-        0.14,
-        0.36
+        0.2,
+        0.5
       ]
     },
     {
       "id": "oled",
       "ref": "DS1",
       "name": "Display OLED",
-      "spec": "0,96\" · I²C · barra 2,54 mm",
+      "spec": "0,96\" · só o vidro à vista",
       "explode": [
         0,
         0,
-        84
+        0
       ],
       "stage": [
-        0.14,
-        0.36
+        0,
+        0
       ]
     },
     {
@@ -86,11 +86,11 @@
       "explode": [
         0,
         0,
-        -45
+        0
       ],
       "stage": [
-        0.6,
-        0.84
+        0,
+        0
       ]
     },
     {
@@ -101,33 +101,33 @@
       "explode": [
         0,
         0,
-        -45
+        0
       ],
       "stage": [
-        0.6,
-        0.84
+        0,
+        0
       ]
     },
     {
       "id": "case_bottom",
       "ref": "CB1",
       "name": "Bandeja inferior",
-      "spec": "cunha de 7° · 118 × 118 mm",
+      "spec": "cunha de 7° · 4 × M3 por baixo",
       "explode": [
         0,
         0,
         -95
       ],
       "stage": [
-        0.5,
-        0.72
+        0.66,
+        0.94
       ]
     }
   ],
   "_explode_nota": "vetor em milimetro, nos eixos do Blender (Z para cima). O visualizador converte para os eixos do glTF (Y para cima) no carregamento: (x, y, z) vira (x, z, -y).",
-  "_camada_nota": "Dois grupos com o MESMO explode e o MESMO stage formam uma CAMADA so: eles se movem juntos e continuam listados separadamente no painel. E assim que switch+oled e socket+mcu viram duas camadas em vez de quatro.",
+  "_camada_nota": "Dois grupos com o MESMO explode e o MESMO stage formam uma CAMADA so: eles se movem juntos e continuam listados separadamente no painel. E assim que PCB, OLED, soquetes e ESP32-C3 formam um conjunto so, parado.",
   "_stage_nota": "faixa do scroll em que o grupo se separa, de 0 a 1. Faixas que se sobrepoem fazem as camadas sairem em cascata em vez de uma de cada vez.",
-  "_ordem_nota": "A ordem respeita a desmontagem real, nao a posicao na pilha. Dois vinculos fisicos a respeitar se voce mexer nas faixas: (1) a bandeja inferior sai ANTES dos soquetes e do SuperMini, porque eles ficam DENTRO dela; (2) o switch termina ACIMA da moldura (84 contra 42) e sai antes dela. Se a moldura subisse mais alto, ela teria de atravessar o switch - e o colar de 15,60 nao passa pelo furo de 14,20 da placa de encaixe - na pratica voce puxa o switch com extrator, que o solta da placa e do soquete ao mesmo tempo. Rode scripts/sweep_choreo.py depois de qualquer mudanca.",
+  "_ordem_nota": "A ordem respeita a desmontagem real. So quatro pecas se movem: keycaps, switches, moldura e bandeja. Tudo que e soldado no PCB - OLED, soquetes Kailh e o ESP32-C3 - fica parado junto com ele, porque numa desmontagem de verdade nada disso sai sem ferro de solda. Dois vinculos fisicos a respeitar se voce mexer nas faixas: (1) o switch termina ACIMA da moldura (84 contra 42) e sai antes dela - se a moldura subisse mais alto ela teria de atravessar o switch, e o colar de 15,60 nao passa pelo furo de 14,20 da placa de encaixe; (2) a OLED nao pode subir pela moldura - a abertura tem 27,0 x 17,4 e o modulo tem 29,6 x 28,0, que e justamente o que esconde os pinos. Rode scripts/sweep_choreo.py depois de qualquer mudanca.",
   "camera": {
     "dist": [
       2.6,
@@ -142,27 +142,23 @@
       "Conjunto montado"
     ],
     [
-      0.06,
+      0.07,
       "Keycaps saindo das hastes"
     ],
     [
-      0.17,
-      "Switches e display saindo da placa"
+      0.24,
+      "Switches saindo da placa"
     ],
     [
-      0.37,
+      0.48,
       "Moldura e placa de encaixe"
     ],
     [
-      0.56,
+      0.7,
       "Bandeja inferior"
     ],
     [
-      0.66,
-      "Soquetes, diodos e ESP32-C3"
-    ],
-    [
-      0.9,
+      0.95,
       "Vista explodida completa"
     ]
   ]

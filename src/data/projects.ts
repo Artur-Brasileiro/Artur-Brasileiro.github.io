@@ -54,7 +54,7 @@ export const featuredProjects: FeaturedProject[] = [
     logoCover: false,
     tags: ["C++", "Python", "Integração de Hardware"],
     demoLink: "/projeto/macropad",
-    githubLink: "https://github.com/Artur-Brasileiro/Macropad-TCC",
+    githubLink: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
     isInternal: true,
   },
 ];
@@ -241,7 +241,7 @@ export const projectData: {
         internalLink: "/projeto/macropad",
         longDescription:
           "Um teclado auxiliar customizado do zero, unindo design de circuito impresso, eletrônica embarcada e desenvolvimento de software multiplataforma. Ele possui um aplicativo desktop em Python que detecta a janela ativa para alterar dinamicamente o contexto e as funções das teclas do hardware.",
-        technicalLink: "https://github.com/Artur-Brasileiro/Macropad-TCC",
+        technicalLink: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
         tags: ["C++", "EasyEDA", "PCB", "Python"],
       },
     ],
@@ -292,7 +292,16 @@ export type TimelineItem = {
   /** frase ao lado do modelo 3D, dizendo o que se gira */
   modelHint?: string;
   /** repositório onde a fase acontece, mostrado como cartão */
-  repository?: { url: string; name: string; description: string; stack: string[] };
+  repository?: {
+    url: string;
+    name: string;
+    description: string;
+    stack: string[];
+    /** quem mais assina o código, quando o repositório não é do Artur */
+    credit?: string;
+    /** última versão para baixar */
+    releaseUrl?: string;
+  };
 };
 
 export const macropad = {
@@ -303,7 +312,7 @@ export const macropad = {
   statusNote: "Em melhoria contínua",
   summary:
     "Um teclado auxiliar customizado do zero, unindo design de circuito impresso, eletrônica embarcada e desenvolvimento de software multiplataforma.",
-  repository: "https://github.com/Artur-Brasileiro/Macropad-TCC",
+  repository: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
   rationale: [
     "A motivação por trás deste projeto é criar uma ferramenta que realmente se adapte ao fluxo de trabalho do usuário, em vez de ser apenas um teclado genérico com atalhos fixos.",
     "Ao integrar um display OLED e desenvolver uma aplicação desktop inteligente, o Macropad saberá exatamente o que você está fazendo. Se você abrir o seu editor de código, as 18 teclas e a tela assumem funções de compilação, debug e formatação. Se você alternar para o navegador, os atalhos mudam instantaneamente.",
@@ -357,12 +366,16 @@ export const macropad = {
       date: "Fase 5",
       title: "Desenvolvimento C++ e Python",
       description:
-        "Criação do código em C++ para o firmware (varredura da matriz e controle do display) e desenvolvimento do software em Python para o computador, responsável por detectar a janela ativa e enviar os contextos corretos ao Macropad. O código é desenvolvido em aberto no GitHub.",
+        "Criação do código em C++ para o firmware (varredura da matriz e controle do display) e desenvolvimento do software em Python para o computador, responsável por detectar a janela ativa e enviar os contextos corretos ao Macropad. O software se chama Ocpad e é desenvolvido em aberto no GitHub, em parceria com Gabriel R. Pires.",
       repository: {
-        url: "https://github.com/Artur-Brasileiro/Macropad-TCC",
-        name: "Artur-Brasileiro/Macropad-TCC",
-        description: "Firmware do ESP32-C3 e aplicação desktop que troca o contexto das teclas conforme o programa em uso.",
-        stack: ["C++", "Python"],
+        url: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
+        name: "gabriel-re-pires/Macropad-Inteligente-TCC",
+        description:
+          "Ocpad: o app desktop que configura as 18 teclas por perfis, troca de perfil conforme o programa em foco e grava o firmware no ESP32-C3. Sem o app, o macropad funciona como teclado Bluetooth com atalhos fixos.",
+        stack: ["Python", "C++"],
+        // o repositório é do Gabriel, parceiro no TCC; o Artur contribui nele
+        credit: "Em parceria com Gabriel R. Pires",
+        releaseUrl: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC/releases/latest",
       },
     },
   ] as TimelineItem[],

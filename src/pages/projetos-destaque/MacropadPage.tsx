@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Check,
+  Download,
   ChevronLeft,
   ChevronRight,
   CircleDashed,
@@ -387,14 +388,22 @@ const PhotoViewer = ({
   );
 };
 
-/** Cartão do repositório da fase: onde o código está sendo escrito, em aberto. */
+/**
+ * Cartão do repositório da fase: onde o código está sendo escrito, em aberto.
+ * O cartão inteiro leva ao repositório (link esticado sobre ele); o download
+ * da última versão é um segundo link, por cima, para não aninhar <a> em <a>.
+ */
 const RepositoryCard = ({ repo }: { repo: NonNullable<TimelineItem["repository"]> }) => (
-  <a
-    href={repo.url}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="group/repo block rounded-lg border border-border bg-background p-6 shadow-soft-sm transition-colors hover:border-primary/40"
-  >
+  // min-w-0: o cartão é item de grid, e sem isso o nome comprido do repositório
+  // alargava a coluna para além da tela do celular
+  <div className="group/repo relative min-w-0 rounded-lg border border-border bg-background p-6 shadow-soft-sm transition-colors hover:border-primary/40">
+    <a
+      href={repo.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="absolute inset-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      aria-label={`Abrir o repositório ${repo.name} no GitHub`}
+    />
     <div className="flex items-start justify-between gap-4">
       <div className="flex min-w-0 items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-surface">
@@ -402,22 +411,36 @@ const RepositoryCard = ({ repo }: { repo: NonNullable<TimelineItem["repository"]
         </span>
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Repositório no GitHub</p>
-          <p className="truncate font-mono text-sm font-medium text-foreground group-hover/repo:text-primary">
+          <p className="font-mono text-sm font-medium text-foreground [overflow-wrap:anywhere] group-hover/repo:text-primary">
             {repo.name}
           </p>
         </div>
       </div>
       <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover/repo:text-primary" aria-hidden />
     </div>
-    <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{repo.description}</p>
-    <div className="mt-4 flex flex-wrap gap-2">
-      {repo.stack.map((t) => (
-        <span key={t} className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs text-foreground">
-          {t}
-        </span>
-      ))}
+    {repo.credit && <p className="mt-3 text-xs font-medium text-foreground">{repo.credit}</p>}
+    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{repo.description}</p>
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap gap-2">
+        {repo.stack.map((t) => (
+          <span key={t} className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs text-foreground">
+            {t}
+          </span>
+        ))}
+      </div>
+      {repo.releaseUrl && (
+        <a
+          href={repo.releaseUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative z-10 inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+        >
+          <Download className="h-3.5 w-3.5" aria-hidden />
+          Baixar a última versão
+        </a>
+      )}
     </div>
-  </a>
+  </div>
 );
 
 /** Moldura de mídia com botão de expandir — mesma linguagem em foto e modelo 3D. */

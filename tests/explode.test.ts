@@ -35,10 +35,26 @@ test("seg: faixa vazia nunca move", () => {
   assert.equal(seg(0.9, [0.6, 0.2]), 0);
 });
 
-test("isGroupOut: grupo parado sempre aceso, móvel acende depois de sair um pouco", () => {
+test("isGroupOut: grupo parado sem reveal sempre aceso, móvel acende depois de sair um pouco", () => {
   assert.equal(isGroupOut(group([0, 0]), 0), true);
   assert.equal(isGroupOut(group([0.6, 0.84]), 0.6), false);
   assert.equal(isGroupOut(group([0.6, 0.84]), 0.84), true);
+});
+
+test("isGroupOut: grupo parado com reveal só acende quando o que o cobria sai", () => {
+  // a placa fica parada; aparece quando a moldura (0.44–0.74) sobe
+  const pcb: PartGroup = { ...group([0, 0]), explode: [0, 0, 0], reveal: [0.44, 0.74] };
+  assert.equal(isGroupOut(pcb, 0), false);
+  assert.equal(isGroupOut(pcb, 0.2), false);
+  assert.equal(isGroupOut(pcb, 0.44), false);
+  assert.equal(isGroupOut(pcb, 0.74), true);
+  assert.equal(isGroupOut(pcb, 1), true);
+});
+
+test("isGroupOut: reveal não muda um grupo que se move — manda a faixa dele", () => {
+  const g: PartGroup = { ...group([0.6, 0.84]), reveal: [0, 0.1] };
+  assert.equal(isGroupOut(g, 0.2), false);
+  assert.equal(isGroupOut(g, 0.84), true);
 });
 
 test("stageAt: etapa vigente pelo limiar", () => {

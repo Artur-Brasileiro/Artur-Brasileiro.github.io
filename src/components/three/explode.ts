@@ -15,6 +15,12 @@ export type PartGroup = {
   explode: [number, number, number];
   /** faixa do scroll em que o grupo se separa, de 0 a 1 */
   stage: [number, number];
+  /**
+   * Só para grupo que fica parado: faixa do scroll em que ele passa a ficar à
+   * vista, porque o que o cobria saiu (a placa aparece quando a moldura sobe).
+   * É o que acende a linha dele na lista de materiais. Sem ela, fica sempre aceso.
+   */
+  reveal?: [number, number];
 };
 
 export type PartsConfig = {
@@ -55,8 +61,15 @@ export const ramp = (q: number, a: number, b: number) => clamp01((q - a) / (b - 
 /** Quanto um grupo já se separou, de 0 a 1, com easing. Faixa vazia não move. */
 export const seg = (p: number, [a, b]: [number, number]) => (b <= a ? 0 : easeInOut(clamp01((p - a) / (b - a))));
 
-/** Um grupo que se move "acende" na lista quando já saiu um pouco; o que fica parado está sempre aceso. */
-export const isGroupOut = (g: PartGroup, q: number) => (g.stage[1] > g.stage[0] ? seg(q, g.stage) > 0.12 : true);
+/**
+ * Um grupo "acende" na lista quando aparece: o que se move, depois de sair um
+ * pouco da sua faixa; o que fica parado, quando o `reveal` dele avança (sem
+ * `reveal`, está sempre aceso).
+ */
+export const isGroupOut = (g: PartGroup, q: number) => {
+  const range = g.stage[1] > g.stage[0] ? g.stage : g.reveal;
+  return range ? seg(q, range) > 0.12 : true;
+};
 
 /** Etapa vigente: a última cujo limiar o progresso já passou. */
 export function stageAt(cfg: PartsConfig | null, q: number): { stage: string; stageIndex: number } {

@@ -289,12 +289,18 @@ export type TimelineItem = {
   image?: string;
   images?: string[];
   modelUrl?: string;
+  /** frase ao lado do modelo 3D, dizendo o que se gira */
+  modelHint?: string;
+  /** repositório onde a fase acontece, mostrado como cartão */
+  repository?: { url: string; name: string; description: string; stack: string[] };
 };
 
 export const macropad = {
   title: "Macropad Inteligente",
   category: "Hardware & PCB",
-  status: "Em desenvolvimento",
+  /** o hardware está pronto; o software segue evoluindo (ver a fase 5) */
+  status: "Concluído",
+  statusNote: "Em melhoria contínua",
   summary:
     "Um teclado auxiliar customizado do zero, unindo design de circuito impresso, eletrônica embarcada e desenvolvimento de software multiplataforma.",
   repository: "https://github.com/Artur-Brasileiro/Macropad-TCC",
@@ -309,6 +315,7 @@ export const macropad = {
     { label: "Firmware", value: "C++" },
     { label: "Aplicação desktop", value: "Python" },
     { label: "Placa", value: "PCB própria (EasyEDA / JLCPCB)" },
+    { label: "Case", value: "Impressão 3D, inclinação de 7°" },
   ],
   timeline: [
     {
@@ -317,7 +324,8 @@ export const macropad = {
       title: "Desenho da PCB no EasyEDA",
       description:
         "Elaboração do esquemático e roteamento completo da placa no EasyEDA. O layout foi cuidadosamente planejado para acomodar as 18 teclas mecânicas e o display OLED de forma ergonômica.",
-      modelUrl: "macropadpage/macropad.glb",
+      modelUrl: "macropadpage/placa.glb",
+      modelHint: "Expanda para girar a placa montada em 3D: tela, ESP32-C3, soquetes Kailh e switches.",
     },
     {
       status: "completed",
@@ -332,22 +340,30 @@ export const macropad = {
       date: "Fase 3",
       title: "Montagem da Placa",
       description:
-        "Com a PCB em mãos, foi feita a montagem: soldagem dos diodos, dos switches mecânicos, do microcontrolador e a conexão do display OLED. A placa está montada e funcional — o próximo passo é a criação da case em impressão 3D.",
+        "Com a PCB em mãos, foi feita a montagem: soldagem dos diodos, dos switches mecânicos, do microcontrolador e a conexão do display OLED. A placa ficou montada e funcional, pronta para receber a case.",
       image: "capa_macropad.jpg",
     },
     {
-      status: "current",
+      status: "completed",
       date: "Fase 4",
       title: "Criação da Case (Impressão 3D)",
       description:
-        "Modelagem e impressão 3D de uma case sob medida para abrigar a placa montada, protegendo a eletrônica e dando ao Macropad um acabamento final ergonômico e compacto.",
+        "Case sob medida impressa em 3D, em duas peças: a moldura, com a placa de encaixe dos switches integrada, e a bandeja inferior, em cunha de 7° para a digitação ficar confortável. As peças se fecham por quatro parafusos M3 que entram por baixo, em insertos de latão, então nenhum parafuso aparece. O display ganhou uma moldura elevada que deixa à vista só o vidro.",
+      modelUrl: "macropadpage/case.glb",
+      modelHint: "Expanda para girar a case em 3D.",
     },
     {
-      status: "planned",
+      status: "current",
       date: "Fase 5",
       title: "Desenvolvimento C++ e Python",
       description:
-        "Criação do código em C++ para o firmware (varredura da matriz e controle do display) e desenvolvimento do software em Python para o computador, responsável por detectar a janela ativa e enviar os contextos corretos ao Macropad.",
+        "Criação do código em C++ para o firmware (varredura da matriz e controle do display) e desenvolvimento do software em Python para o computador, responsável por detectar a janela ativa e enviar os contextos corretos ao Macropad. O código é desenvolvido em aberto no GitHub.",
+      repository: {
+        url: "https://github.com/Artur-Brasileiro/Macropad-TCC",
+        name: "Artur-Brasileiro/Macropad-TCC",
+        description: "Firmware do ESP32-C3 e aplicação desktop que troca o contexto das teclas conforme o programa em uso.",
+        stack: ["C++", "Python"],
+      },
     },
   ] as TimelineItem[],
 };

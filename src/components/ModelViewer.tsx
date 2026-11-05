@@ -1,12 +1,13 @@
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Stage, Html, useProgress, Center } from '@react-three/drei';
+import { OrbitControls, useGLTF, Stage, Html, useProgress } from '@react-three/drei';
 import { Component, Suspense, useMemo, useRef, useState, useEffect, type ReactNode } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { Loader2, Box } from 'lucide-react';
+import { useStudioEnvironment } from '@/components/three/studio';
 
 /**
  * Resolve o caminho do modelo contra a base do site.
- * Sem isso, uma URL relativa como "macropadpage/macropad.glb" é resolvida
+ * Sem isso, uma URL relativa como "macropadpage/placa.glb" é resolvida
  * contra a rota atual (/projeto/macropad -> /projeto/macropadpage/...), o
  * servidor responde o index.html do fallback SPA e o GLTFLoader estoura.
  */
@@ -26,17 +27,21 @@ function CanvasLoader() {
 }
 
 function Model({ url }: { url: string }) {
+  // os GLBs do macropad vêm com meshopt; o useGLTF do drei já decodifica
   const { scene } = useGLTF(url);
   // O memo garante que a cena só é clonada quando a URL realmente mudar
   const copiedScene = useMemo(() => scene.clone(), [scene]);
+  return <primitive object={copiedScene} />;
+}
 
-  return (
-    <group rotation={[Math.PI / -4, -3, 4]}>
-      <Center>
-        <primitive object={copiedScene} />
-      </Center>
-    </group>
-  );
+/**
+ * O mesmo estúdio da vista explodida da home. O preset "city" do Stage baixava
+ * um HDR de um CDN de terceiros a cada visita e passava pelo pré-filtro GGX do
+ * three, que só para compilar travava ~1,9 s no Windows — por canvas.
+ */
+function Studio() {
+  useStudioEnvironment('light');
+  return null;
 }
 
 // Garante ao menos um frame desenhado quando frameloop="demand"
@@ -119,17 +124,20 @@ export default function ModelViewer({
     >
       <ModelErrorBoundary>
         <Canvas
-          camera={{ position: [20, -50, 100], fov: 50 }}
+          // a direção da câmera é a que o enquadramento do Stage mantém:
+          // de frente, por cima, a ~35°, como se a peça estivesse na bancada
+          camera={{ position: [70, 80, 120], fov: 35 }}
           dpr={[1, maxDpr]}
           frameloop={autoRotate ? 'always' : 'demand'}
           gl={{ antialias: true, powerPreference: 'high-performance' }}
         >
+          <Studio />
           <Suspense fallback={<CanvasLoader />}>
             <Stage
-              environment="city"
-              intensity={0.6}
-              shadows={{ type: 'contact', opacity: 0.5, blur: 2 }}
-              adjustCamera={enableZoom ? 1.2 : 0.9}
+              environment={null}
+              intensity={0.35}
+              shadows={{ type: 'contact', opacity: 0.35, blur: 2.5 }}
+              adjustCamera={enableZoom ? 1.15 : 1.05}
             >
               <Model url={resolvedUrl} />
             </Stage>
@@ -138,7 +146,7 @@ export default function ModelViewer({
 
           <OrbitControls
             autoRotate={autoRotate}
-            autoRotateSpeed={2.5}
+            autoRotateSpeed={1.6}
             enableZoom={enableZoom}
             enablePan={enableZoom}
             enableRotate={enableRotate}
@@ -149,5 +157,3 @@ export default function ModelViewer({
     </div>
   );
 }
-
-useGLTF.preload(resolveAssetUrl('macropadpage/macropad.glb'));

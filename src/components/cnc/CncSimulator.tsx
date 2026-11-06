@@ -9,18 +9,19 @@
  * Com economia de dados ou 2G, o 3D espera a pessoa pedir.
  *
  * A cena (CncScene) é three puro e imperativo. Os números que mudam a cada
- * quadro (posição, passos, terminal) são escritos direto no DOM pelas refs: re-
+ * quadro (posição, passos, progresso) são escritos direto no DOM pelas refs: re-
  * renderizar o React 15 vezes por segundo não acrescentaria nada.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Download, Eraser, Maximize2, Minimize2, Pause, PenLine, Play, RotateCcw, Sparkles } from "lucide-react";
+import { Eraser, FileCode2, Maximize2, Minimize2, Pause, PenLine, Play, RotateCcw, Sparkles } from "lucide-react";
 import { useLenisLock } from "@/components/motion/useLenisLock";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import { cn } from "@/lib/utils";
-import { CNC_3D_KB, CNC_GLB, CNC_POSTER, constrainedNetwork, loadFont, loadScene } from "./preload";
-import { demoProgram, formatDuration, gcodeFile, SERVO_W, STEPS_MM, TH_DOWN, TH_UP, V_DRAW, V_RAPID, X_MAX, Y_MAX, type Cmd } from "./machine";
+import GcodeDialog from "./GcodeDialog";
+import { CNC_3D_KB, CNC_GLB, CNC_POSTER, constrainedNetwork, loadFont, loadScene, pickQuality } from "./preload";
+import { demoProgram, formatDuration, SERVO_W, STEPS_MM, TH_DOWN, TH_UP, V_DRAW, V_RAPID, X_MAX, Y_MAX, type Cmd } from "./machine";
 import { FONT_CREDIT, FONT_IDS, FONT_LABEL, MAX_CHARS, normalizeText, textProgram, type FontId, type StrokeFont, type TextLayout } from "./text";
-import type { CncScene, Quality, Snapshot, ViewName } from "./CncScene";
+import type { CncScene, Snapshot, ViewName } from "./CncScene";
 
 type Phase = "wait" | "loading" | "ready" | "error" | "nowebgl";
 type Tab = "escrever" | "eixos" | "exibir";
@@ -35,17 +36,6 @@ const VIEWS: [ViewName, string][] = [
 const SPEEDS = [1, 5, 20];
 
 const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-/** começa pelo aparelho; a cena ainda ajusta sozinha se os quadros ficarem lentos */
-function pickQuality(): Quality {
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  const mem = nav.deviceMemory ?? 8;
-  const cores = nav.hardwareConcurrency ?? 8;
-  const coarse = window.matchMedia("(pointer: coarse)").matches;
-  if (mem <= 2 || (coarse && mem <= 4 && cores <= 4)) return "low";
-  if (coarse || window.innerWidth < 900) return "medium";
-  return "high";
-}
 
 /** tempo restante a partir de cada comando, a 1× (para o "faltam ~") */
 function remainingTimes(P: Cmd[]): Float64Array {
@@ -65,7 +55,6 @@ function remainingTimes(P: Cmd[]): Float64Array {
   return out;
 }
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const nf = new Intl.NumberFormat("pt-BR");
 
 const DEMO: Program = { kind: "demo", label: "Desenho de demonstração", cmds: demoProgram(), file: "cnc-demo.gcode" };
@@ -92,6 +81,8 @@ export default function CncSimulator() {
   const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
   const [interacted, setInteracted] = useState(false);
+  /** a linha do programa que rodava quando a pessoa abriu o G-code (null: fechado) */
+  const [gcodeAt, setGcodeAt] = useState<number | null>(null);
 
   // o que a cena precisa ler sem re-render
   const visible = useRef(false);
@@ -115,10 +106,9 @@ export default function CncSimulator() {
     ink: useRef<HTMLElement>(null),
     pen: useRef<HTMLSpanElement>(null),
     bar: useRef<HTMLDivElement>(null),
-    term: useRef<HTMLDivElement>(null),
     eta: useRef<HTMLSpanElement>(null),
   };
-  const lastTermI = useRef(-1);
+  const lastI = useRef(0);
   const flags = useRef({ penTargetDown: false, finished: false, started: false });
 
   const onSnapshot = useCallback((s: Snapshot) => {
@@ -139,20 +129,7 @@ export default function CncSimulator() {
       const left = (remainingRef.current[Math.min(s.i, remainingRef.current.length - 1)] ?? 0) / speedRef.current;
       o.eta.current.textContent = s.finished ? "concluído" : s.i === 0 && !s.running ? `~${formatDuration(left)} a ${speedRef.current}×` : `faltam ~${formatDuration(left)}`;
     }
-    if (o.term.current && s.i !== lastTermI.current) {
-      lastTermI.current = s.i;
-      const P = programRef.current.cmds;
-      const lines: string[] = [];
-      for (let k = s.i - 3; k <= s.i + 1; k++) {
-        if (k < 0 || k >= P.length) {
-          lines.push(" ");
-          continue;
-        }
-        const n = "N" + String(k + 1).padStart(4, "0");
-        lines.push(k === s.i ? `<span class="text-gold-soft">▸ ${n}  ${esc(P[k].g)}</span>` : `<span class="opacity-45">  ${n}  ${esc(P[k].g)}</span>`);
-      }
-      o.term.current.innerHTML = lines.join("\n");
-    }
+    lastI.current = s.i;
     // só o que muda texto de botão passa pelo React, e só quando muda
     if (flags.current.penTargetDown !== s.penTargetDown) {
       flags.current.penTargetDown = s.penTargetDown;
@@ -294,7 +271,7 @@ export default function CncSimulator() {
     autoplay.current = false;
     setProgram(p);
     programRef.current = p;
-    lastTermI.current = -1;
+    lastI.current = 0;
     const s = sc();
     if (!s) return; // ainda carregando: a cena pega o programa quando montar
     s.clearPaper();
@@ -328,15 +305,6 @@ export default function CncSimulator() {
   const jog = () => {
     autoplay.current = false;
     sc()?.jog(Number(out.sx.current?.value ?? 0), Number(out.sy.current?.value ?? 0));
-  };
-
-  const download = (p: Program) => {
-    const blob = new Blob([gcodeFile(p.cmds)], { type: "text/plain" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = p.file;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
   const coarse = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
@@ -532,12 +500,15 @@ export default function CncSimulator() {
           <div className="mt-3 h-[3px] overflow-hidden rounded bg-border" aria-hidden>
             <div ref={out.bar} className="h-full origin-left bg-gold" style={{ transform: "scaleX(0)" }} />
           </div>
-          {/* terminal: as linhas de G-code em volta da que está rodando */}
-          <div
-            ref={out.term}
-            aria-hidden
-            className="mt-3 h-[94px] overflow-hidden whitespace-pre rounded-md bg-foreground px-3 py-2 font-mono text-[11.5px] leading-[1.6] text-[#d8dbe0]"
-          />
+          {/* o G-code fica atrás de um botão: rolando na tela a cada passo, era mais ruído que informação */}
+          <button
+            type="button"
+            onClick={() => setGcodeAt(lastI.current)}
+            className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11.5px] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            <FileCode2 className="h-3.5 w-3.5" />
+            Ver e baixar o G-code
+          </button>
         </div>
 
         {/* abas */}
@@ -570,14 +541,6 @@ export default function CncSimulator() {
         <div className="p-4">
           <div role="tabpanel" id="cnc-panel-escrever" aria-labelledby="cnc-tab-escrever" hidden={tab !== "escrever"}>
             <WritePanel onWrite={write} disabled={phase === "error" || phase === "nowebgl"} />
-            <button
-              type="button"
-              onClick={() => download(program)}
-              className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11.5px] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Baixar o G-code de agora ({program.kind === "demo" ? "demonstração" : "seu texto"})
-            </button>
           </div>
 
           <div role="tabpanel" id="cnc-panel-eixos" aria-labelledby="cnc-tab-eixos" hidden={tab !== "eixos"}>
@@ -649,6 +612,16 @@ export default function CncSimulator() {
           </div>
         </div>
       </aside>
+
+      <GcodeDialog
+        open={gcodeAt !== null}
+        onClose={() => setGcodeAt(null)}
+        label={program.label}
+        file={program.file}
+        cmds={program.cmds}
+        current={gcodeAt ?? 0}
+        seconds={remaining[0]}
+      />
     </div>
   );
 }

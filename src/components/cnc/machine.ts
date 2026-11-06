@@ -304,3 +304,93 @@ export function formatDuration(sec: number): string {
     r = s % 60;
   return r ? `${m} min ${r} s` : `${m} min`;
 }
+
+/* ---------- linha do tempo: o programa como movimento contínuo ---------- */
+
+/**
+ * O programa desdobrado em trechos com hora marcada, para pôr a máquina em
+ * qualquer instante sem simular desde o começo — é o que deixa a rolagem da
+ * home ir e voltar no desenho. Mesmas regras da simulação: o servo termina de
+ * subir ou descer antes de o carro andar, G0 a V_RAPID, G1 a V_DRAW.
+ */
+export type Timeline = {
+  n: number;
+  t0: Float64Array;
+  t1: Float64Array;
+  x0: Float64Array;
+  y0: Float64Array;
+  x1: Float64Array;
+  y1: Float64Array;
+  th0: Float64Array;
+  th1: Float64Array;
+  /** 1 quando o trecho põe tinta (G1 com a caneta no papel) */
+  draw: Uint8Array;
+  /** índice do comando no programa */
+  cmd: Int32Array;
+  duration: number;
+};
+
+export function buildTimeline(P: Cmd[]): Timeline {
+  const rows: number[][] = [];
+  let x = 0,
+    y = 0,
+    th = TH_UP,
+    t = 0,
+    down = false;
+  P.forEach((c, i) => {
+    if (c.t === "note") return;
+    if (c.t === "pen") {
+      const to = c.down ? TH_DOWN : TH_UP;
+      const d = Math.abs(to - th) / SERVO_W;
+      rows.push([t, t + d, x, y, x, y, th, to, 0, i]);
+      t += d;
+      th = to;
+      down = c.down;
+      return;
+    }
+    const d = Math.hypot(c.x - x, c.y - y) / (c.rapid ? V_RAPID : V_DRAW);
+    rows.push([t, t + d, x, y, c.x, c.y, th, th, down && !c.rapid ? 1 : 0, i]);
+    t += d;
+    x = c.x;
+    y = c.y;
+  });
+  const n = rows.length;
+  const col = (k: number) => Float64Array.from(rows, (r) => r[k]);
+  return {
+    n,
+    t0: col(0),
+    t1: col(1),
+    x0: col(2),
+    y0: col(3),
+    x1: col(4),
+    y1: col(5),
+    th0: col(6),
+    th1: col(7),
+    draw: Uint8Array.from(rows, (r) => r[8]),
+    cmd: Int32Array.from(rows, (r) => r[9]),
+    duration: t,
+  };
+}
+
+/** Onde a máquina está no instante `t` (s): trecho, fração dele, posição e ângulo do servo. */
+export function sampleTimeline(tl: Timeline, t: number) {
+  if (!tl.n) return { k: -1, f: 1, x: 0, y: 0, th: TH_UP };
+  // último trecho que já começou
+  let lo = 0,
+    hi = tl.n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (tl.t0[mid] <= t) lo = mid;
+    else hi = mid - 1;
+  }
+  const k = lo;
+  const len = tl.t1[k] - tl.t0[k];
+  const f = len > 0 ? Math.min(1, Math.max(0, (t - tl.t0[k]) / len)) : 1;
+  return {
+    k,
+    f,
+    x: tl.x0[k] + (tl.x1[k] - tl.x0[k]) * f,
+    y: tl.y0[k] + (tl.y1[k] - tl.y0[k]) * f,
+    th: tl.th0[k] + (tl.th1[k] - tl.th0[k]) * f,
+  };
+}

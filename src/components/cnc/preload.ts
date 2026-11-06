@@ -6,6 +6,7 @@
  * de dados ligada, nada sai sozinho: a pessoa vê o pôster e escolhe carregar.
  */
 import type { StrokeFont, FontId } from "./text";
+import type { Quality } from "./CncScene";
 
 export const CNC_GLB = "/projetos/cnc/cnc.glb";
 export const CNC_POSTER = "/projetos/cnc/poster";
@@ -50,4 +51,15 @@ export function loadFont(id: FontId): Promise<StrokeFont> {
     fonts.set(id, p);
   }
   return p;
+}
+
+/** começa pelo aparelho; a cena ainda ajusta sozinha se os quadros ficarem lentos */
+export function pickQuality(): Quality {
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const mem = nav.deviceMemory ?? 8;
+  const cores = nav.hardwareConcurrency ?? 8;
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  if (mem <= 2 || (coarse && mem <= 4 && cores <= 4)) return "low";
+  if (coarse || window.innerWidth < 900) return "medium";
+  return "high";
 }

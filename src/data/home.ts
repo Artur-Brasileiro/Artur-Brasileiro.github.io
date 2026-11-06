@@ -8,7 +8,7 @@ import { profile } from "./profile";
 /** Abaixo do nome, no hero. */
 export const heroLead =
   `${profile.role} — do esquemático da placa ao último pixel da interface. ` +
-  "Role para desmontar o projeto que melhor resume isso.";
+  "Role a página e veja os projetos em movimento.";
 
 /** Linhas da seção "sobre". */
 export const nowLines: { k: "faço" | "estudo" | "agora"; v: string }[] = [

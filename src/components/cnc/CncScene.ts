@@ -21,6 +21,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { applyGaussianPrefilter } from "@/components/three/pmrem";
+import type { FitBox } from "@/components/three/explode";
 import {
   BELT_THICKNESS,
   BELT_X_AXIS_Z,
@@ -41,11 +42,14 @@ import {
   Y_MAX,
   beltXAxisPath,
   beltYAxisPath,
+  buildTimeline,
   penHeight,
   penIsDown,
   penWorld,
   ribbon,
+  sampleTimeline,
   type Cmd,
+  type Timeline,
 } from "./machine";
 
 export type ViewName = "geral" | "ponte" | "carro" | "baixo";
@@ -227,6 +231,14 @@ class InkLayer {
   /** última faixa reta, para estender em vez de criar outra (linha longa a 1× = centenas de quadros) */
   private lastQuad = -1;
   private lastDir: [number, number] | null = null;
+  /**
+   * Esticar a faixa anterior em vez de criar outra. Na home fica desligado: lá
+   * o desenho é revelado por contagem de índices, e esticar mexeria no que já
+   * foi contado.
+   */
+  merge = true;
+  /** largura do traço, mm. Na home ela engrossa: a máquina aparece pequena e 1,3 mm sumiria no celular */
+  width = INK_W;
 
   constructor(material: THREE.Material) {
     this.mesh = new THREE.Mesh(new THREE.BufferGeometry(), material);
@@ -278,7 +290,7 @@ class InkLayer {
   disc(x: number, y: number) {
     this.reserve(DISC + 1, DISC * 3);
     const c = this.vert(x, y);
-    const r = INK_W / 2;
+    const r = this.width / 2;
     for (let i = 0; i < DISC; i++) this.vert(x + r * Math.cos((i / DISC) * Math.PI * 2), y + r * Math.sin((i / DISC) * Math.PI * 2));
     for (let i = 0; i < DISC; i++) this.tri(c, c + 1 + i, c + 1 + ((i + 1) % DISC));
     this.lastQuad = -1;
@@ -297,10 +309,10 @@ class InkLayer {
     else if (this.lastDir) {
       const cos = ux * this.lastDir[0] + uy * this.lastDir[1];
       // mesma direção: só estica a faixa anterior
-      if (cos > 0.99995 && this.lastQuad >= 0) {
+      if (this.merge && cos > 0.99995 && this.lastQuad >= 0) {
         const k = this.lastQuad * 3;
-        const nx = -uy * (INK_W / 2),
-          ny = ux * (INK_W / 2);
+        const nx = -uy * (this.width / 2),
+          ny = ux * (this.width / 2);
         this.pos[k + 6] = bx - nx;
         this.pos[k + 7] = by - ny;
         this.pos[k + 9] = bx + nx;
@@ -312,8 +324,8 @@ class InkLayer {
       if (cos < 0.94) this.disc(ax, ay); // canto: arredonda a junta
     }
     this.reserve(4, 6);
-    const nx = -uy * (INK_W / 2),
-      ny = ux * (INK_W / 2);
+    const nx = -uy * (this.width / 2),
+      ny = ux * (this.width / 2);
     const a0 = this.vert(ax + nx, ay + ny);
     this.vert(ax - nx, ay - ny);
     this.vert(bx - nx, by - ny);
@@ -355,6 +367,16 @@ class InkLayer {
     return this.dirtyV < this.v || this.dirtyI < this.n;
   }
 
+  /** índices gravados até agora */
+  get count() {
+    return this.n;
+  }
+
+  /** mostra só os primeiros `n` índices (a rolagem da home volta e avança o desenho) */
+  showUpTo(n: number) {
+    this.mesh.geometry.setDrawRange(0, Math.min(n, this.n));
+  }
+
   clear() {
     this.v = this.n = this.dirtyV = this.dirtyI = 0;
     this.lastQuad = -1;
@@ -371,6 +393,31 @@ class InkLayer {
 type View = { t: () => THREE.Vector3; o: THREE.Vector3; follow: boolean };
 
 const reduceMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * Enquadramento da home, pedido a cada quadro: a caixa da tela onde a máquina
+ * deve caber inteira e de onde a câmera olha (azimute e elevação, radianos,
+ * em volta do eixo Z da mesa).
+ */
+export type HomeFraming = (q: number) => { box: FitBox; az: number; el: number } | null;
+
+type Scrub = {
+  tl: Timeline;
+  /** índices de tinta visíveis durante cada trecho, e ao fim dele */
+  n0: Int32Array;
+  n1: Int32Array;
+  tail: THREE.Mesh;
+  /** progresso suavizado e o alvo (o scroll) */
+  q: number;
+  target: number;
+  reported: number;
+  /** o desenho ocupa esta faixa do progresso; antes e depois a máquina espera */
+  window: [number, number];
+  framing: HomeFraming;
+  onProgress?: (q: number) => void;
+  shown: number;
+  key: number;
+};
 
 export type SceneOptions = {
   quality: Quality;
@@ -406,6 +453,11 @@ export class CncScene {
   private beltX: THREE.Mesh;
   private ink: InkLayer;
   private ready = false;
+  /** modo da home: a rolagem posiciona a máquina no programa; sem controles de órbita */
+  private scrub: Scrub | null = null;
+  /** pontos que precisam caber no quadro da home (cantos das peças e da mesa) */
+  private fitPts: THREE.Vector3[] = [];
+  private fitCenter = new THREE.Vector3();
 
   /* estado da máquina */
   private st = { x: 0, y: 0, th: TH_UP, thTarget: TH_UP, ink: 0 };
@@ -720,8 +772,10 @@ export class CncScene {
     gltf.scene.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
 
     this.ready = true;
+    this.collectFitPoints();
     this.applyPose(true);
-    this.setView("geral", true);
+    if (this.scrub) this.scrub.key = -1;
+    else this.setView("geral", true);
     this.shadowDirty = true;
     this.wake();
     // os contornos das peças impressas custam alguns quadros de CPU: ficam
@@ -964,7 +1018,9 @@ export class CncScene {
     this.lastT = now;
     const dt = Math.min(0.05, Math.max(0, raw));
     let busy = false;
-    if (this.ready) {
+    if (this.ready && this.scrub) {
+      busy = this.scrubStep(dt);
+    } else if (this.ready) {
       busy = this.tick(dt) || busy;
       busy = this.cameraStep(dt) || busy;
       if (this.ink.dirty) {
@@ -973,7 +1029,7 @@ export class CncScene {
       }
       if ((this.uiTick++ & 3) === 0 || !busy) this.emitSnapshot();
     }
-    if (this.controls.update()) busy = true;
+    if (!this.scrub && this.controls.update()) busy = true;
     if (busy) this.needsRender = true;
     if (this.needsRender) {
       if (this.shadowDirty && this.renderer.shadowMap.enabled) {
@@ -1044,8 +1100,10 @@ export class CncScene {
     this.camera.aspect = w / h;
     // caixa quadrada ou em pé (celular, coluna do desktop) pede lente mais aberta;
     // no artifact a regra era a largura da tela, que aqui não diz o formato do palco
-    this.camera.fov = w / h < 1.25 ? 46 : 34;
+    // na home a caixa do enquadramento decide o tamanho; lente fechada, menos distorção
+    this.camera.fov = this.scrub ? 30 : w / h < 1.25 ? 46 : 34;
     this.camera.updateProjectionMatrix();
+    if (this.scrub) this.scrub.key = -1;
     this.wake();
   }
 
@@ -1158,6 +1216,211 @@ export class CncScene {
     return this.renderer.domElement.toDataURL(type, q);
   }
 
+  /* ---------- home: a rolagem desenha ---------- */
+
+  /**
+   * Liga o modo da home: o programa vira uma linha do tempo, a tinta do
+   * desenho inteiro é gerada de uma vez e a rolagem só escolhe quanto dela
+   * aparece. Ir e voltar não refaz geometria — muda um número.
+   */
+  enterScrub(P: Cmd[], framing: HomeFraming, opts: { window?: [number, number]; onProgress?: (q: number) => void } = {}) {
+    const tl = buildTimeline(P);
+    const ink = this.ink;
+    ink.clear();
+    ink.merge = false;
+    ink.width = 2.6;
+    const n0 = new Int32Array(tl.n);
+    const n1 = new Int32Array(tl.n);
+    let lastDraw = -1;
+    let fresh = true;
+    for (let k = 0; k < tl.n; k++) {
+      if (tl.draw[k]) {
+        const a = penWorld(tl.x0[k], tl.y0[k]);
+        const b = penWorld(tl.x1[k], tl.y1[k]);
+        if (fresh) ink.disc(a.x, a.y);
+        n0[k] = ink.count;
+        ink.segment(a.x, a.y, b.x, b.y, false);
+        n1[k] = ink.count;
+        fresh = false;
+        lastDraw = k;
+      } else {
+        // caneta subindo depois de um traço: a ponta redonda entra no fim do traço
+        if (!fresh && tl.th1[k] > tl.th0[k] && lastDraw >= 0) {
+          const e = penWorld(tl.x1[lastDraw], tl.y1[lastDraw]);
+          ink.lift(e.x, e.y);
+          n1[lastDraw] = ink.count;
+          fresh = true;
+        }
+        n0[k] = n1[k] = ink.count;
+      }
+    }
+    ink.flush();
+    ink.showUpTo(0);
+
+    const tail = new THREE.Mesh(new THREE.BufferGeometry(), ink.mesh.material);
+    tail.geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(12), 3).setUsage(THREE.DynamicDrawUsage));
+    tail.geometry.setIndex([0, 1, 2, 0, 2, 3]);
+    tail.frustumCulled = false;
+    tail.renderOrder = 1;
+    tail.visible = false;
+    this.scene.add(tail);
+
+    this.scrub = { tl, n0, n1, tail, q: 0, target: 0, reported: -1, window: opts.window ?? [0, 1], framing, onProgress: opts.onProgress, shown: -1, key: -1 };
+    this.run.on = false;
+    this.controls.enabled = false;
+    this.setTouchMode("page");
+    this.resize();
+    this.wake();
+  }
+
+  /** o progresso da rolagem, de 0 a 1; a cena chega lá suavizando */
+  scrubTo(q: number, instant = false) {
+    const s = this.scrub;
+    if (!s) return;
+    s.target = Math.min(1, Math.max(0, q));
+    if (instant) s.q = s.target;
+    if (Math.abs(s.target - s.q) > 1e-5 || instant) this.wake();
+  }
+
+  /** algo do enquadramento mudou (arrasto, caixa): refaz a câmera */
+  reframe() {
+    if (this.scrub) this.scrub.key = -1;
+    this.wake();
+  }
+
+  /** cantos das peças (com a ponte nas duas pontas do curso) e da mesa */
+  private collectFitPoints() {
+    const pts: THREE.Vector3[] = [];
+    const box = new THREE.Box3();
+    const corners = (o: THREE.Object3D) => {
+      o.traverse((m) => {
+        if (!(m as THREE.Mesh).isMesh) return;
+        box.setFromObject(m, false);
+        if (box.isEmpty()) return;
+        for (let i = 0; i < 8; i++) pts.push(new THREE.Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
+      });
+    };
+    const x = this.st.x;
+    this.scene.updateMatrixWorld(true);
+    corners(this.frame);
+    for (const gx of [0, X_MAX]) {
+      this.gantry.position.y = -gx;
+      this.gantry.updateMatrixWorld(true);
+      corners(this.gantry);
+    }
+    this.gantry.position.y = -x;
+    this.gantry.updateMatrixWorld(true);
+    for (const [tx, ty] of [
+      [TABLE.x0, TABLE.y0],
+      [TABLE.x1, TABLE.y0],
+      [TABLE.x0, TABLE.y1],
+      [TABLE.x1, TABLE.y1],
+    ])
+      for (const tz of [TABLE.z0, TABLE.z1]) pts.push(new THREE.Vector3(tx, ty, tz));
+    const all = new THREE.Box3().setFromPoints(pts);
+    all.getCenter(this.fitCenter);
+    this.fitPts = pts.map((p) => p.sub(this.fitCenter));
+  }
+
+  private scrubStep(dt: number): boolean {
+    const s = this.scrub!;
+    let busy = false;
+    const d = s.target - s.q;
+    if (Math.abs(d) < 1e-4 || reduceMotion()) s.q = s.target;
+    else {
+      // suavização por tempo, não por quadro: igual em 30 ou 144 fps
+      s.q += d * (1 - Math.exp(-dt * 9));
+      busy = true;
+    }
+    const q = s.q;
+
+    /* a máquina no instante do programa que corresponde a q */
+    const [w0, w1] = s.window;
+    const u = Math.min(1, Math.max(0, (q - w0) / (w1 - w0)));
+    const m = sampleTimeline(s.tl, u * s.tl.duration);
+    const st = this.st;
+    if (st.x !== m.x || st.y !== m.y || st.th !== m.th) {
+      st.x = m.x;
+      st.y = m.y;
+      st.th = st.thTarget = m.th;
+      this.applyPose();
+    }
+    const k = m.k;
+    const drawing = k >= 0 && s.tl.draw[k] === 1 && m.f < 1;
+    const shown = k < 0 ? 0 : m.f >= 1 ? s.n1[k] : s.n0[k];
+    if (shown !== s.shown) {
+      s.shown = shown;
+      this.ink.showUpTo(shown);
+      this.needsRender = true;
+    }
+    // o trecho em andamento: uma faixa só, da origem dele até a ponta da caneta
+    const tailOn = drawing && m.f > 0;
+    if (tailOn) {
+      const a = penWorld(s.tl.x0[k], s.tl.y0[k]);
+      const b = penWorld(m.x, m.y);
+      const L = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      const nx = (-(b.y - a.y) / L) * (this.ink.width / 2),
+        ny = ((b.x - a.x) / L) * (this.ink.width / 2);
+      const pos = s.tail.geometry.getAttribute("position") as THREE.BufferAttribute;
+      (pos.array as Float32Array).set([a.x + nx, a.y + ny, INK_Z, a.x - nx, a.y - ny, INK_Z, b.x - nx, b.y - ny, INK_Z, b.x + nx, b.y + ny, INK_Z]);
+      pos.needsUpdate = true;
+      this.needsRender = true;
+    }
+    if (s.tail.visible !== tailOn) {
+      s.tail.visible = tailOn;
+      this.needsRender = true;
+    }
+
+    /* a câmera: a caixa e o ângulo podem mudar com q (e com o arrasto) */
+    if (s.key !== q) {
+      s.key = q;
+      this.frameHome(q);
+      this.needsRender = true;
+    }
+
+    if (Math.abs(q - s.reported) > 0.0008 || (q === s.target && s.reported !== q)) {
+      s.reported = q;
+      s.onProgress?.(q);
+    }
+    return busy;
+  }
+
+  /**
+   * Distância exata para todos os pontos caberem na caixa: cada canto, visto
+   * da direção da câmera, pede uma distância mínima na largura e na altura (os
+   * cantos mais perto da câmera pedem mais). Depois o centro de projeção vai
+   * para o meio da caixa.
+   */
+  private frameHome(q: number) {
+    const fr = this.scrub?.framing(q);
+    if (!fr || !this.fitPts.length) return;
+    const { box, az, el } = fr;
+    const cam = this.camera;
+    const dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el));
+    const fwd = dir.clone().negate();
+    const right = new THREE.Vector3().crossVectors(fwd, cam.up).normalize();
+    const up = new THREE.Vector3().crossVectors(right, fwd);
+    const tanY = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
+    const tanX = tanY * cam.aspect;
+    const MARGIN = 1.04;
+    let dist = 0;
+    for (const p of this.fitPts) {
+      const z = p.dot(dir);
+      dist = Math.max(dist, z + (Math.abs(p.dot(right)) * MARGIN) / (tanX * box.w), z + (Math.abs(p.dot(up)) * MARGIN) / (tanY * box.h));
+    }
+    cam.position.copy(this.fitCenter).addScaledVector(dir, dist);
+    cam.lookAt(this.fitCenter);
+    cam.near = Math.max(2, dist * 0.2);
+    cam.far = dist * 4;
+    const W = this.container.clientWidth,
+      H = this.container.clientHeight;
+    const sx = box.x + box.w / 2 - 0.5,
+      sy = box.y + box.h / 2 - 0.5;
+    if (Math.abs(sx) < 1e-4 && Math.abs(sy) < 1e-4) cam.clearViewOffset();
+    else cam.setViewOffset(W, H, -sx * W, -sy * H, W, H);
+    cam.updateProjectionMatrix();
+  }
+
   /* ---------- tooltip ---------- */
 
   private pick(clientX: number, clientY: number): Label | null {
@@ -1188,7 +1451,7 @@ export class CncScene {
 
   private hoverQueued = false;
   private onPointerMove = (e: PointerEvent) => {
-    if (e.pointerType !== "mouse" || !this.ready) return;
+    if (e.pointerType !== "mouse" || !this.ready || !this.opts.tip) return;
     if (e.buttons) {
       this.hideTip();
       return;

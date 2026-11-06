@@ -113,3 +113,34 @@ test("texto: o comentário do G-code leva o texto, e o programa termina", () => 
   assert.match(program[0].g, /^; texto: "Oi" · fonte Cursiva/);
   assert.equal(program[program.length - 1].g, "M2        ; fim");
 });
+
+test("linha do tempo: soma o tempo do programa e acha a máquina em qualquer instante", async () => {
+  const { buildTimeline, sampleTimeline } = await import("../src/components/cnc/machine.ts");
+  const P = programFromPolylines([[[100, 0], [200, 0]]], []);
+  const tl = buildTimeline(P);
+  // a estimativa conta o M5 inicial como um curso inteiro do servo; a linha do tempo sabe que a caneta já está erguida
+  assert.ok(Math.abs(estimateSeconds(P) - tl.duration - (TH_UP - TH_DOWN) / 6.5) < 1e-9);
+  // no meio do único traço (G1 de 100 mm a 100 mm/s), a caneta está no papel e no meio do caminho
+  const k = Array.from(tl.draw).indexOf(1);
+  const mid = (tl.t0[k] + tl.t1[k]) / 2;
+  const s = sampleTimeline(tl, mid);
+  assert.equal(s.k, k);
+  assert.ok(Math.abs(s.x - 150) < 1e-9 && s.y === 0);
+  assert.ok(penIsDown(s.th));
+  // antes de começar e depois de acabar
+  assert.deepEqual([sampleTimeline(tl, -1).x, sampleTimeline(tl, -1).y], [0, 0]);
+  const end = sampleTimeline(tl, tl.duration + 5);
+  assert.deepEqual([end.x, end.y, end.f], [0, 0, 1]);
+});
+
+test("engrenagens da home: cabem na área útil e cada parte começa num G0", async () => {
+  const { gearDrawing } = await import("../src/components/cnc/gear.ts");
+  const { program, parts } = gearDrawing();
+  for (const c of program) if (c.t === "mv") assert.ok(c.x >= 0 && c.x <= X_MAX && c.y >= 0 && c.y <= Y_MAX, `${c.g} fora da área`);
+  assert.equal(parts.length, 5);
+  for (const p of parts) assert.match(program[p.firstCmd].g, /^G0 /, `${p.name} não começa num G0`);
+  // os firstCmd crescem e o último cabe no programa
+  for (let i = 1; i < parts.length; i++) assert.ok(parts[i].firstCmd > parts[i - 1].firstCmd);
+  const s = estimateSeconds(program);
+  assert.ok(s > 30 && s < 150, `desenho leva ${s} s a 1×`);
+});

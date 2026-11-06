@@ -1,9 +1,11 @@
 /**
  * Projetos com vista explodida em 3D — as "folhas" do desenho na home.
  *
- * Projeto novo: copie o .glb e o parts.json para /public/projetos/<slug>/ e
- * preencha `config`. Sem `config`, a folha aparece reservada ("em breve") no
- * seletor do carimbo, sem carregar nada.
+ * Dois tipos de folha:
+ *  - "explode" (o padrão): vista explodida. Copie o .glb e o parts.json para
+ *    /public/projetos/<slug>/ e preencha `config`.
+ *  - "draw": a CNC desenhando conforme a rolagem (CncDrawView). Não usa config.
+ * Folha sem nada disso fica fora das setas, sem carregar nada.
  */
 export type Sheet = {
   /** número da folha no carimbo */
@@ -12,18 +14,20 @@ export type Sheet = {
   name: string;
   /** nome completo, no carimbo e na legenda da figura */
   full: string;
-  /** caminho do parts.json; o modelo fica na mesma pasta */
+  /** o que a rolagem faz na folha */
+  kind?: "explode" | "draw";
+  /** caminho do parts.json; o modelo fica na mesma pasta (só "explode") */
   config?: string;
   /** estudo de caso do projeto, se houver */
   caseUrl?: string;
   /** uma frase sobre o projeto, na faixa logo abaixo da vista explodida */
   summary?: string;
-  /**
-   * Ajuste fino da distância da câmera (menor = mais perto). O celular encaixa
-   * o modelo pela caixa envolvente, que sobra num modelo largo e baixo como a CNC.
-   */
+  /** ajuste fino da distância da câmera na vista explodida (menor = mais perto) */
   zoom?: { desktop?: number; mobile?: number };
 };
+
+/** a folha tem o que mostrar? */
+export const sheetReady = (s: Sheet) => s.kind === "draw" || !!s.config;
 
 export const sheets: Sheet[] = [
   {
@@ -40,10 +44,9 @@ export const sheets: Sheet[] = [
     n: "02",
     name: "CNC Plotter",
     full: "CNC Plotter",
-    config: "/projetos/cnc/parts.json",
+    kind: "draw",
     caseUrl: "/projeto/cnc-plotter",
-    zoom: { mobile: 0.84 },
     summary:
-      "Uma plotter de mesa com área de 818 × 402 mm. Na página do projeto a máquina desenha em 3D, com os eixos à mão — e escreve o que você digitar.",
+      "Uma plotter de mesa com área de 818 × 402 mm. Aqui ela desenha um par de engrenagens enquanto você rola; na página do projeto, escreve o que você digitar.",
   },
 ];

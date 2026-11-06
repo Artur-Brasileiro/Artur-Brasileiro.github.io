@@ -170,24 +170,37 @@ function beltTexture() {
   return t;
 }
 
+/**
+ * Pinus desenhado no navegador. O tom é mais quente e escuro que o pinus de
+ * verdade de propósito: o fundo do site é papel creme, e a mesa clara sumia
+ * nele. O desenho fica guardado — trocar de folha e voltar não refaz.
+ */
+let woodCanvas: HTMLCanvasElement | null = null;
 function woodTexture(aniso: number) {
+  const t = new THREE.CanvasTexture((woodCanvas ??= paintWood()));
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = aniso;
+  return t;
+}
+
+function paintWood() {
   const W = 512,
     H = 1024,
     c = document.createElement("canvas");
   c.width = W;
   c.height = H;
   const g = c.getContext("2d")!;
-  g.fillStyle = "#e4c79d";
+  g.fillStyle = "#cf9c5c";
   g.fillRect(0, 0, W, H);
   let seed = 7;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 160; i++) {
     const x = rnd() * W,
       w = 0.6 + rnd() * 2.6,
-      a = 0.05 + rnd() * 0.16,
+      a = 0.06 + rnd() * 0.2,
       wob = 4 + rnd() * 14,
       ph = rnd() * 6;
-    g.strokeStyle = `rgba(150,96,44,${a})`;
+    g.strokeStyle = `rgba(128,74,26,${a})`;
     g.lineWidth = w;
     g.beginPath();
     for (let y = 0; y <= H; y += 16) {
@@ -202,17 +215,59 @@ function woodTexture(aniso: number) {
     const cx = rnd() * W,
       cy = rnd() * H;
     for (let r = 22; r > 2; r -= 3) {
-      g.strokeStyle = `rgba(120,70,30,${0.12 + (22 - r) / 120})`;
+      g.strokeStyle = `rgba(104,56,20,${0.14 + (22 - r) / 110})`;
       g.lineWidth = 1.4;
       g.beginPath();
       g.ellipse(cx, cy, r * 0.6, r * 1.6, 0, 0, Math.PI * 2);
       g.stroke();
     }
   }
+  return c;
+}
+
+/** sombra suave embaixo da mesa: assenta a máquina no fundo da página */
+function groundShadow() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d")!;
+  const grad = g.createRadialGradient(64, 64, 10, 64, 64, 64);
+  grad.addColorStop(0, "rgba(40,28,16,0.42)");
+  grad.addColorStop(0.55, "rgba(40,28,16,0.2)");
+  grad.addColorStop(1, "rgba(40,28,16,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = aniso;
-  return t;
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry((TABLE.x1 - TABLE.x0) * 1.45, (TABLE.y1 - TABLE.y0) * 1.32),
+    new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, toneMapped: false }),
+  );
+  m.position.set((TABLE.x0 + TABLE.x1) / 2 + 30, (TABLE.y0 + TABLE.y1) / 2 - 30, TABLE.z0 - 0.5);
+  m.renderOrder = -1;
+  m.raycast = () => {};
+  return m;
+}
+
+/* ---------- o GLB: baixado e decodificado uma vez por página, não a cada cena ---------- */
+type Gltf = Awaited<ReturnType<GLTFLoader["loadAsync"]>>;
+const models = new Map<string, Promise<Gltf>>();
+
+/**
+ * Baixa e decodifica o modelo. A home chama isto no tempo ocioso, antes de a
+ * pessoa trocar de folha; a cena depois só monta o que já está na memória.
+ */
+export function prefetchModel(url: string, onProgress?: (p: number) => void): Promise<Gltf> {
+  let p = models.get(url);
+  if (!p) {
+    const loader = new GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
+    p = loader.loadAsync(url, (e) => {
+      if (e.lengthComputable && e.total) onProgress?.(e.loaded / e.total);
+    });
+    p.catch(() => models.delete(url));
+    models.set(url, p);
+  }
+  return p;
 }
 
 /* ---------- tinta: faixas de 1 mm sobre o papel, crescendo sem realocar a cada traço ---------- */
@@ -559,14 +614,15 @@ export class CncScene {
 
     /* ---------- mesa e papel ---------- */
     const aniso = Math.min(8, r.capabilities.getMaxAnisotropy());
-    const table = new THREE.Mesh(
-      new THREE.BoxGeometry(TABLE.x1 - TABLE.x0, TABLE.y1 - TABLE.y0, TABLE.z1 - TABLE.z0),
-      new THREE.MeshStandardMaterial({ map: woodTexture(aniso), roughness: 0.78, color: 0xffffff }),
-    );
+    const woodMap = woodTexture(aniso);
+    const top = new THREE.MeshStandardMaterial({ map: woodMap, roughness: 0.78, color: 0xffffff });
+    // a borda da tábua um tom abaixo: dá espessura e separa a mesa do fundo
+    const edge = new THREE.MeshStandardMaterial({ map: woodMap, roughness: 0.8, color: lin(0x9a7650) });
+    const table = new THREE.Mesh(new THREE.BoxGeometry(TABLE.x1 - TABLE.x0, TABLE.y1 - TABLE.y0, TABLE.z1 - TABLE.z0), [edge, edge, edge, edge, top, edge]);
     table.position.set((TABLE.x0 + TABLE.x1) / 2, (TABLE.y0 + TABLE.y1) / 2, (TABLE.z0 + TABLE.z1) / 2);
     table.receiveShadow = true;
     table.userData.label = ["Mesa de pinus", "Base de madeira onde os suportes são parafusados"] as Label;
-    this.scene.add(table);
+    this.scene.add(table, groundShadow());
 
     const paper = new THREE.Mesh(
       new THREE.PlaneGeometry(PAPER.x1 - PAPER.x0, PAPER.y1 - PAPER.y0),
@@ -690,11 +746,7 @@ export class CncScene {
   /* ---------- carga do modelo ---------- */
 
   async load(url: string, onProgress?: (p: number) => void) {
-    const loader = new GLTFLoader();
-    loader.setMeshoptDecoder(MeshoptDecoder);
-    const gltf = await loader.loadAsync(url, (e) => {
-      if (e.lengthComputable && e.total) onProgress?.(e.loaded / e.total);
-    });
+    const gltf = await prefetchModel(url, onProgress);
     if (this.disposed) return;
 
     const mats: Record<string, THREE.MeshStandardMaterial> = {};
@@ -769,7 +821,16 @@ export class CncScene {
         this.plaMeshes.push(m);
       }
     });
-    gltf.scene.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+
+    // Compila os shaders antes do primeiro quadro, em paralelo quando o
+    // navegador deixa (KHR_parallel_shader_compile). Sem isto o primeiro
+    // render travava a página ~1,5 s no Windows (ANGLE/D3D compila devagar).
+    try {
+      await this.renderer.compileAsync(this.scene, this.camera);
+    } catch {
+      /* compila no primeiro quadro, como antes */
+    }
+    if (this.disposed) return;
 
     this.ready = true;
     this.collectFitPoints();
@@ -1069,8 +1130,8 @@ export class CncScene {
       r.shadowMap.enabled = false;
       this.sun.castShadow = false;
       this.scene.traverse((o) => {
-        const m = (o as THREE.Mesh).material as THREE.Material | undefined;
-        if (m) m.needsUpdate = true;
+        const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        for (const x of Array.isArray(m) ? m : m ? [m] : []) x.needsUpdate = true;
       });
     }
   }
@@ -1210,6 +1271,24 @@ export class CncScene {
     return !!this.renderer.getContext();
   }
 
+  /** o contexto WebGL foi perdido (o sistema recolhe contextos parados): a cena não serve mais */
+  get contextLost() {
+    return this.renderer.getContext().isContextLost();
+  }
+
+  /**
+   * Muda a cena de lugar na página sem recriá-la: a home guarda uma cena
+   * pronta fora da tela e a traz para a folha quando a pessoa troca de projeto.
+   */
+  attach(container: HTMLElement) {
+    if (this.disposed || container === this.container) return;
+    this.resizeObs.unobserve(this.container);
+    this.container = container;
+    container.appendChild(this.renderer.domElement);
+    this.resizeObs.observe(container);
+    this.resize();
+  }
+
   /** um quadro como imagem (para o pôster) */
   snapshotDataURL(type = "image/webp", q = 0.82) {
     this.renderer.render(this.scene, this.camera);
@@ -1257,6 +1336,11 @@ export class CncScene {
     ink.flush();
     ink.showUpTo(0);
 
+    // cena reaproveitada: a faixa da volta anterior sai
+    if (this.scrub) {
+      this.scene.remove(this.scrub.tail);
+      this.scrub.tail.geometry.dispose();
+    }
     const tail = new THREE.Mesh(new THREE.BufferGeometry(), ink.mesh.material);
     tail.geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(12), 3).setUsage(THREE.DynamicDrawUsage));
     tail.geometry.setIndex([0, 1, 2, 0, 2, 3]);

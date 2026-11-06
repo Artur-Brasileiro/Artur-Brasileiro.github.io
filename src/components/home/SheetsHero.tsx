@@ -7,14 +7,14 @@
  * rolagem começa), legenda da figura, a lista da folha (peças ou partes do
  * desenho), marcas de corte e o carimbo com etapa e progresso.
  */
-import { forwardRef, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import ExplodedView from "@/components/three/ExplodedView";
 import CncDrawView from "@/components/cnc/CncDrawView";
 import { preloadExplodedView } from "@/components/three/preload";
-import { preloadCnc } from "@/components/cnc/preload";
+import { disposeHomeScene, warmHomeScene } from "@/components/cnc/preload";
 import { isGroupOut, ramp, type ExplodedState, type FitBox, type Shift } from "@/components/three/explode";
 import { sheetReady, sheets, type Sheet } from "@/data/sheets";
 import { heroLead } from "@/data/home";
@@ -110,7 +110,7 @@ const SheetSwitcher = forwardRef<HTMLDivElement, { index: number; onSelect: (i: 
     const go = (d: number) => onSelect(READY[(pos + d + READY.length) % READY.length]);
     const near = (d: number) => {
       const s = sheets[READY[(pos + d + READY.length) % READY.length]];
-      if (s.kind === "draw") preloadCnc();
+      if (s.kind === "draw") warmHomeScene();
       else if (s.config) preloadExplodedView(s.config);
     };
     const sheet = sheets[index];
@@ -318,6 +318,32 @@ function Hud({
 export default function SheetsHero() {
   const desktop = useMediaQuery("(min-width: 1024px)");
   const [index, setIndex] = useState(READY[0] ?? 0);
+
+  // Com a primeira folha já na tela e o navegador ocioso, as outras vão
+  // baixando por trás (na CNC, ~130 KB: o three já veio com o macropad). Assim
+  // a seta troca na hora, sem "carregando". Com economia de dados, nada sai.
+  useEffect(() => {
+    let idle = 0;
+    const run = () => {
+      for (const i of READY) {
+        const s = sheets[i];
+        if (i === index) continue;
+        if (s.kind === "draw") warmHomeScene();
+        else if (s.config) preloadExplodedView(s.config);
+      }
+    };
+    const t = window.setTimeout(() => {
+      idle = "requestIdleCallback" in window ? window.requestIdleCallback(run, { timeout: 3000 }) : (globalThis.setTimeout(run, 0) as unknown as number);
+    }, 2500);
+    return () => {
+      window.clearTimeout(t);
+      if (idle && "cancelIdleCallback" in window) window.cancelIdleCallback(idle);
+      // saindo da home, a cena guardada da CNC solta o WebGL
+      disposeHomeScene();
+    };
+    // só a folha de abertura importa: depois disso a pessoa já está navegando
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const track = useRef<HTMLElement>(null);
   const boxes = useRef<FitBoxes | null>(null);
   const sheet = sheets[index];

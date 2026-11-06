@@ -28,7 +28,10 @@ let started = false;
 export function preloadCnc() {
   if (started || typeof document === "undefined" || constrainedNetwork()) return;
   started = true;
-  loadScene().catch(() => {}); // a falha de verdade aparece no componente
+  // o chunk da cena, e com ele o GLB já decodificado (fica em memória para a cena montar na hora)
+  loadScene()
+    .then((m) => m.prefetchModel(CNC_GLB))
+    .catch(() => {}); // a falha de verdade aparece no componente
   // mesmo modo e credenciais do fetch do GLTFLoader, para o navegador
   // entregar a resposta pré-carregada em vez de baixar de novo
   const link = document.createElement("link");
@@ -62,4 +65,77 @@ export function pickQuality(): Quality {
   if (mem <= 2 || (coarse && mem <= 4 && cores <= 4)) return "low";
   if (coarse || window.innerWidth < 900) return "medium";
   return "high";
+}
+
+/* ---------- a cena da home, pronta antes do clique ---------- */
+
+let parking: HTMLDivElement | null = null;
+let warm: Promise<import("./CncScene").CncScene> | null = null;
+
+/** onde a cena espera, fora da vista, com o tamanho da tela (para compilar e enquadrar igual) */
+function park() {
+  if (!parking) {
+    parking = document.createElement("div");
+    parking.setAttribute("aria-hidden", "true");
+    parking.style.cssText = "position:fixed;left:0;top:0;width:100vw;height:100svh;visibility:hidden;pointer-events:none;z-index:-1;contain:strict";
+    document.body.appendChild(parking);
+  }
+  return parking;
+}
+
+/**
+ * A cena da folha da CNC: criada uma vez, com o modelo e os shaders prontos, e
+ * reaproveitada a cada troca de folha. A home pede no tempo ocioso; quando a
+ * pessoa clica na seta, a máquina aparece na hora.
+ */
+export function homeScene(onProgress?: (p: number) => void) {
+  if (warm) {
+    const w = warm;
+    return w.then((sc) => {
+      if (!sc.contextLost) return sc;
+      sc.dispose();
+      if (warm === w) warm = null;
+      return homeScene(onProgress);
+    });
+  }
+  const p = loadScene().then(async ({ CncScene }) => {
+    let sc;
+    try {
+      sc = new CncScene(park(), { quality: pickQuality() });
+    } catch (e) {
+      throw Object.assign(new Error("WebGL indisponível"), { nowebgl: true, cause: e });
+    }
+    sc.setActive(false);
+    try {
+      await sc.load(CNC_GLB, onProgress);
+    } catch (e) {
+      sc.dispose();
+      throw e;
+    }
+    return sc;
+  });
+  warm = p;
+  p.catch(() => {
+    if (warm === p) warm = null;
+  });
+  return p;
+}
+
+/** pré-aquece a cena da home, se a rede e o aparelho comportam */
+export function warmHomeScene() {
+  if (typeof document === "undefined" || constrainedNetwork() || pickQuality() === "low") return;
+  homeScene().catch(() => {});
+}
+
+/** a folha saiu: a cena volta a esperar fora da vista, parada */
+export function parkHomeScene(sc: import("./CncScene").CncScene) {
+  sc.setActive(false);
+  sc.attach(park());
+}
+
+/** saiu da home: solta o contexto WebGL */
+export function disposeHomeScene() {
+  const w = warm;
+  warm = null;
+  w?.then((sc) => sc.dispose()).catch(() => {});
 }

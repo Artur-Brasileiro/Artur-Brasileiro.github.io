@@ -12,7 +12,7 @@ import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type Rea
 import { EL_LIMIT, type ExplodedState, type FitBox, type PartsConfig } from "@/components/three/explode";
 import { buildTimeline } from "./machine";
 import { gearDrawing } from "./gear";
-import { CNC_GLB, loadScene, pickQuality } from "./preload";
+import { homeScene, parkHomeScene } from "./preload";
 import type { CncScene, HomeFraming } from "./CncScene";
 
 /** o desenho ocupa esta faixa da trilha: antes o título sai, depois o desenho fica à vista */
@@ -73,6 +73,13 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
   const [phase, setPhase] = useState<Phase>("loading");
   const [loaded, setLoaded] = useState(0);
   const [attempt, setAttempt] = useState(0);
+  // o aviso de carga só aparece se a carga demorar: com o modelo pré-carregado
+  // a máquina surge antes disso, e o aviso piscando seria só ruído
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSlow(true), 600);
+    return () => window.clearTimeout(t);
+  }, [attempt]);
   const [q, setQ] = useState(0);
   const progress = useRef(0);
   const sceneDriving = useRef(false);
@@ -131,8 +138,9 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
     const ease = k * k * (3 - 2 * k);
     const s = stick.current;
     const tall = !!s && (box.w * s.clientWidth) / (box.h * s.clientHeight) < 0.9;
-    const az = (tall ? 1.02 + 0.5 * ease : 0.42 - 0.36 * ease) + d.az;
-    const el = Math.max(0.12, Math.min(EL_LIMIT, (tall ? 0.62 + 0.46 * ease : 0.52 + 0.5 * ease) + d.el));
+    // a frente da máquina é o lado −X da mesa (onde o carro aponta a caneta); az = π olha dali
+    const az = (tall ? Math.PI - 0.5 - (Math.PI / 2 - 0.54) * ease : Math.PI + 0.34 - 0.3 * ease) + d.az;
+    const el = Math.max(0.12, Math.min(EL_LIMIT, (tall ? 0.6 + 0.48 * ease : 0.46 + 0.56 * ease) + d.el));
     return { box, az, el };
   }, []);
 
@@ -144,37 +152,32 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
     let sc: CncScene | null = null;
     setPhase("loading");
     setLoaded(0);
-    loadScene()
-      .then(({ CncScene }) => {
+    homeScene((p) => setLoaded(Math.round(p * 100)))
+      .then((s) => {
         if (disposed) return;
-        try {
-          sc = new CncScene(el, { quality: pickQuality() });
-        } catch (e) {
-          console.warn("WebGL indisponível:", e);
-          setPhase("nowebgl");
-          return;
-        }
-        scene.current = sc;
-        sc.enterScrub(program, framing, {
+        sc = s;
+        scene.current = s;
+        s.attach(el);
+        s.enterScrub(program, framing, {
           window: WINDOW,
           onProgress: (v) => {
             sceneDriving.current = true;
             setQ(v);
           },
         });
-        sc.scrubTo(progress.current, true);
-        return sc.load(CNC_GLB, (p) => setLoaded(Math.round(p * 100))).then(() => {
-          if (!disposed) setPhase("ready");
-        });
+        s.scrubTo(progress.current, true);
+        s.setActive(true);
+        setPhase("ready");
       })
       .catch((e) => {
         console.warn("folha da CNC indisponível:", e);
-        if (!disposed) setPhase("error");
+        if (!disposed) setPhase((e as { nowebgl?: boolean }).nowebgl ? "nowebgl" : "error");
       });
     return () => {
       disposed = true;
       sceneDriving.current = false;
-      sc?.dispose();
+      // a cena não morre: volta a esperar, pronta para a próxima troca
+      if (sc) parkHomeScene(sc);
       scene.current = null;
     };
   }, [program, framing, attempt]);
@@ -234,11 +237,11 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
       >
         <div
           ref={host}
-          className="absolute inset-0 cursor-grab transition-opacity duration-700 active:cursor-grabbing"
+          className="absolute inset-0 cursor-grab transition-opacity duration-500 active:cursor-grabbing"
           style={{ opacity: phase === "ready" ? 1 : 0 }}
         />
 
-        {phase !== "ready" && (
+        {phase !== "ready" && (slow || phase !== "loading") && (
           <div
             className="pointer-events-none absolute grid place-items-center font-mono text-[11px] text-muted-foreground"
             style={{ left: `${box.x * 100}%`, top: `${box.y * 100}%`, width: `${box.w * 100}%`, height: `${box.h * 100}%` }}

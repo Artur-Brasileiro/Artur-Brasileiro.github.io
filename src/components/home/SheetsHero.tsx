@@ -309,7 +309,7 @@ export default function SheetsHero() {
           configUrl={sheet.config}
           trackVh={460}
           className="bg-grid"
-          zoom={desktop ? DESKTOP.zoom : 1}
+          zoom={desktop ? DESKTOP.zoom * (sheet.zoom?.desktop ?? 1) : (sheet.zoom?.mobile ?? 1)}
           shift={desktop ? DESKTOP.shift : undefined}
           fit={fit}
         >

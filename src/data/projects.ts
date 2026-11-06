@@ -244,6 +244,16 @@ export const projectData: {
         technicalLink: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
         tags: ["C++", "EasyEDA", "PCB", "Python"],
       },
+      {
+        id: 16,
+        name: "CNC Plotter",
+        description: "Plotter de mesa com área de 818 × 402 mm, com simulação 3D que desenha e escreve o que você digitar.",
+        image: "projetos/cnc/poster-800.webp",
+        internalLink: "/projeto/cnc-plotter",
+        longDescription:
+          "Uma plotter grande, montada sobre uma mesa de pinus: dois motores NEMA 17 e correias GT2 levam uma caneta por uma área de 818 × 402 mm, e um servo SG90 a levanta entre um traço e outro. A página do projeto tem a máquina inteira em 3D, desenhando em tempo real, com os eixos à mão e um campo onde você digita e ela escreve.",
+        tags: ["NEMA 17", "GT2", "Servo SG90", "FreeCAD", "G-code"],
+      },
     ],
   },
 };
@@ -379,4 +389,44 @@ export const macropad = {
       },
     },
   ] as TimelineItem[],
+};
+
+/* ------------------------------------------------------------------ */
+/* Case: CNC Plotter                                                   */
+/* ------------------------------------------------------------------ */
+
+export const cnc = {
+  title: "CNC Plotter",
+  category: "Hardware & mecânica",
+  status: "Em desenvolvimento",
+  statusNote: "Carro v2 a imprimir",
+  summary:
+    "Uma plotter de mesa grande, feita em casa: barras de aço de 1 metro, correias GT2 e dois NEMA 17 levam uma caneta por uma área de 818 × 402 mm. A máquina inteira está modelada no FreeCAD, e é esse modelo que desenha aqui embaixo.",
+  specs: [
+    { label: "Área útil", value: "818 × 402 mm" },
+    { label: "Eixo X", value: "2 × barra Ø12 × 1000 mm · 3 × LM12UU" },
+    { label: "Eixo Y", value: "2 × barra Ø6 × 500 mm · LM6UU" },
+    { label: "Motores", value: "2 × NEMA 17 (17HS4401)" },
+    { label: "Transmissão", value: "Correia GT2 6 mm · polias 20T" },
+    { label: "Caneta", value: "Servo SG90 · pen holder em LM6UU" },
+    { label: "Resolução", value: "80 passos/mm (1/16 de micropasso)" },
+  ],
+  /** como cada eixo se move — tirado do modelo, peça por peça */
+  mechanics: [
+    {
+      ref: "X",
+      title: "Eixo X em ômega",
+      text: "A correia do eixo longo fica presa nos dois suportes da mesa e não se move. O motor viaja com a ponte e passa a correia por duas polias loucas e pela própria polia, num desenho de ômega: girando, ele “escala” a correia e arrasta a ponte inteira sobre as barras de 12 mm.",
+    },
+    {
+      ref: "Y",
+      title: "Eixo Y com correia aberta",
+      text: "No eixo curto a correia é aberta: cada ponta dá a volta no pino de uma presilha do carro e trava em si mesma, com um M3 no rasgo para ajustar a tensão. Ela passa pela polia louca do Apoio Secundário e pela polia do motor, preso por baixo da base principal.",
+    },
+    {
+      ref: "Z",
+      title: "Caneta por gravidade",
+      text: "O pen holder corre em dois rolamentos LM6UU. O braço do servo SG90 empurra o pino dele para levantar a caneta; para baixar, o servo só sai da frente e a caneta desce pelo próprio peso até o papel. Um fim de curso, acionado por um dedo do carro, marca o Y zero.",
+    },
+  ],
 };

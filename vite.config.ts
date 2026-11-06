@@ -49,7 +49,10 @@ export default defineConfig(({ mode }) => ({
           if (!id.includes('node_modules')) return;
           // O 3D tem chunk próprio: só a vista explodida e o visualizador do case
           // o importam (sob demanda). No 'vendor' ele viraria download de toda página.
-          if (THREE_DEPS.test(id)) return 'three';
+          // O three puro (com os exemplos: controles, GLTFLoader) fica separado
+          // do r3f/drei: o simulador da CNC é three puro e não precisa baixar o resto.
+          if (/node_modules[\\/]three[\\/]/.test(id)) return 'three';
+          if (THREE_DEPS.test(id)) return 'r3f';
           return 'vendor';
         },
       },

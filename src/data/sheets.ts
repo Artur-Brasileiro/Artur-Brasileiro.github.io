@@ -18,6 +18,11 @@ export type Sheet = {
   caseUrl?: string;
   /** uma frase sobre o projeto, na faixa logo abaixo da vista explodida */
   summary?: string;
+  /**
+   * Ajuste fino da distância da câmera (menor = mais perto). O celular encaixa
+   * o modelo pela caixa envolvente, que sobra num modelo largo e baixo como a CNC.
+   */
+  zoom?: { desktop?: number; mobile?: number };
 };
 
 export const sheets: Sheet[] = [
@@ -31,5 +36,14 @@ export const sheets: Sheet[] = [
       "Desenhei o esquemático, roteei a placa, soldei os componentes e modelei a case. " +
       "O firmware em C++ e o app em Python são a próxima etapa.",
   },
-  { n: "02", name: "CNC Plotter", full: "CNC Plotter" },
+  {
+    n: "02",
+    name: "CNC Plotter",
+    full: "CNC Plotter",
+    config: "/projetos/cnc/parts.json",
+    caseUrl: "/projeto/cnc-plotter",
+    zoom: { mobile: 0.84 },
+    summary:
+      "Uma plotter de mesa com área de 818 × 402 mm. Na página do projeto a máquina desenha em 3D, com os eixos à mão — e escreve o que você digitar.",
+  },
 ];

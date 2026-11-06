@@ -17,7 +17,7 @@ export const nowLines: { k: "faço" | "estudo" | "agora"; v: string }[] = [
     k: "estudo",
     v: `Engenharia da Computação na UEMG — ${profile.currentSemester}º período, conclusão em ${profile.graduationYear}.`,
   },
-  { k: "agora", v: "Fechando a case impressa do Macropad e mantendo o Atlas Fluency em produção." },
+  { k: "agora", v: "Abrindo o Polpad em código aberto, montando a CNC plotter e mantendo o Atlas Fluency em produção." },
 ];
 
 /** Card de projeto da home. Os projetos com vista explodida não entram: estão nas folhas do hero. */

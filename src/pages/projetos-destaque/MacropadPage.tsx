@@ -4,10 +4,10 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Check,
-  Download,
   ChevronLeft,
   ChevronRight,
   CircleDashed,
+  Code2,
   Github,
   Maximize2,
   Rotate3d,
@@ -24,6 +24,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import SiteFooter from "@/components/SiteFooter";
+import PolpadDownloads from "@/components/PolpadDownloads";
 import { macropad, type TimelineItem, type TimelineStatus } from "@/data/projects";
 import { cn } from "@/lib/utils";
 
@@ -94,11 +95,10 @@ const MacropadPage = () => {
                   {macropad.category}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                  <Check className="h-3 w-3" aria-hidden />
+                  <Code2 className="h-3 w-3" aria-hidden />
                   {macropad.status}
                 </span>
-                {/* concluído não quer dizer parado: o software segue recebendo
-                    melhorias, e o ponto pulsando diz isso sem precisar de texto longo */}
+                {/* o ponto pulsando diz que o projeto está vivo sem precisar de texto longo */}
                 <span className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground">
                   <span className="relative flex h-2 w-2" aria-hidden>
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/50 motion-reduce:animate-none" />
@@ -108,20 +108,30 @@ const MacropadPage = () => {
                 </span>
               </div>
 
-              <h1 className="font-display mt-5 text-display-xl font-medium">{macropad.title}</h1>
+              <div className="mt-5 flex items-center gap-4">
+                {/* o polvo visto de cima, com os braços girando como um encoder: o ícone do app */}
+                <img src={asset("macropadpage/polpad.svg")} alt="" width={64} height={64} className="h-12 w-12 shrink-0 md:h-16 md:w-16" />
+                <div className="min-w-0">
+                  <h1 className="font-display text-display-xl font-medium leading-none">{macropad.title}</h1>
+                  <p className="mt-2 text-sm text-muted-foreground">antes {macropad.formerly}</p>
+                </div>
+              </div>
 
               <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
                 {macropad.summary}
               </p>
 
+              <PolpadDownloads className="mt-8" />
+
               <a
                 href={macropad.repository}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-8 inline-flex h-11 items-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-medium text-foreground shadow-soft-sm transition-colors hover:text-primary"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
               >
                 <Github className="h-4 w-4" />
-                Acompanhar no GitHub
+                Código, placa e case no GitHub
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </a>
             </div>
 
@@ -428,17 +438,7 @@ const RepositoryCard = ({ repo }: { repo: NonNullable<TimelineItem["repository"]
           </span>
         ))}
       </div>
-      {repo.releaseUrl && (
-        <a
-          href={repo.releaseUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative z-10 inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        >
-          <Download className="h-3.5 w-3.5" aria-hidden />
-          Baixar a última versão
-        </a>
-      )}
+      {repo.releaseUrl && <PolpadDownloads compact />}
     </div>
   </div>
 );

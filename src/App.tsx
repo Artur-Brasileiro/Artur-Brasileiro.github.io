@@ -34,6 +34,8 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<Suspense fallback={<PageLoader />}><PageWrapper><Index /></PageWrapper></Suspense>} />
         <Route path="/:category" element={<Suspense fallback={<PageLoader />}><PageWrapper><ProjectsPage /></PageWrapper></Suspense>} />
         <Route path="/projeto/macropad" element={<Suspense fallback={<PageLoader />}><PageWrapper><MacropadPage /></PageWrapper></Suspense>} />
+        {/* o nome novo do projeto também abre a página */}
+        <Route path="/projeto/polpad" element={<Suspense fallback={<PageLoader />}><PageWrapper><MacropadPage /></PageWrapper></Suspense>} />
         <Route path="/projeto/cnc-plotter" element={<Suspense fallback={<PageLoader />}><PageWrapper><CncPage /></PageWrapper></Suspense>} />
         <Route path="*" element={<Suspense fallback={<PageLoader />}><PageWrapper><NotFound /></PageWrapper></Suspense>} />
       </Routes>

@@ -32,13 +32,13 @@ export const sheetReady = (s: Sheet) => s.kind === "draw" || !!s.config;
 export const sheets: Sheet[] = [
   {
     n: "01",
-    name: "Macropad",
-    full: "Macropad ESP32-C3",
+    name: "Polpad",
+    full: "Polpad · macropad ESP32-C3",
     config: "/projetos/macropad/parts.json",
     caseUrl: "/projeto/macropad",
     summary:
       "Desenhei o esquemático, roteei a placa, soldei os componentes e modelei a case. " +
-      "O firmware em C++ e o app em Python são a próxima etapa.",
+      "Hoje ele é o Polpad: firmware, app para Windows e Linux e tudo aberto no GitHub.",
   },
   {
     n: "02",

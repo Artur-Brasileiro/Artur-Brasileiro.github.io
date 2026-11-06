@@ -1,6 +1,6 @@
 import { Code2, Cpu, type LucideIcon } from "lucide-react";
 
-/** Projetos em destaque (home), catálogo completo (rotas de categoria) e o case do Macropad. */
+/** Projetos em destaque (home), catálogo completo (rotas de categoria) e os cases do Polpad e da CNC. */
 
 export type FeaturedProject = {
   id: string;
@@ -46,15 +46,15 @@ export const featuredProjects: FeaturedProject[] = [
   },
   {
     id: "macropad-oled",
-    title: "Macropad Inteligente",
+    title: "Polpad",
     category: "Hardware",
     description:
-      "Dispositivo IoT auxiliar com display OLED. Possui software desktop que se adapta dinamicamente ao contexto dos aplicativos em uso.",
+      "Macropad open source com display OLED e app para Windows e Linux que troca as funções das teclas conforme o programa em uso.",
     image: "capa_macropad.jpg",
     logoCover: false,
     tags: ["C++", "Python", "Integração de Hardware"],
     demoLink: "/projeto/macropad",
-    githubLink: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
+    githubLink: "https://github.com/gabriel-re-pires/polpad",
     isInternal: true,
   },
 ];
@@ -234,14 +234,14 @@ export const projectData: {
       },
       {
         id: 14,
-        name: "Macropad Inteligente",
+        name: "Polpad",
         description:
-          "Teclado auxiliar com display integrado e app multiplataforma que detecta programas ativos.",
+          "Macropad open source com display integrado e app para Windows e Linux que detecta o programa ativo.",
         image: "capa_macropad.jpg",
         internalLink: "/projeto/macropad",
         longDescription:
-          "Um teclado auxiliar customizado do zero, unindo design de circuito impresso, eletrônica embarcada e desenvolvimento de software multiplataforma. Ele possui um aplicativo desktop em Python que detecta a janela ativa para alterar dinamicamente o contexto e as funções das teclas do hardware.",
-        technicalLink: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
+          "Um teclado auxiliar feito do zero, unindo circuito impresso, eletrônica embarcada e software. O app desktop em Python detecta a janela ativa e troca as funções das teclas; placa, case, firmware e app são abertos para qualquer um montar e contribuir.",
+        technicalLink: "https://github.com/gabriel-re-pires/polpad",
         tags: ["C++", "EasyEDA", "PCB", "Python"],
       },
       {
@@ -286,7 +286,7 @@ export const projectCategories = [
 ];
 
 /* ------------------------------------------------------------------ */
-/* Case: Macropad Inteligente                                          */
+/* Case: Polpad (antes Macropad Inteligente)                           */
 /* ------------------------------------------------------------------ */
 
 export type TimelineStatus = "completed" | "current" | "planned";
@@ -314,27 +314,64 @@ export type TimelineItem = {
   };
 };
 
+/** O Polpad (antes "Macropad Inteligente"): repositório, licenças e os instaladores da última versão. */
+export const POLPAD_REPO = "gabriel-re-pires/polpad";
+const POLPAD_URL = `https://github.com/${POLPAD_REPO}`;
+
+export type Installer = {
+  os: "windows" | "linux";
+  label: string;
+  /** para quem é: sistema e formato */
+  detail: string;
+  /** nome do anexo no release (o link "latest" sempre aponta para a versão mais nova) */
+  asset: string;
+  url: string;
+};
+
+const latest = (asset: string) => `${POLPAD_URL}/releases/latest/download/${asset}`;
+
 export const macropad = {
-  title: "Macropad Inteligente",
-  category: "Hardware & PCB",
-  /** o hardware está pronto; o software segue evoluindo (ver a fase 5) */
-  status: "Concluído",
-  statusNote: "Em melhoria contínua",
+  title: "Polpad",
+  /** o nome antigo, para quem chega procurando por ele */
+  formerly: "Macropad Inteligente",
+  category: "Hardware & software livre",
+  /** o hardware está pronto; o software segue evoluindo em aberto */
+  status: "Open source",
+  statusNote: "Em desenvolvimento aberto",
   summary:
-    "Um teclado auxiliar customizado do zero, unindo design de circuito impresso, eletrônica embarcada e desenvolvimento de software multiplataforma.",
-  repository: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
+    "Um macropad de 18 teclas com display OLED, feito do zero — placa, case, firmware e app — e aberto para quem quiser montar o seu, adaptar e contribuir.",
+  repository: POLPAD_URL,
+  releases: `${POLPAD_URL}/releases`,
+  installers: [
+    {
+      os: "windows",
+      label: "Baixar para Windows",
+      detail: "Windows 10/11 · instalador .exe",
+      asset: "Polpad-Windows-Instalador.exe",
+      url: latest("Polpad-Windows-Instalador.exe"),
+    },
+    {
+      os: "linux",
+      label: "Baixar para Linux",
+      detail: "Linux x86-64 · pacote .tar.gz",
+      asset: "Polpad-Linux-Instalador.tar.gz",
+      url: latest("Polpad-Linux-Instalador.tar.gz"),
+    },
+  ] as Installer[],
   rationale: [
-    "A motivação por trás deste projeto é criar uma ferramenta que realmente se adapte ao fluxo de trabalho do usuário, em vez de ser apenas um teclado genérico com atalhos fixos.",
-    "Ao integrar um display OLED e desenvolver uma aplicação desktop inteligente, o Macropad saberá exatamente o que você está fazendo. Se você abrir o seu editor de código, as 18 teclas e a tela assumem funções de compilação, debug e formatação. Se você alternar para o navegador, os atalhos mudam instantaneamente.",
-    "O grande desafio e diferencial deste projeto é construir a ponte completa: desenhar a própria placa, fabricar o protótipo, realizar a soldagem dos componentes e garantir que os códigos (C++ e Python) conversem perfeitamente com o sistema operacional.",
+    "O projeto nasceu como um macropad para o TCC, feito em parceria com Gabriel R. Pires: um teclado auxiliar que se adapta ao que você está fazendo. Abriu o editor de código, as 18 teclas e a tela assumem compilar, depurar e formatar; trocou para o navegador, os atalhos mudam junto.",
+    "No caminho ele virou o Polpad, e a premissa cresceu: em vez de um aparelho fechado, uma base aberta. A placa e a case estão sob licença de hardware livre (CERN-OHL-S), o firmware e o app sob GPL-3.0, e o repositório traz os STLs e o G-code da case prontos para imprimir.",
+    "Qualquer pessoa pode montar o seu, mudar o que quiser e devolver para o projeto. No app, cada tipo de ação é uma função registrada — atalhos, comandos, chamadas HTTP, OBS Studio, Home Assistant —, então somar uma ação nova não mexe no resto do código.",
   ],
   specs: [
     { label: "Teclas", value: "18 switches mecânicos" },
-    { label: "Display", value: "OLED integrado" },
-    { label: "Firmware", value: "C++" },
-    { label: "Aplicação desktop", value: "Python" },
+    { label: "Display", value: "OLED 0,96\" · 128 × 64" },
+    { label: "Microcontrolador", value: "ESP32-C3 SuperMini" },
+    { label: "Firmware", value: "C++ · USB serial + Bluetooth LE" },
+    { label: "App", value: "Python · Qt · Windows e Linux" },
     { label: "Placa", value: "PCB própria (EasyEDA / JLCPCB)" },
     { label: "Case", value: "Impressão 3D, inclinação de 7°" },
+    { label: "Licenças", value: "GPL-3.0 · CERN-OHL-S" },
   ],
   timeline: [
     {
@@ -372,20 +409,27 @@ export const macropad = {
       modelHint: "Expanda para girar a case em 3D.",
     },
     {
-      status: "current",
+      status: "completed",
       date: "Fase 5",
-      title: "Desenvolvimento C++ e Python",
+      title: "Firmware em C++ e app em Python",
       description:
-        "Criação do código em C++ para o firmware (varredura da matriz e controle do display) e desenvolvimento do software em Python para o computador, responsável por detectar a janela ativa e enviar os contextos corretos ao Macropad. O software se chama Ocpad e é desenvolvido em aberto no GitHub, em parceria com Gabriel R. Pires.",
+        "O firmware no ESP32-C3 varre a matriz e desenha o que o computador manda no display; toda a lógica fica no app. Ele organiza as 18 teclas em perfis, troca de perfil sozinho conforme o programa em foco, mostra o mapa das teclas no OLED e grava o firmware pela USB. Sem o app, o Polpad vira um teclado Bluetooth com atalhos fixos.",
+    },
+    {
+      status: "current",
+      date: "Fase 6",
+      title: "Polpad, em código aberto",
+      description:
+        "O projeto ganhou nome, ícone e casa própria no GitHub, com instalador para Windows e Linux e atualização automática dentro do app. O código, a placa e a case estão abertos para quem quiser montar, adaptar ou contribuir com novas ações e integrações.",
       repository: {
-        url: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC",
-        name: "gabriel-re-pires/Macropad-Inteligente-TCC",
+        url: POLPAD_URL,
+        name: POLPAD_REPO,
         description:
-          "Ocpad: o app desktop que configura as 18 teclas por perfis, troca de perfil conforme o programa em foco e grava o firmware no ESP32-C3. Sem o app, o macropad funciona como teclado Bluetooth com atalhos fixos.",
-        stack: ["Python", "C++"],
+          "App, firmware, protocolo e os arquivos da case (STL e G-code). Software sob GPL-3.0 e hardware sob CERN-OHL-S.",
+        stack: ["Python", "Qt", "C++", "ESP32-C3"],
         // o repositório é do Gabriel, parceiro no TCC; o Artur contribui nele
         credit: "Em parceria com Gabriel R. Pires",
-        releaseUrl: "https://github.com/gabriel-re-pires/Macropad-Inteligente-TCC/releases/latest",
+        releaseUrl: `${POLPAD_URL}/releases/latest`,
       },
     },
   ] as TimelineItem[],

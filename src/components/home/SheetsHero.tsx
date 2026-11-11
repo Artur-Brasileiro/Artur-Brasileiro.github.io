@@ -1,6 +1,7 @@
 /**
  * Hero da home: as "folhas" do desenho. Cada projeto com modelo 3D é uma folha;
- * rolar faz a folha andar — o macropad desmonta, a CNC desenha — e as setas
+ * rolar faz a folha andar — o macropad desmonta pela rolagem; a CNC e o
+ * pêndulo começam a tocar, como vídeo, com play e pausa no carimbo — e as setas
  * em cima do modelo trocam de folha.
  *
  * Por cima do canvas, tudo é HUD de desenho técnico: título (some quando a
@@ -9,16 +10,19 @@
  */
 import { forwardRef, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Pause, Play, RotateCcw } from "lucide-react";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import ExplodedView from "@/components/three/ExplodedView";
 import CncDrawView from "@/components/cnc/CncDrawView";
+import PenduloRunView from "@/components/pendulo/PenduloRunView";
+import { preloadPendulo } from "@/components/pendulo/preload";
 import { preloadExplodedView } from "@/components/three/preload";
 import { disposeHomeScene, warmHomeScene } from "@/components/cnc/preload";
 import { isGroupOut, ramp, type ExplodedState, type FitBox, type Shift } from "@/components/three/explode";
 import { sheetReady, sheets, type Sheet } from "@/data/sheets";
 import { heroLead } from "@/data/home";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import type { Playback } from "@/components/home/playback";
 import { cn } from "@/lib/utils";
 
 /* Enquadramento no desktop: o modelo começa à direita do título e desliza para
@@ -32,6 +36,15 @@ const DESKTOP_DRAW = {
   intro: { x: 0.38, y: 0.14, w: 0.61, h: 0.78 },
   scroll: { x: 0.04, y: 0.17, w: 0.7, h: 0.72 },
 };
+/* O pêndulo é alto (a haste em pé tem quase meio metro): a caixa usa mais altura. */
+const DESKTOP_RUN = {
+  intro: { x: 0.4, y: 0.12, w: 0.58, h: 0.8 },
+  scroll: { x: 0.06, y: 0.15, w: 0.66, h: 0.76 },
+};
+
+/* CNC e pêndulo tocam como vídeo: a rolagem só tira o título e dá a partida,
+   então a trilha é curta. O Polpad continua desmontando pela rolagem (460). */
+const PLAY_TRACK_VH = 160;
 
 // a folha que abre a home já começa a baixar quando este módulo é avaliado,
 // em paralelo com o primeiro render da página, e não depois dele
@@ -72,8 +85,10 @@ function CropMarks() {
  * especificação quebrar em duas linhas; abaixo de 680 px de altura some a
  * especificação e fica só referência e nome; abaixo de 520 px some a lista.
  */
-function PartsList({ cfg, q, title }: Pick<ExplodedState, "cfg" | "q"> & { title: string }) {
+function PartsList({ cfg, q, play, title }: Pick<ExplodedState, "cfg" | "q" | "play"> & { title: string }) {
   if (!cfg) return null;
+  // nas folhas que tocam como vídeo, as linhas acendem pelo relógio (e nenhuma antes do play)
+  const p = play ? (play.started ? play.u : -1) : q;
   return (
     <div
       className="absolute right-12 top-28 hidden w-[320px] border-l border-border pl-4 lg:block [@media(max-height:680px)]:top-24 [@media(max-height:520px)]:!hidden"
@@ -84,7 +99,7 @@ function PartsList({ cfg, q, title }: Pick<ExplodedState, "cfg" | "q"> & { title
         <div
           key={g.id}
           className="grid grid-cols-[64px_1fr] gap-2 py-[5px] transition-opacity duration-300 [@media(max-height:680px)]:py-[3px]"
-          style={{ opacity: isGroupOut(g, q) ? 1 : 0.32 }}
+          style={{ opacity: isGroupOut(g, p) ? 1 : 0.32 }}
         >
           <span className="text-[10px] tracking-[0.06em] text-gold">{g.ref}</span>
           <span className="font-sans text-[12px] leading-tight text-foreground">
@@ -111,6 +126,7 @@ const SheetSwitcher = forwardRef<HTMLDivElement, { index: number; onSelect: (i: 
     const near = (d: number) => {
       const s = sheets[READY[(pos + d + READY.length) % READY.length]];
       if (s.kind === "draw") warmHomeScene();
+      else if (s.kind === "run") preloadPendulo();
       else if (s.config) preloadExplodedView(s.config);
     };
     const sheet = sheets[index];
@@ -152,10 +168,85 @@ const Progress = ({ q }: { q: number }) => (
   </div>
 );
 
+const clock = (s: number) => {
+  const n = Math.floor(s);
+  return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
+};
+
+/**
+ * Controles de vídeo das folhas que tocam sozinhas (CNC, pêndulo): play/pausa
+ * (ou "de novo", no fim), a linha do tempo — clicar ou arrastar leva para
+ * aquele instante — e o tempo. Fica na base do carimbo, no lugar da barra.
+ */
+function PlayBar({ play }: { play: Playback }) {
+  const bar = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const seekAt = (clientX: number) => {
+    const r = bar.current?.getBoundingClientRect();
+    if (r && r.width) play.seek((clientX - r.left) / r.width);
+  };
+  const Icon = play.ended ? RotateCcw : play.playing ? Pause : Play;
+  const label = play.ended ? "Ver de novo" : play.playing ? "Pausar" : "Reproduzir";
+  const step = 5 / play.duration;
+  return (
+    <div className="pointer-events-auto grid grid-cols-[auto_1fr_auto] items-center border-t border-border">
+      <button
+        type="button"
+        onClick={play.ended ? play.restart : play.toggle}
+        aria-label={label}
+        title={label}
+        className="flex h-9 w-10 items-center justify-center border-r border-border text-foreground transition-colors hover:bg-foreground hover:text-background focus-visible:bg-foreground focus-visible:text-background focus-visible:outline-none lg:h-8 lg:w-9"
+      >
+        <Icon className="h-3.5 w-3.5" fill={Icon === RotateCcw ? "none" : "currentColor"} aria-hidden />
+      </button>
+      <div
+        ref={bar}
+        role="slider"
+        tabIndex={0}
+        aria-label="Linha do tempo da animação"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(play.duration)}
+        aria-valuenow={Math.round(play.t)}
+        aria-valuetext={`${clock(play.t)} de ${clock(play.duration)}`}
+        className="group relative mx-3 h-9 cursor-pointer touch-none focus-visible:outline-none lg:h-8"
+        onPointerDown={(e) => {
+          dragging.current = true;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          seekAt(e.clientX);
+        }}
+        onPointerMove={(e) => dragging.current && seekAt(e.clientX)}
+        onPointerUp={() => (dragging.current = false)}
+        onPointerCancel={() => (dragging.current = false)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            play.seek(play.u + (e.key === "ArrowRight" ? step : -step));
+          } else if (e.key === " " || e.key === "k") {
+            e.preventDefault();
+            play.toggle();
+          }
+        }}
+      >
+        <div className="absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 bg-border transition-[height] group-hover:h-[3px]">
+          <div className="h-full bg-gold" style={{ width: `${play.u * 100}%` }} />
+        </div>
+        <div
+          className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold ring-2 ring-background group-focus-visible:ring-foreground"
+          style={{ left: `${play.u * 100}%` }}
+        />
+      </div>
+      <span className="whitespace-nowrap border-l border-border px-2.5 py-1.5 tabular-nums text-muted-foreground">
+        {clock(play.t)}/{clock(play.duration)}
+        {play.speed !== 1 && <span className="ml-1.5 text-gold" title={`${String(play.speed).replace(".", ",")} vezes mais rápido que a máquina`}>{String(play.speed).replace(".", ",")}×</span>}
+      </span>
+    </div>
+  );
+}
+
 type StampProps = { sheet: Sheet; state: ExplodedState };
 
 /** Carimbo completo (desktop): projeto, folha, etapa e progresso, no canto. */
-function Stamp({ sheet, state: { q, cfg, stage, stageIndex } }: StampProps) {
+function Stamp({ sheet, state: { q, cfg, stage, stageIndex, play } }: StampProps) {
   return (
     <div className="absolute bottom-10 right-12 hidden w-[400px] border border-foreground bg-background/90 text-[10px] lg:block">
       <div className="grid grid-cols-[92px_1fr_auto] border-b border-border">
@@ -173,7 +264,7 @@ function Stamp({ sheet, state: { q, cfg, stage, stageIndex } }: StampProps) {
           {stage}
         </span>
       </div>
-      <Progress q={q} />
+      {play ? <PlayBar play={play} /> : <Progress q={q} />}
     </div>
   );
 }
@@ -182,7 +273,7 @@ function Stamp({ sheet, state: { q, cfg, stage, stageIndex } }: StampProps) {
  * Carimbo compacto (celular e tablet): só a etapa, na largura do pé da tela.
  * O nome do projeto já está nas setas e na legenda.
  */
-const StampCompact = forwardRef<HTMLDivElement, StampProps>(function StampCompact({ state: { q, cfg, stage, stageIndex } }, ref) {
+const StampCompact = forwardRef<HTMLDivElement, StampProps>(function StampCompact({ state: { q, cfg, stage, stageIndex, play } }, ref) {
   return (
     <div ref={ref} className="absolute inset-x-4 bottom-4 border border-foreground bg-background/90 text-[10px] lg:hidden">
       <div className="grid grid-cols-[84px_1fr]">
@@ -193,7 +284,7 @@ const StampCompact = forwardRef<HTMLDivElement, StampProps>(function StampCompac
           {stage}
         </span>
       </div>
-      <Progress q={q} />
+      {play ? <PlayBar play={play} /> : <Progress q={q} />}
     </div>
   );
 });
@@ -204,6 +295,15 @@ type FitBoxes = { intro: FitBox; scroll: FitBox };
 type SwitcherTops = { intro: number; scroll: number };
 
 const SWITCHER_W = 270;
+
+/**
+ * Celular deitado: a tela tem ~360 px de altura, e título grande + setas +
+ * carimbo não deixavam espaço para o modelo (o carimbo cobria o título). Aí o
+ * título fica numa linha só, sem o texto de apoio, e as setas vão para o canto
+ * de cima, ao lado do título, em vez de ficar acima do modelo.
+ */
+const SHORT = "(max-height: 500px) and (orientation: landscape)";
+const isShort = () => typeof window !== "undefined" && window.matchMedia(SHORT).matches && !window.matchMedia("(min-width: 1024px)").matches;
 
 function Hud({
   sheet,
@@ -225,6 +325,7 @@ function Hud({
 }) {
   const { q } = state;
   const draw = sheet.kind === "draw";
+  const run = sheet.kind === "run";
   const intro = 1 - ramp(q, 0.03, 0.14);
   const hud = useRef<HTMLDivElement>(null);
   const title = useRef<HTMLDivElement>(null);
@@ -249,7 +350,8 @@ function Hud({
         H = h.offsetHeight;
       const GAP = 14,
         SIDE = 16;
-      const sw = switcher.current?.offsetHeight ?? 0;
+      // deitado, as setas ficam no canto, fora da coluna do modelo
+      const sw = isShort() ? 0 : (switcher.current?.offsetHeight ?? 0);
       const bottom = s.offsetTop - GAP;
       const top = { intro: t.offsetTop + t.offsetHeight + GAP, scroll: c.offsetTop + c.offsetHeight + GAP };
       const below = (y: number): FitBox => {
@@ -266,10 +368,13 @@ function Hud({
   }, [boxes]);
 
   const t = ramp(q, 0.03, 0.14);
+  const short = useMediaQuery(SHORT) && !desktop;
   const switcherStyle: React.CSSProperties = desktop
     ? // centrado no modelo, sem passar por cima da lista do canto direito
       { left: `clamp(${SWITCHER_W / 2 + 24}px, ${modelX * 100}%, calc(100% - ${48 + 320 + 24 + SWITCHER_W / 2}px))`, top: 76, transform: "translateX(-50%)" }
-    : { left: "50%", top: tops ? lerp(tops.intro, tops.scroll, t) : -999, transform: "translateX(-50%)" };
+    : short
+      ? { right: 16, top: 64 }
+      : { left: "50%", top: tops ? lerp(tops.intro, tops.scroll, t) : -999, transform: "translateX(-50%)" };
 
   return (
     <div ref={hud} className="pointer-events-none absolute inset-0 font-mono">
@@ -278,35 +383,35 @@ function Hud({
       {/* título: some quando a rolagem começa */}
       <div
         ref={title}
-        className="absolute left-6 right-6 top-[76px] max-w-[640px] md:left-12 md:right-auto md:top-28"
+        className="absolute left-6 right-6 top-[76px] max-w-[640px] md:left-12 md:right-auto md:top-28 [@media(max-height:500px)_and_(orientation:landscape)]:!right-[330px] [@media(max-height:500px)_and_(orientation:landscape)]:!top-[64px]"
         style={{ opacity: intro, transform: `translateY(${(1 - intro) * -24}px)` }}
       >
         <p className="text-[12px] text-gold [text-shadow:0_0_14px_hsl(var(--gold-soft)/0.35)]">$ whoami</p>
-        <h1 className="mt-3 text-[clamp(40px,6.4vw,92px)] font-medium leading-[0.98] tracking-[-0.045em] text-foreground">
+        <h1 className="mt-3 text-[clamp(40px,6.4vw,92px)] [@media(max-height:500px)_and_(orientation:landscape)]:mt-1 [@media(max-height:500px)_and_(orientation:landscape)]:text-[32px] font-medium leading-[0.98] tracking-[-0.045em] text-foreground">
           {/* o espaço antes da quebra mantém o nome legível para leitor de tela e busca */}
-          artur <br />
+          artur <br className="[@media(max-height:500px)_and_(orientation:landscape)]:hidden" />
           brasileiro
         </h1>
-        <p className="mt-5 max-w-[46ch] font-sans text-[14px] leading-relaxed text-muted-foreground md:mt-6 md:text-[15px]">{heroLead}</p>
+        <p className="mt-5 max-w-[46ch] font-sans text-[14px] leading-relaxed text-muted-foreground md:mt-6 md:text-[15px] [@media(max-height:500px)_and_(orientation:landscape)]:hidden">{heroLead}</p>
       </div>
 
       {/* legenda da figura, no lugar do título */}
       <p
         ref={caption}
-        className="absolute left-6 right-6 top-[76px] text-[11px] uppercase tracking-[0.16em] text-muted-foreground md:left-12 md:right-auto md:top-28"
+        className="absolute left-6 right-6 top-[76px] text-[11px] uppercase tracking-[0.16em] text-muted-foreground md:left-12 md:right-auto md:top-[128px] [@media(max-height:500px)_and_(orientation:landscape)]:!right-[330px] [@media(max-height:500px)_and_(orientation:landscape)]:!top-[72px]"
         style={{ opacity: 1 - intro }}
         aria-hidden={intro > 0.5}
       >
-        <span className="text-gold">fig. {sheet.n}</span> — {sheet.full.toLowerCase()}, {draw ? "desenhando" : "vista explodida"}
+        <span className="text-gold">fig. {sheet.n}</span> — {sheet.full.toLowerCase()}, {draw ? "desenhando" : run ? "funcionando" : "vista explodida"}
       </p>
 
       <SheetSwitcher ref={switcher} index={index} onSelect={onSelect} className="absolute" style={switcherStyle} />
 
-      <PartsList cfg={state.cfg} q={q} title={draw ? "o que ela desenha" : "lista de materiais"} />
+      <PartsList cfg={state.cfg} q={q} play={state.play} title={draw ? "o que ela desenha" : run ? "o que acontece" : "lista de materiais"} />
 
       {/* no celular o texto de cima já diz para rolar, e aqui o carimbo cobriria a dica */}
       <p className="absolute bottom-10 left-12 hidden text-[11px] text-muted-foreground lg:block">
-        {q < 0.02 ? (draw ? "↓ role para a máquina desenhar" : "↓ role para desmontar") : desktop ? "arraste para girar" : ""}
+        {q < 0.02 && !state.play?.started ? (draw ? "↓ role para a máquina desenhar" : run ? "↓ role para ligar o pêndulo" : "↓ role para desmontar") : desktop ? "arraste para girar" : ""}
       </p>
 
       <Stamp sheet={sheet} state={state} />
@@ -329,6 +434,7 @@ export default function SheetsHero() {
         const s = sheets[i];
         if (i === index) continue;
         if (s.kind === "draw") warmHomeScene();
+        else if (s.kind === "run") preloadPendulo();
         else if (s.config) preloadExplodedView(s.config);
       }
     };
@@ -348,6 +454,7 @@ export default function SheetsHero() {
   const boxes = useRef<FitBoxes | null>(null);
   const sheet = sheets[index];
   const draw = sheet.kind === "draw";
+  const run = sheet.kind === "run";
 
   // celular: a caixa cresce do espaço abaixo do título para o espaço abaixo da
   // legenda, no mesmo trecho em que o título some
@@ -356,9 +463,10 @@ export default function SheetsHero() {
     return b ? lerpBox(b.intro, b.scroll, ramp(q, 0.03, 0.14)) : null;
   };
   const drawFit = desktop ? (q: number) => lerpBox(DESKTOP_DRAW.intro, DESKTOP_DRAW.scroll, ramp(q, 0.03, 0.16)) : mobileFit;
+  const runFit = desktop ? (q: number) => lerpBox(DESKTOP_RUN.intro, DESKTOP_RUN.scroll, ramp(q, 0.03, 0.16)) : mobileFit;
   const modelX = (q: number) => {
-    if (!draw) return 0.5 + (DESKTOP.shift as (q: number) => [number, number])(q)[0];
-    const b = drawFit(q);
+    if (!draw && !run) return 0.5 + (DESKTOP.shift as (q: number) => [number, number])(q)[0];
+    const b = (run ? runFit : drawFit)(q);
     return b ? b.x + b.w / 2 : 0.5;
   };
 
@@ -383,9 +491,13 @@ export default function SheetsHero() {
     <>
       {/* key: cada folha monta o próprio canvas, com o próprio modelo */}
       {draw ? (
-        <CncDrawView ref={track} key={sheet.n} trackVh={460} className="bg-grid" fit={drawFit}>
+        <CncDrawView ref={track} key={sheet.n} trackVh={PLAY_TRACK_VH} className="bg-grid" fit={drawFit}>
           {hud}
         </CncDrawView>
+      ) : run ? (
+        <PenduloRunView ref={track} key={sheet.n} trackVh={PLAY_TRACK_VH} className="bg-grid" fit={runFit}>
+          {hud}
+        </PenduloRunView>
       ) : (
         sheet.config && (
           <ExplodedView

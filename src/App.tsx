@@ -19,6 +19,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
 const MacropadPage = lazy(() => import("./pages/projetos-destaque/MacropadPage"));
 const CncPage = lazy(() => import("./pages/projetos-destaque/CncPage"));
+const PenduloPage = lazy(() => import("./pages/projetos-destaque/PenduloPage"));
 
 const PageLoader = () => <div className="min-h-screen bg-background w-full" />;
 
@@ -37,6 +38,7 @@ const AnimatedRoutes = () => {
         {/* o nome novo do projeto também abre a página */}
         <Route path="/projeto/polpad" element={<Suspense fallback={<PageLoader />}><PageWrapper><MacropadPage /></PageWrapper></Suspense>} />
         <Route path="/projeto/cnc-plotter" element={<Suspense fallback={<PageLoader />}><PageWrapper><CncPage /></PageWrapper></Suspense>} />
+        <Route path="/projeto/pendulo-invertido" element={<Suspense fallback={<PageLoader />}><PageWrapper><PenduloPage /></PageWrapper></Suspense>} />
         <Route path="*" element={<Suspense fallback={<PageLoader />}><PageWrapper><NotFound /></PageWrapper></Suspense>} />
       </Routes>
     </AnimatePresence>

@@ -121,10 +121,18 @@ export function homeScene(onProgress?: (p: number) => void) {
   return p;
 }
 
-/** pré-aquece a cena da home, se a rede e o aparelho comportam */
+/**
+ * Pré-aquece a folha da CNC, se a rede e o aparelho comportam. No desktop, a
+ * cena inteira (contexto WebGL, modelo, shaders): a seta troca na hora. No
+ * celular só o chunk e o modelo decodificado: um segundo contexto WebGL
+ * parado, à espera de um clique que talvez nunca venha, custa memória e CPU
+ * demais num telefone; a cena monta quando a folha abre.
+ */
 export function warmHomeScene() {
-  if (typeof document === "undefined" || constrainedNetwork() || pickQuality() === "low") return;
-  homeScene().catch(() => {});
+  if (typeof document === "undefined" || constrainedNetwork()) return;
+  const q = pickQuality();
+  if (q === "high") homeScene().catch(() => {});
+  else preloadCnc();
 }
 
 /** a folha saiu: a cena volta a esperar fora da vista, parada */

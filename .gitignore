@@ -30,3 +30,5 @@ prints/
 
 # Pacotes de material recebidos (zip) — os assets usados já ficam em public/
 *.zip
+# exceção: a documentação do pêndulo é para baixar pela página do projeto
+!public/projetos/pendulo/arquivos/pendulo-invertido-documentacao.zip

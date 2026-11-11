@@ -5,6 +5,7 @@
  *  - "explode" (o padrão): vista explodida. Copie o .glb e o parts.json para
  *    /public/projetos/<slug>/ e preencha `config`.
  *  - "draw": a CNC desenhando conforme a rolagem (CncDrawView). Não usa config.
+ *  - "run": o pêndulo ligando conforme a rolagem (PenduloRunView). Não usa config.
  * Folha sem nada disso fica fora das setas, sem carregar nada.
  */
 export type Sheet = {
@@ -15,7 +16,7 @@ export type Sheet = {
   /** nome completo, no carimbo e na legenda da figura */
   full: string;
   /** o que a rolagem faz na folha */
-  kind?: "explode" | "draw";
+  kind?: "explode" | "draw" | "run";
   /** caminho do parts.json; o modelo fica na mesma pasta (só "explode") */
   config?: string;
   /** estudo de caso do projeto, se houver */
@@ -27,7 +28,7 @@ export type Sheet = {
 };
 
 /** a folha tem o que mostrar? */
-export const sheetReady = (s: Sheet) => s.kind === "draw" || !!s.config;
+export const sheetReady = (s: Sheet) => s.kind === "draw" || s.kind === "run" || !!s.config;
 
 export const sheets: Sheet[] = [
   {
@@ -48,5 +49,15 @@ export const sheets: Sheet[] = [
     caseUrl: "/projeto/cnc-plotter",
     summary:
       "Uma plotter de mesa com área de 818 × 402 mm. Aqui ela desenha um par de engrenagens enquanto você rola; na página do projeto, escreve o que você digitar.",
+  },
+  {
+    n: "03",
+    name: "Pêndulo",
+    full: "Pêndulo invertido",
+    kind: "run",
+    caseUrl: "/projeto/pendulo-invertido",
+    summary:
+      "Uma haste de meio metro em pé sobre um carrinho. Aqui ela sobe, equilibra e leva um tapa enquanto você rola; " +
+      "na página do projeto, você mesmo empurra.",
   },
 ];

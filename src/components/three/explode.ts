@@ -40,6 +40,12 @@ export type ExplodedState = {
   /** texto da etapa atual, de `stages` */
   stage: string;
   stageIndex: number;
+  /**
+   * Folhas que tocam como vídeo (CNC, pêndulo): o relógio delas. Aí `q` é só o
+   * layout (título saindo), e a lista e o progresso seguem `play.u`. Os
+   * `reveal` e `stages` do `cfg` ficam na escala de `play.u`.
+   */
+  play?: import("@/components/home/playback").Playback;
 };
 
 /** Deslocamento do modelo na tela, em fração da largura e da altura. */

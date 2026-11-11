@@ -254,6 +254,16 @@ export const projectData: {
           "Uma plotter grande, montada sobre uma mesa de pinus: dois motores NEMA 17 e correias GT2 levam uma caneta por uma área de 818 × 402 mm, e um servo SG90 a levanta entre um traço e outro. A página do projeto tem a máquina inteira em 3D, desenhando em tempo real, com os eixos à mão e um campo onde você digita e ela escreve.",
         tags: ["NEMA 17", "GT2", "Servo SG90", "FreeCAD", "G-code"],
       },
+      {
+        id: 17,
+        name: "Pêndulo Invertido",
+        description: "Haste de meio metro que sobe e se equilibra sozinha sobre um carrinho, com simulador 3D em que você mesmo empurra.",
+        image: "projetos/pendulo/poster-800.webp",
+        internalLink: "/projeto/pendulo-invertido",
+        longDescription:
+          "Uma haste de inox de 500 mm, em pé sobre um carrinho num trilho MGN15H levado por um NEMA 17. Ao ligar, o carro balança a haste até ela subir e depois a segura em pé com um controle LQR a 200 Hz num Arduino UNO, lendo um encoder de 4000 contagens por volta. A página do projeto roda o mesmo firmware sobre a física medida da haste (dá para empurrar, desligar o controle e ver em câmera lenta) e traz o guia completo para montar o seu, com firmware, peças e ligações.",
+        tags: ["Arduino", "LQR", "NEMA 17", "Encoder", "CadQuery"],
+      },
     ],
   },
 };

@@ -1,22 +1,27 @@
 /**
- * A folha da CNC na home: a máquina sobre a mesa de pinus, com o papel, e a
- * rolagem da página fazendo ela desenhar um par de engrenagens. Rolar para cima
- * desfaz o desenho; rolar para baixo continua de onde estava.
+ * A folha da CNC na home: a máquina sobre a mesa de pinus, com o papel,
+ * desenhando um par de engrenagens.
+ *
+ * Toca como um vídeo, em velocidade constante: a rolagem só tira o título e dá
+ * a partida, e rolar rápido ou devagar não muda nada. O carimbo tem play,
+ * pausa e a linha do tempo. Fora da tela, pausa; de volta, continua. O
+ * desenho de verdade leva ~80 s de máquina; aqui ele passa a 2,5×.
  *
  * Mesmo contrato da vista explodida (trilha de scroll, área fixa, HUD por
- * cima via `children`), para o hero tratar as duas folhas igual. A diferença é
- * o motor: aqui é a CncScene do simulador, em modo de rolagem — sem controles
- * de órbita, com a tinta do desenho inteiro gerada uma vez só.
+ * cima via `children`), para o hero tratar as folhas igual. O motor é a
+ * CncScene do simulador no modo da home: sem controles de órbita, com a tinta
+ * do desenho inteiro gerada uma vez só.
  */
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EL_LIMIT, type ExplodedState, type FitBox, type PartsConfig } from "@/components/three/explode";
+import { layoutFromScroll, prefersReducedMotion, usePlayback } from "@/components/home/playback";
 import { buildTimeline } from "./machine";
 import { gearDrawing } from "./gear";
 import { homeScene, parkHomeScene } from "./preload";
 import type { CncScene, HomeFraming } from "./CncScene";
 
-/** o desenho ocupa esta faixa da trilha: antes o título sai, depois o desenho fica à vista */
-const WINDOW: [number, number] = [0.07, 0.92];
+/** o desenho real leva ~79 s; a 2,5× fica em ~32 s, ainda legível */
+const SPEED = 2.5;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const ramp = (q: number, a: number, b: number) => clamp01((q - a) / (b - a));
@@ -24,19 +29,19 @@ const FULL: FitBox = { x: 0, y: 0, w: 1, h: 1 };
 
 type Phase = "loading" | "ready" | "error" | "nowebgl";
 
-/** O programa da home e o "carimbo" dele: cada parte do desenho vira uma linha da lista e uma etapa. */
+/** O programa da home e o "carimbo" dele: cada parte do desenho vira uma linha da lista e uma etapa (na escala 0–1 do desenho). */
 function useDrawing() {
   return useMemo(() => {
     const { program, parts } = gearDrawing();
     const tl = buildTimeline(program);
-    const toQ = (t: number) => WINDOW[0] + (t / tl.duration) * (WINDOW[1] - WINDOW[0]);
+    const toU = (t: number) => t / tl.duration;
     const startOf = (cmd: number) => {
       for (let k = 0; k < tl.n; k++) if (tl.cmd[k] >= cmd) return tl.t0[k];
       return tl.duration;
     };
     let lastInk = 0;
     for (let k = 0; k < tl.n; k++) if (tl.draw[k]) lastInk = tl.t1[k];
-    const starts = parts.map((p) => toQ(startOf(p.firstCmd)));
+    const starts = parts.map((p) => toU(startOf(p.firstCmd)));
     const cfg: PartsConfig = {
       model: "",
       groups: parts.map((p, i) => ({
@@ -49,9 +54,9 @@ function useDrawing() {
         // acende quando a caneta começa esta parte
         reveal: [starts[i], starts[i] + 0.004],
       })),
-      stages: [[0, "Caneta erguida, papel em branco"], ...parts.map((p, i): [number, string] => [starts[i], p.name]), [toQ(lastInk), "Pronto · a caneta volta à origem"]],
+      stages: [[0, "Caneta erguida, papel em branco"], ...parts.map((p, i): [number, string] => [starts[i], p.name]), [toU(lastInk), "Pronto · a caneta volta à origem"]],
     };
-    return { program, cfg };
+    return { program, cfg, duration: tl.duration };
   }, []);
 }
 
@@ -59,13 +64,13 @@ type Props = {
   /** altura da trilha de scroll, em vh */
   trackVh?: number;
   className?: string;
-  /** caixa (frações da área fixa) onde a máquina deve caber inteira */
+  /** caixa (frações da área fixa) onde a máquina deve caber inteira, pelo progresso do layout */
   fit?: (q: number) => FitBox | null;
   children?: (s: ExplodedState) => ReactNode;
 };
 
-const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackVh = 460, className = "", fit, children }, ref) {
-  const { program, cfg } = useDrawing();
+const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackVh = 160, className = "", fit, children }, ref) {
+  const { program, cfg, duration } = useDrawing();
   const track = useRef<HTMLElement | null>(null);
   const stick = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
@@ -80,12 +85,18 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
     const t = window.setTimeout(() => setSlow(true), 600);
     return () => window.clearTimeout(t);
   }, [attempt]);
+  /** layout: o título saindo e a caixa indo para o meio; vem da rolagem */
   const [q, setQ] = useState(0);
-  const progress = useRef(0);
-  const sceneDriving = useRef(false);
+  const layout = useRef(0);
+  /** a pessoa rolou: o desenho deve começar assim que a cena estiver pronta */
+  const [wants, setWants] = useState(false);
   const fitRef = useRef(fit);
   fitRef.current = fit;
   const drag = useRef({ az: 0, el: 0, active: false, x: 0, y: 0 });
+
+  const play = usePlayback(duration, SPEED, (u) => scene.current?.scrubTo(u, true));
+  const playRef = useRef(play);
+  playRef.current = play;
 
   const setTrack = useCallback(
     (el: HTMLElement | null) => {
@@ -96,15 +107,18 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
     [ref],
   );
 
-  /* a rolagem manda: progresso de 0 a 1 ao longo da trilha */
+  /* a rolagem só mexe no layout e dá a partida */
   const readScroll = useCallback(() => {
-    const t = track.current,
-      s = stick.current;
-    if (!t || !s) return;
-    const span = t.offsetHeight - s.offsetHeight;
-    progress.current = clamp01(span > 0 ? -t.getBoundingClientRect().top / span : 0);
-    scene.current?.scrubTo(progress.current);
-    if (!sceneDriving.current) setQ(Math.round(progress.current * 1000) / 1000);
+    const t = track.current;
+    if (!t) return;
+    const px = -t.getBoundingClientRect().top;
+    const v = Math.round(layoutFromScroll(px) * 1000) / 1000;
+    if (v !== layout.current) {
+      layout.current = v;
+      setQ(v);
+      scene.current?.reframe();
+    }
+    if (px > 4) setWants(true);
   }, []);
 
   useEffect(() => {
@@ -125,16 +139,21 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
     };
   }, [readScroll]);
 
+  /* rolou e a cena está pronta: toca (uma vez; depois, só pelos botões) */
+  useEffect(() => {
+    if (phase === "ready" && wants && !playRef.current.started && !prefersReducedMotion()) playRef.current.play();
+  }, [phase, wants]);
+
   /* câmera: começa de quina, baixa, mostrando a máquina; conforme o desenho
      avança, sobe e gira até o papel ficar alinhado com a tela, para o par de
      engrenagens aparecer inteiro e legível no fim. A mesa é mais comprida que
      larga: em caixa deitada (desktop) o comprimento fica na horizontal; em
      caixa em pé (celular) ele vai para a vertical, senão sobraria tela vazia
-     em cima e embaixo da máquina */
-  const framing = useCallback<HomeFraming>((v) => {
-    const box = fitRef.current?.(v) ?? FULL;
+     em cima e embaixo da máquina. A caixa vem do layout; o ângulo, do desenho. */
+  const framing = useCallback<HomeFraming>((u) => {
+    const box = fitRef.current?.(layout.current) ?? FULL;
     const d = drag.current;
-    const k = ramp(v, 0.05, 0.95);
+    const k = ramp(u, 0.05, 0.95);
     const ease = k * k * (3 - 2 * k);
     const s = stick.current;
     const tall = !!s && (box.w * s.clientWidth) / (box.h * s.clientHeight) < 0.9;
@@ -144,7 +163,7 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
     return { box, az, el };
   }, []);
 
-  /* a cena: chunk do three, GLB, e o modo de rolagem */
+  /* a cena: a guardada da home (ou uma nova), e o desenho como linha do tempo */
   useEffect(() => {
     const el = host.current;
     if (!el) return;
@@ -158,14 +177,8 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
         sc = s;
         scene.current = s;
         s.attach(el);
-        s.enterScrub(program, framing, {
-          window: WINDOW,
-          onProgress: (v) => {
-            sceneDriving.current = true;
-            setQ(v);
-          },
-        });
-        s.scrubTo(progress.current, true);
+        s.enterScrub(program, framing, { window: [0, 1] });
+        s.scrubTo(playRef.current.u, true);
         s.setActive(true);
         setPhase("ready");
       })
@@ -175,18 +188,31 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
       });
     return () => {
       disposed = true;
-      sceneDriving.current = false;
       // a cena não morre: volta a esperar, pronta para a próxima troca
       if (sc) parkHomeScene(sc);
       scene.current = null;
     };
   }, [program, framing, attempt]);
 
-  /* fora da tela, a cena não desenha */
+  /* fora da tela: a cena não desenha e o vídeo pausa; de volta, continua */
   useEffect(() => {
     const t = track.current;
     if (!t) return;
-    const io = new IntersectionObserver(([e]) => scene.current?.setActive(e.isIntersecting), { rootMargin: "200px 0px" });
+    let autoPaused = false;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        scene.current?.setActive(e.isIntersecting);
+        const p = playRef.current;
+        if (!e.isIntersecting && p.playing) {
+          p.pause();
+          autoPaused = true;
+        } else if (e.isIntersecting && autoPaused) {
+          autoPaused = false;
+          p.play();
+        }
+      },
+      { rootMargin: "200px 0px" },
+    );
     io.observe(t);
     return () => io.disconnect();
   }, [phase]);
@@ -216,10 +242,10 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
   const { stage, stageIndex } = useMemo(() => {
     let i = 0;
     cfg.stages.forEach(([at], k) => {
-      if (q >= at) i = k;
+      if (play.u >= at) i = k;
     });
     return { stage: cfg.stages[i][1], stageIndex: i };
-  }, [cfg, q]);
+  }, [cfg, play.u]);
 
   // o aviso de carga fica no meio da caixa onde a máquina vai aparecer
   const box = fit?.(q) ?? FULL;
@@ -266,7 +292,7 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
           </div>
         )}
 
-        {children?.({ q, cfg, stage, stageIndex })}
+        {children?.({ q, cfg, stage, stageIndex, play })}
       </div>
     </section>
   );

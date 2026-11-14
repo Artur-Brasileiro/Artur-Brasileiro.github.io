@@ -1,0 +1,8 @@
+[gwrite.cnc_artur]
+unit = "mm"
+invert_y = true
+document_start = "; F-16 Fighting Falcon - poster cartolina 600 x 385 mm (canto em 0,0) - desenho todo em F500\n; Caneta: M3 S220 = embaixo | M5 = em cima\nG21\nG90\nM5\nG4 P0.3\n"
+segment_first = "G0 X{x:.3f} Y{y:.3f}\nM3 S220\nG4 P0.3\n"
+segment = "G1 X{x:.3f} Y{y:.3f} F500\n"
+line_end = "M5\nG4 P0.3\n"
+document_end = "M5\nG4 P0.3\nG0 X0 Y0\n; fim\n"

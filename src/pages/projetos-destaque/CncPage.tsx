@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react";
+import { lazy, Suspense, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
@@ -7,33 +7,33 @@ import SiteFooter from "@/components/SiteFooter";
 import CncSimulator from "@/components/cnc/CncSimulator";
 import { preloadCnc } from "@/components/cnc/preload";
 import { cnc } from "@/data/projects";
+import { marcos } from "@/data/cncGuia";
 import { cn } from "@/lib/utils";
 
 // o 3D começa a baixar junto com a página, não depois do primeiro render
 preloadCnc();
 
-const PIPELINE = [
-  {
-    n: "01",
-    title: "Fonte de traço único",
-    text: "Cada letra é uma linha só, como alguém escrevendo à caneta. Uma fonte comum só daria o contorno, e a máquina desenharia letras vazadas.",
-  },
-  {
-    n: "02",
-    title: "Encaixe no papel",
-    text: "O texto é quebrado em até quatro linhas, na combinação que deixa a letra maior, e centralizado na área de 818 × 402 mm.",
-  },
-  {
-    n: "03",
-    title: "G-code",
-    text: "Cada traço vira um G0 até o começo, M3 para baixar a caneta, uma sequência de G1 e M5 para subir. O arquivo pode ser baixado.",
-  },
-  {
-    n: "04",
-    title: "A máquina executa",
-    text: "A simulação roda o programa com as velocidades da máquina: 250 mm/s no ar e 100 mm/s com a caneta no papel.",
-  },
-];
+/*
+ * O guia de construção é a maior parte da página (catorze capítulos, o esquema
+ * de ligações e os resultados). Num pedaço separado, o topo e o simulador saem
+ * primeiro e o guia chega logo depois, bem antes de alguém rolar até ele. O
+ * download começa já, em paralelo com o resto.
+ */
+const loadGuide = () => import("@/components/cnc/CncGuide");
+const CncGuide = lazy(loadGuide);
+void loadGuide();
+
+/**
+ * Rola até uma seção pelo Lenis; sem ele, a âncora nativa resolve. O Lenis já
+ * desconta o scroll-padding-top do html e o scroll-margin-top da seção.
+ */
+function jump(e: React.MouseEvent, id: string) {
+  const el = document.getElementById(id);
+  const lenis = getLenis();
+  if (!el || !lenis) return;
+  e.preventDefault();
+  lenis.scrollTo(el);
+}
 
 function Specs({ className }: { className?: string }) {
   return (
@@ -90,19 +90,29 @@ const CncPage = () => {
               <h1 className="font-display mt-5 text-display-xl font-medium">{cnc.title}</h1>
               <p className="mt-5 text-lg leading-relaxed text-muted-foreground">{cnc.summary}</p>
 
-              <a
-                href="#simulador"
-                onClick={(e) => {
-                  const el = document.getElementById("simulador");
-                  const lenis = getLenis();
-                  if (!el || !lenis) return; // sem Lenis, a âncora nativa resolve
-                  e.preventDefault();
-                  lenis.scrollTo(el, { offset: -56 });
-                }}
-                className="mt-8 inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 font-mono text-[13px] font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
-              >
-                Ver a máquina desenhar ↓
-              </a>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a
+                  href="#simulador"
+                  onClick={(e) => jump(e, "simulador")}
+                  className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 font-mono text-[13px] font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
+                >
+                  Ver a máquina desenhar ↓
+                </a>
+                <a
+                  href="#monte-a-sua"
+                  onClick={(e) => jump(e, "monte-a-sua")}
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-background px-5 font-mono text-[13px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  Monte a sua ↓
+                </a>
+                <a
+                  href="#resultados"
+                  onClick={(e) => jump(e, "resultados")}
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-background px-5 font-mono text-[13px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  Desenhos ↓
+                </a>
+              </div>
             </div>
 
             {/* no celular a ficha vai para depois do simulador: quem abre a página quer ver a máquina primeiro */}
@@ -150,39 +160,51 @@ const CncPage = () => {
               </Reveal>
             ))}
           </div>
+          <dl className="mt-10 grid grid-cols-2 gap-x-8 gap-y-6 border-t border-border pt-8 md:grid-cols-4">
+            {cnc.numbers.map((n) => (
+              <div key={n.label}>
+                <dt className="sr-only">{n.label}</dt>
+                <dd className="font-display text-3xl font-medium tabular-nums text-foreground">{n.value}</dd>
+                <p className="mt-1 text-[14px] leading-snug text-muted-foreground">{n.label}</p>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
-      {/* Do texto ao papel */}
-      <section className="bg-background">
+      {/* Diário de bordo */}
+      <section className="border-b border-border bg-background">
         <div className="rail py-16 md:py-20">
-          <p className="eyebrow">Escrita</p>
-          <h2 className="font-display mt-5 text-display-lg font-medium">Do texto ao papel</h2>
-          <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-muted-foreground">
-            O que você digita no simulador passa pelo mesmo caminho que um desenho passaria na máquina real.
-          </p>
-          <ol className="mt-10 grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-4">
-            {PIPELINE.map((s) => (
-              <li key={s.n} className="border-t border-foreground pt-4">
-                <span className="font-mono text-[12px] text-gold">{s.n}</span>
-                <h3 className="mt-2 font-semibold text-foreground">{s.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{s.text}</p>
+          <p className="eyebrow">Diário de bordo</p>
+          <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
+            <h2 className="font-display text-display-lg font-medium">Do primeiro traço ao pôster</h2>
+            <p className="max-w-[52ch] leading-relaxed text-muted-foreground">Uma semana de novembro de 2026: dos motores trocados de lugar ao pôster de 600 × 385 mm.</p>
+          </div>
+          <ol className="mt-10 grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-7">
+            {marcos.map((m, i) => (
+              <li key={m.data} className="relative border-t border-foreground pt-4">
+                <span className={cn("absolute -top-[5px] left-0 h-[9px] w-[9px] rounded-full border-2 border-foreground", i === marcos.length - 1 ? "bg-primary" : "bg-background")} aria-hidden />
+                <span className="font-mono text-[12px] text-gold">{m.data}</span>
+                <p className="mt-2 text-[14.5px] leading-snug text-foreground">{m.text}</p>
               </li>
             ))}
           </ol>
-
-          <div className="mt-16 border-t border-border pt-8">
-            <Link
-              to="/"
-              state={{ targetId: "projetos" }}
-              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Voltar para projetos
-            </Link>
-          </div>
         </div>
       </section>
+
+      {/* enquanto o guia não chega, a seção vazia guarda o lugar (e a âncora "Monte a sua") */}
+      <Suspense fallback={<section id="monte-a-sua" className="min-h-[100svh] border-b border-border bg-surface" aria-busy="true" />}>
+        <CncGuide />
+      </Suspense>
+
+      <div className="bg-background">
+        <div className="rail py-8">
+          <Link to="/" state={{ targetId: "projetos" }} className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para projetos
+          </Link>
+        </div>
+      </div>
 
       <SiteFooter />
     </div>

@@ -1,0 +1,11 @@
+<svg viewBox="0 0 360 230" aria-label="Fim de curso: COM, NO e NC">
+        <rect width="360" height="230" fill="#fff"/>
+        <rect x="70" y="40" width="160" height="70" rx="8" fill="#f8fafc" stroke="#1d1d1f" stroke-width="1.5"/>
+        <path d="M230 60 L285 40" stroke="#1d1d1f" stroke-width="3"/><circle cx="292" cy="37" r="9" fill="#fff" stroke="#1d1d1f" stroke-width="2"/>
+        <text x="150" y="80" text-anchor="middle" class="lbl">microswitch</text>
+        <g class="mono" text-anchor="middle"><text x="105" y="135">COM</text><text x="150" y="135">NO</text><text x="195" y="135">NC</text></g>
+        <g stroke="#1d1d1f" stroke-width="2"><line x1="105" y1="110" x2="105" y2="120"/><line x1="150" y1="110" x2="150" y2="120"/><line x1="195" y1="110" x2="195" y2="120"/></g>
+        <path d="M105 140 V190" stroke="var(--gnd)" stroke-width="3"/><path d="M150 140 V190" stroke="var(--end)" stroke-width="3"/>
+        <text x="98" y="208" text-anchor="end" class="lbl-s">GND (preto)</text><text x="157" y="208" class="lbl-s">sinal (branco)</text>
+        <text x="195" y="160" text-anchor="middle" class="lbl-s">livre</text>
+      </svg>

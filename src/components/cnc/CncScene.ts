@@ -127,17 +127,17 @@ const LABELS: [string, string, string][] = [
   ["ApoioBase", "Apoio Base", "2 × LM12UU na barra da direita"],
   ["ApoioSecundario", "Apoio Secundário", "1 × LM12UU centralizado + polia louca do Y"],
   ["Rolamento", "Rolamento linear LM12UU", "Esferas recirculantes na barra de 12"],
-  ["CarroPrincipal", "Carro Principal v2", "Ainda não impresso · vão do servo 23,5 mm · hastes 3,5 mm à frente · dedo do fim de curso"],
-  ["PenHolder", "Pen Holder v2", "Sobe e desce em 2 × LM6UU · pino de 6,5 mm"],
+  ["CarroPrincipal", "Carro Principal", "No modelo, a v2 · na máquina já roda a v3 em PETG, com rasgo aberto e canal em V"],
+  ["PenHolder", "Pen Holder", "Sobe e desce em LM6UU · a v3 tem 2 por haste e mola"],
   ["LM6UU", "Rolamento linear LM6UU", "Ø12 × 19 mm"],
   ["Haste6mm", "Haste Ø6 × 73,4 mm", "Guia vertical do Pen Holder"],
   ["Presilha", "Presilha da correia (GT2 belt end)", "A correia dá a volta no pino e trava em si mesma · M3 no rasgo do carro, ajustável"],
-  ["Servo", "Servo SG90", "Levanta a caneta empurrando o pino do Pen Holder"],
+  ["Servo", "Servo MG90S", "Levanta a caneta empurrando o pino do Pen Holder"],
   ["Horn", "Braço do servo (horn)", "Gira para cima e ergue o Pen Holder"],
   ["Caneta", "Caneta", "Desce pelo próprio peso quando o servo abaixa"],
   ["MotorY", "Motor do eixo Y (curto)", "NEMA 17 · 17HS4401 · preso por baixo da placa"],
   ["MotorX", "Motor do eixo X (longo)", "NEMA 17 · 17HS4401 · tração em ômega"],
-  ["FimDeCurso", "Fim de curso (microswitch)", "Acionado pelo dedo do carro em Y0"],
+  ["FimDeCurso", "Fim de curso (microswitch)", "Acionado pelo dedo do carro no fundo (Y+, o home)"],
 ];
 const SUBS: Record<string, Label> = {
   PX: ["Polia GT2 20 dentes", "Motor do eixo X"],
@@ -630,7 +630,7 @@ export class CncScene {
     );
     paper.position.set((PAPER.x0 + PAPER.x1) / 2, (PAPER.y0 + PAPER.y1) / 2, PAPER.z);
     paper.receiveShadow = true;
-    paper.userData.label = ["Papel 420 × 860 mm", "Área que a caneta alcança: 818 × 402 mm"] as Label;
+    paper.userData.label = ["Papel 420 × 860 mm", "Alcance da caneta no modelo: 818 × 402 mm · útil 810 × 390"] as Label;
     this.scene.add(paper, this.cornerMarks());
     this.pickables.push(table, paper);
 

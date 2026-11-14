@@ -798,7 +798,7 @@ function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string
           <PreviewSvg layout={preview?.layout ?? null} placeholder={!normalizeText(text)} />
         </div>
         <figcaption className="mt-1.5 flex justify-between gap-3 font-mono text-[11px] text-muted-foreground">
-          <span>prévia · área de 818 × 402 mm</span>
+          <span>prévia · alcance de 818 × 402 mm no modelo</span>
           {preview && normalizeText(text) && (
             <span className="tabular-nums">
               letra de {Math.round(preview.layout.em * 0.7)} mm · {formatDuration(secs / 5)} a 5×

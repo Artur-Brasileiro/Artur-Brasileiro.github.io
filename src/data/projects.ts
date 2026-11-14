@@ -247,12 +247,12 @@ export const projectData: {
       {
         id: 16,
         name: "CNC Plotter",
-        description: "Plotter de mesa com área de 818 × 402 mm, com simulação 3D que desenha e escreve o que você digitar.",
+        description: "Plotter de mesa com área de 810 × 390 mm, com simulação 3D e um guia completo para montar a sua.",
         image: "projetos/cnc/poster-800.webp",
         internalLink: "/projeto/cnc-plotter",
         longDescription:
-          "Uma plotter grande, montada sobre uma mesa de pinus: dois motores NEMA 17 e correias GT2 levam uma caneta por uma área de 818 × 402 mm, e um servo SG90 a levanta entre um traço e outro. A página do projeto tem a máquina inteira em 3D, desenhando em tempo real, com os eixos à mão e um campo onde você digita e ela escreve.",
-        tags: ["NEMA 17", "GT2", "Servo SG90", "FreeCAD", "G-code"],
+          "Uma plotter grande, montada sobre uma mesa de pinus: dois motores NEMA 17 e correias GT2 levam uma caneta por uma área de 810 × 390 mm, e um servo MG90S a levanta entre um traço e outro. A página do projeto tem a máquina inteira em 3D, desenhando em tempo real, e um guia de montagem com o material, as ligações, o GRBL e o caminho da imagem ao G-code.",
+        tags: ["NEMA 17", "GT2", "GRBL", "FreeCAD", "G-code"],
       },
       {
         id: 17,
@@ -452,35 +452,43 @@ export const macropad = {
 export const cnc = {
   title: "CNC Plotter",
   category: "Hardware & mecânica",
-  status: "Em desenvolvimento",
-  statusNote: "Carro v2 a imprimir",
+  status: "Funcionando",
+  statusNote: "Carro v3 · homing e origem fixa",
   summary:
-    "Uma plotter de mesa grande, feita em casa: barras de aço de 1 metro, correias GT2 e dois NEMA 17 levam uma caneta por uma área de 818 × 402 mm. A máquina inteira está modelada no FreeCAD, e é esse modelo que desenha aqui embaixo.",
+    "Uma plotter de mesa grande, feita em casa: barras de aço de 1 metro, correias GT2 e dois NEMA 17 levam uma caneta por uma área de 810 × 390 mm, com Arduino e GRBL. A máquina inteira está modelada no FreeCAD, e é esse modelo que desenha aqui embaixo. Logo depois vem o guia para montar a sua.",
   specs: [
-    { label: "Área útil", value: "818 × 402 mm" },
+    { label: "Área útil", value: "810 × 390 mm" },
     { label: "Eixo X", value: "2 × barra Ø12 × 1000 mm · 3 × LM12UU" },
-    { label: "Eixo Y", value: "2 × barra Ø6 × 500 mm · LM6UU" },
-    { label: "Motores", value: "2 × NEMA 17 (17HS4401)" },
+    { label: "Eixo Y", value: "2 × barra Ø6 × 500 mm · 4 × LM6UU" },
+    { label: "Motores", value: "2 × NEMA 17 (17HS4401S)" },
     { label: "Transmissão", value: "Correia GT2 6 mm · polias 20T" },
-    { label: "Caneta", value: "Servo SG90 · pen holder em LM6UU" },
+    { label: "Caneta", value: "Servo MG90S · Pen Holder em LM6UU" },
+    { label: "Controle", value: "Arduino Uno + CNC Shield · GRBL 1.1h" },
     { label: "Resolução", value: "80 passos/mm (1/16 de micropasso)" },
   ],
-  /** como cada eixo se move — tirado do modelo, peça por peça */
+  /** como cada eixo se move */
   mechanics: [
     {
       ref: "X",
       title: "Eixo X em ômega",
-      text: "A correia do eixo longo fica presa nos dois suportes da mesa e não se move. O motor viaja com a ponte e passa a correia por duas polias loucas e pela própria polia, num desenho de ômega: girando, ele “escala” a correia e arrasta a ponte inteira sobre as barras de 12 mm.",
+      text: "A correia do eixo longo fica presa nos dois suportes do fundo e não se move. O motor viaja com a ponte e passa a correia por duas polias loucas e pela própria polia, num desenho de ômega: girando, ele “escala” a correia e arrasta a ponte inteira, de 1,2 kg, sobre as barras de 12 mm.",
     },
     {
       ref: "Y",
-      title: "Eixo Y com correia aberta",
-      text: "No eixo curto a correia é aberta: cada ponta dá a volta no pino de uma presilha do carro e trava em si mesma, com um M3 no rasgo para ajustar a tensão. Ela passa pela polia louca do Apoio Secundário e pela polia do motor, preso por baixo da base principal.",
+      title: "Eixo Y em laço",
+      text: "No eixo curto a correia fecha um laço entre a polia do motor, preso por baixo da Base Principal, e a polia louca do Apoio Secundário. As duas pontas dão a volta no pino de uma presilha do carro e travam dente com dente; um M3 no rasgo ajusta a tensão.",
     },
     {
       ref: "Z",
       title: "Caneta por gravidade",
-      text: "O pen holder corre em dois rolamentos LM6UU. O braço do servo SG90 empurra o pino dele para levantar a caneta; para baixar, o servo só sai da frente e a caneta desce pelo próprio peso até o papel. Um fim de curso, acionado por um dedo do carro, marca o Y zero.",
+      text: "O Pen Holder corre em quatro LM6UU, em duas hastes. O braço do servo MG90S só levanta a caneta; para baixar, ele sai da frente e o Pen Holder desce pelo próprio peso e por uma mola, acompanhando qualquer ondulação da mesa.",
     },
   ],
+  numbers: [
+    { value: "810 × 390", label: "mm de área útil" },
+    { value: "0,0125", label: "mm por micropasso" },
+    { value: "F500", label: "velocidade de desenho" },
+    { value: "200 mm/s", label: "com a caneta no ar" },
+  ],
 };
+

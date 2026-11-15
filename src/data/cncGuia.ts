@@ -13,6 +13,8 @@
 import type { Row } from "@/components/guide/kit";
 
 const A = "/projetos/cnc/arquivos";
+/** STL e STEP das peças impressas */
+const P = `${A}/modelos-3d`;
 export const IMG = "/projetos/cnc/imagens";
 export const FOTOS = "/projetos/cnc/fotos";
 
@@ -48,9 +50,10 @@ export const fotos = {
   pecasImpressas: {
     n: "02",
     title: "Peças impressas",
-    caption: "Suportes, Base Principal, Apoios, carro e Pen Holder v3, presilhas e a base do shield.",
-    how: "A máquina já está montada: pode ser uma imagem do modelo 3D com as peças soltas (vista explodida ou lado a lado), exportada do FreeCAD.",
-    ratio: "3/2",
+    caption: "Todas as peças, no modelo 3D: em preto as de PLA, em branco o carro e o Pen Holder v3, em PETG. O ×2 marca as que se imprime em dobro.",
+    how: "Render do modelo 3D com as peças soltas e os nomes.",
+    ratio: "4/3",
+    src: "pecas-impressas.webp",
   },
   suportes: {
     n: "03",
@@ -204,13 +207,14 @@ export const guia = {
   downloads: {
     principal: {
       label: "Pacote completo",
-      detail: ".zip · 1,6 MB · guia, ligações, firmware, G-codes, scripts e STL",
+      detail: ".zip · 2,4 MB · guia, ligações, firmware, G-codes, scripts, STL e STEP",
       href: `${A}/cnc-plotter-arquivos.zip`,
     } satisfies Download,
     outros: [
       { label: "configuracao_grbl.txt", detail: "todos os parâmetros $", href: `${A}/firmware/configuracao_grbl.txt` },
       { label: "svg_para_gcode.py", detail: "qualquer SVG vira G-code", href: `${A}/software/svg_para_gcode.py` },
       { label: "Base_CNC_Shield.stl", detail: "base do Arduino", href: `${A}/modelos-3d/Base_CNC_Shield.stl` },
+      { label: "pecas-impressas-stl.zip", detail: "todas as peças · STL + STEP · 1 MB", href: `${A}/pecas-impressas-stl.zip` },
     ] satisfies Download[],
   },
 
@@ -301,21 +305,25 @@ export const guia = {
   impressao: {
     resumo:
       "A estrutura sai em **PLA** e as duas peças que mais sofrem, o carro e o Pen Holder, em **PETG**. O modelo completo foi feito no FreeCAD; o carro v3 e a base do shield, em CadQuery (código, para mudar uma medida e gerar de novo).",
+    /** peça, qtd, material, função, STL, STEP (vazio quando não há) */
     pecas: [
-      ["Suporte alto (base em L + abraçadeira, 88,7 mm)", "2", "PLA", "barra de 12 mm da **frente**"],
-      ["Suporte baixo (base em L + abraçadeira, 60 mm)", "2", "PLA", "barra do **fundo** e pontas da correia do X"],
-      ["Base Principal", "1", "PLA", "placa dos motores, em cima do Apoio Base"],
-      ["Apoio Base", "1", "PLA", "2 × LM12UU na barra do fundo"],
-      ["Apoio Secundário", "1", "PLA", "1 × LM12UU na barra da frente + polia louca do Y"],
-      ["Carro Principal **v3**", "1", "**PETG**", "leva a caneta; 4 × LM6UU"],
-      ["Pen Holder **v3**", "1", "**PETG**", "segura a caneta; 4 × LM6UU"],
-      ["Presilha da correia GT2", "2", "PLA", "prende as pontas da correia do Y no carro"],
-      ["Base_CNC_Shield", "1", "PLA", "Arduino + shield rente à mesa (4 mm)"],
+      ["Suporte alto · base (88,7 mm)", "2", "PLA", "barra de 12 mm da **frente**", `${P}/pecas/Suporte_Alto_Base.stl`, `${P}/pecas/Suporte_Alto_Base.step`],
+      ["Suporte alto · abraçadeira", "2", "PLA", "fecha sobre a barra da frente (4 × M3)", `${P}/pecas/Suporte_Alto_Abracadeira.stl`, `${P}/pecas/Suporte_Alto_Abracadeira.step`],
+      ["Suporte baixo · base (60 mm)", "2", "PLA", "barra do **fundo** e pontas da correia do X", `${P}/pecas/Suporte_Baixo_Base.stl`, `${P}/pecas/Suporte_Baixo_Base.step`],
+      ["Suporte baixo · abraçadeira", "2", "PLA", "fecha sobre a barra do fundo (4 × M3)", `${P}/pecas/Suporte_Baixo_Abracadeira.stl`, `${P}/pecas/Suporte_Baixo_Abracadeira.step`],
+      ["Base Principal", "1", "PLA", "placa dos motores, em cima do Apoio Base", `${P}/pecas/Base_Principal.stl`, `${P}/pecas/Base_Principal.step`],
+      ["Apoio Base", "1", "PLA", "2 × LM12UU na barra do fundo", `${P}/pecas/Apoio_Base.stl`, `${P}/pecas/Apoio_Base.step`],
+      ["Apoio Secundário", "1", "PLA", "1 × LM12UU na barra da frente + polia louca do Y", `${P}/pecas/Apoio_Secundario.stl`, `${P}/pecas/Apoio_Secundario.step`],
+      ["Carro Principal **v3**", "1", "**PETG**", "leva a caneta; 4 × LM6UU", `${P}/pecas/Carro_Principal_v3.stl`, ""],
+      ["Pen Holder **v3**", "1", "**PETG**", "segura a caneta; 4 × LM6UU", `${P}/pecas/Pen_Holder_v3.stl`, ""],
+      ["Presilha da correia GT2", "2", "PLA", "prende as pontas da correia do Y no carro", `${P}/pecas/Presilha_GT2.stl`, `${P}/pecas/Presilha_GT2.step`],
+      ["Base do CNC Shield", "1", "PLA", "Arduino + shield rente à mesa (4 mm)", `${P}/Base_CNC_Shield.stl`, `${P}/Base_CNC_Shield.step`],
     ] as Row[],
     dicas: [
       "Imprima as abraçadeiras com o eixo do furo de 12,2 mm **na vertical**: o furo sai redondo.",
       "No carro v3, os furos dos LM6UU têm **nervuras de pressão** (3 por furo, inscrito Ø11,9): o rolamento entra justo e fica sem folga, sem depender da tolerância da impressora.",
       "A estrutura foi impressa numa Creality Ender; carro e Pen Holder em PETG, numa Snapmaker.",
+      "Os STL estão na posição em que a peça fica na máquina, em milímetros: gire no fatiador para a orientação de impressão que preferir.",
     ],
     base: {
       title: "Base do Arduino + CNC Shield",
@@ -327,7 +335,7 @@ export const guia = {
       ] satisfies Download[],
     },
     pendente:
-      "Os STL do carro e do Pen Holder v3, das presilhas, dos suportes e dos Apoios ainda vão entrar aqui, junto com o assembly do FreeCAD. Por enquanto, o modelo inteiro está no simulador lá em cima, peça por peça.",
+      "Estão todos no pecas-impressas-stl.zip (lista de downloads no topo do guia): suportes alto e baixo (base e abraçadeira), Base Principal, Apoio Base, Apoio Secundário, Carro Principal e Pen Holder v3, presilha GT2 e a base do shield, em STL para fatiar e STEP para o CAD (o carro e o Pen Holder v3 só em STL). Um LEIA-ME dentro do zip diz a quantidade e o material de cada peça.",
   },
 
   /* ---------------------------------------------------------------- 04 */

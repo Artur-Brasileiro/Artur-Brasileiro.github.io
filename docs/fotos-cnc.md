@@ -5,7 +5,7 @@ Cada foto tem um número, que aparece na página ("foto 07"). Os arquivos ficam 
 | Nº | Foto | Onde aparece | Situação | Arquivo |
 |---|---|---|---|---|
 | 01 | A máquina inteira | 01 Visão geral | ✓ no ar | `maquina-inteira.webp` |
-| 02 | Peças impressas | 03 Peças impressas | **falta** · A máquina já está montada: pode ser uma imagem do modelo 3D com as peças soltas (vista explodida ou lado a lado), exportada do FreeCAD. | `pecas-impressas.webp` |
+| 02 | Peças impressas | 03 Peças impressas | ✓ no ar | `pecas-impressas.webp` |
 | 03 | Suporte com a barra de 12 mm | 04 Mesa e ponte | ✓ no ar | `suportes.webp` |
 | 04 | Apoio Base | 04 Mesa e ponte | ✓ no ar | `apoio-base.webp` |
 | 05 | Apoio Secundário | 04 Mesa e ponte | ✓ no ar | `apoio-secundario.webp` |

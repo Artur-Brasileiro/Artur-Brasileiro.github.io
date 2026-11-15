@@ -256,9 +256,32 @@ export default function CncGuide() {
               {/* 03 · impressão */}
               <Chapter {...c[2]}>
                 <P>{impressao.resumo}</P>
-                <Table head={["Peça", "Qtd.", "Material", "Função"]} rows={impressao.pecas} />
+                <Photo info={fotos.pecasImpressas} dir={FOTOS} />
+                <Table
+                  head={["Peça", "Qtd.", "Material", "Função", "Arquivos"]}
+                  rows={impressao.pecas}
+                  cell={(row, i) =>
+                    i < 4 ? (
+                      fmt(row[i])
+                    ) : (
+                      <span className="flex flex-wrap gap-x-3 gap-y-1">
+                        {[row[4], row[5]].filter(Boolean).map((href) => (
+                          <a
+                            key={href}
+                            href={href}
+                            download
+                            className="-my-1.5 inline-flex min-h-[36px] items-center gap-1.5 whitespace-nowrap py-1.5 font-mono text-[12.5px] text-foreground underline-offset-4 hover:text-primary hover:underline"
+                            aria-label={`Baixar ${href.split("/").pop()}`}
+                          >
+                            <Box className="h-3.5 w-3.5" aria-hidden />
+                            {href.endsWith(".stl") ? ".stl" : ".step"}
+                          </a>
+                        ))}
+                      </span>
+                    )
+                  }
+                />
                 <Bullets items={impressao.dicas} />
-                <Photo info={fotos.pecasImpressas} dir={FOTOS} className="max-w-4xl" />
                 <Card className="grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-center">
                   <Figure
                     src={`${IMG}/base-shield.webp`}
@@ -275,7 +298,7 @@ export default function CncGuide() {
                     </div>
                   </div>
                 </Card>
-                <Callout tone="tip" title="O resto dos STL">
+                <Callout tone="tip" title="Todas as peças num arquivo só">
                   {impressao.pendente}
                 </Callout>
               </Chapter>

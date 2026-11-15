@@ -9,8 +9,11 @@
  */
 import { useRef } from "react";
 import { ArrowRight, Box, Download, ExternalLink, FileCode2, Maximize2, Power, PowerOff, ShieldCheck, Terminal } from "lucide-react";
-import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc, useTocHidden, fmt } from "@/components/guide/kit";
-import { Photo, PhotoFrame, PhotoRow, PhotoViewer, openPhoto } from "@/components/guide/Photo";
+import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc } from "@/components/guide/kit";
+import { fmt } from "@/components/guide/fmt";
+import { useTocHidden } from "@/components/guide/nav";
+import { Photo, PhotoFrame, PhotoRow, PhotoViewer } from "@/components/guide/Photo";
+import { FULL, openPhoto } from "@/components/guide/photos";
 import CncFiacao from "./CncFiacao";
 import { FOTOS, IMG, fotos, guia, resultados, type Download as Dl, type Resultado } from "@/data/cncGuia";
 import { cn } from "@/lib/utils";
@@ -199,7 +202,7 @@ export default function CncGuide() {
               {/* 01 · visão geral */}
               <Chapter {...c[0]}>
                 <P>{visao.resumo}</P>
-                <Photo info={fotos.maquinaInteira} dir={FOTOS} />
+                <Photo info={fotos.maquinaInteira} dir={FOTOS} sizes={FULL} />
                 <div className="grid gap-4 md:grid-cols-3">
                   {visao.eixos.map((e) => (
                     <Card key={e.k}>
@@ -256,7 +259,7 @@ export default function CncGuide() {
               {/* 03 · impressão */}
               <Chapter {...c[2]}>
                 <P>{impressao.resumo}</P>
-                <Photo info={fotos.pecasImpressas} dir={FOTOS} />
+                <Photo info={fotos.pecasImpressas} dir={FOTOS} sizes={FULL} />
                 <Table
                   head={["Peça", "Qtd.", "Material", "Função", "Arquivos"]}
                   rows={impressao.pecas}
@@ -312,7 +315,7 @@ export default function CncGuide() {
                     <Steps items={mesa.suportes} />
                   </div>
                 </div>
-                <Photo info={fotos.suportes} dir={FOTOS} className="max-w-4xl" />
+                <Photo info={fotos.suportes} dir={FOTOS} className="max-w-4xl" sizes={FULL} />
                 <Callout tone="tip" title="Guiar de um lado, apoiar do outro">
                   {mesa.ideia}
                 </Callout>
@@ -340,7 +343,7 @@ export default function CncGuide() {
                     <Steps items={correias.x} />
                   </div>
                 </div>
-                <Photo info={fotos.omega} dir={FOTOS} className="max-w-4xl" />
+                <Photo info={fotos.omega} dir={FOTOS} className="max-w-4xl" sizes={FULL} />
                 <div>
                   <H4>Eixo Y, em laço</H4>
                   <div className="mt-5">
@@ -576,7 +579,7 @@ export default function CncGuide() {
                   <H4>Testes em 1/16, na cartolina</H4>
                   <Table head={["Teste", "Resultado (medido)"]} rows={traco.testes} />
                 </div>
-                <Photo info={fotos.cartolina} dir={FOTOS} className="max-w-4xl" />
+                <Photo info={fotos.cartolina} dir={FOTOS} className="max-w-4xl" sizes={FULL} />
                 <P>{traco.conclusao}</P>
                 <Callout tone="tip" title="Velocidade de trabalho">
                   {traco.decisao}

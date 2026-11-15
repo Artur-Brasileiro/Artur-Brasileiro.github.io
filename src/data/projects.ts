@@ -484,6 +484,16 @@ export const cnc = {
       text: "O Pen Holder corre em quatro LM6UU, em duas hastes. O braço do servo MG90S só levanta a caneta; para baixar, ele sai da frente e o Pen Holder desce pelo próprio peso e por uma mola, acompanhando qualquer ondulação da mesa.",
     },
   ],
+  /** linha do tempo (especificacoes.json do pacote); fica aqui e não no guia para o texto do guia não entrar no primeiro carregamento */
+  marcos: [
+    { data: "06/11", text: "Ligação dos motores corrigida (X ↔ Y)" },
+    { data: "07/11", text: "Primeiro desenho no papel: quadrado + círculo, em passo cheio" },
+    { data: "08/11", text: "Fins de curso instalados" },
+    { data: "10/11", text: "Carro e Pen Holder v3 projetados" },
+    { data: "12/11", text: "Micropasso 1/16, eletrônica fixada, carro v3 montado" },
+    { data: "13/11", text: "Homing, origem fixa, testes de traço e gabarito desenhado na mesa" },
+    { data: "14/11", text: "G-code do pôster do F-16 e o caminho imagem → SVG → G-code" },
+  ],
   numbers: [
     { value: "810 × 390", label: "mm de área útil" },
     { value: "0,0125", label: "mm por micropasso" },

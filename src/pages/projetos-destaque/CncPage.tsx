@@ -1,13 +1,14 @@
-import { lazy, Suspense, useLayoutEffect } from "react";
+import { lazy, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import SiteFooter from "@/components/SiteFooter";
+import DeferredGuide from "@/components/guide/Deferred";
+import { scrollToEl, whenGuideHas } from "@/components/guide/nav";
 import CncSimulator from "@/components/cnc/CncSimulator";
 import { preloadCnc } from "@/components/cnc/preload";
 import { cnc } from "@/data/projects";
-import { marcos } from "@/data/cncGuia";
 import { cn } from "@/lib/utils";
 
 // o 3D começa a baixar junto com a página, não depois do primeiro render
@@ -29,10 +30,15 @@ void loadGuide();
  */
 function jump(e: React.MouseEvent, id: string) {
   const el = document.getElementById(id);
-  const lenis = getLenis();
-  if (!el || !lenis) return;
+  if (el) {
+    if (!getLenis()) return;
+    e.preventDefault();
+    scrollToEl(el);
+    return;
+  }
+  // o alvo mora dentro do guia, que ainda não foi montado: pede o guia e rola quando ele chegar
   e.preventDefault();
-  lenis.scrollTo(el);
+  void whenGuideHas(id).then((t) => t && scrollToEl(t));
 }
 
 function Specs({ className }: { className?: string }) {
@@ -181,9 +187,9 @@ const CncPage = () => {
             <p className="max-w-[52ch] leading-relaxed text-muted-foreground">Uma semana de novembro de 2026: dos motores trocados de lugar ao pôster de 600 × 385 mm.</p>
           </div>
           <ol className="mt-10 grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-7">
-            {marcos.map((m, i) => (
+            {cnc.marcos.map((m, i) => (
               <li key={m.data} className="relative border-t border-foreground pt-4">
-                <span className={cn("absolute -top-[5px] left-0 h-[9px] w-[9px] rounded-full border-2 border-foreground", i === marcos.length - 1 ? "bg-primary" : "bg-background")} aria-hidden />
+                <span className={cn("absolute -top-[5px] left-0 h-[9px] w-[9px] rounded-full border-2 border-foreground", i === cnc.marcos.length - 1 ? "bg-primary" : "bg-background")} aria-hidden />
                 <span className="font-mono text-[12px] text-gold">{m.data}</span>
                 <p className="mt-2 text-[14.5px] leading-snug text-foreground">{m.text}</p>
               </li>
@@ -192,10 +198,10 @@ const CncPage = () => {
         </div>
       </section>
 
-      {/* enquanto o guia não chega, a seção vazia guarda o lugar (e a âncora "Monte a sua") */}
-      <Suspense fallback={<section id="monte-a-sua" className="min-h-[100svh] border-b border-border bg-surface" aria-busy="true" />}>
+      {/* o guia só é montado perto da hora de ser lido; até lá o lugar dele guarda a âncora */}
+      <DeferredGuide id="monte-a-sua">
         <CncGuide />
-      </Suspense>
+      </DeferredGuide>
 
       <div className="bg-background">
         <div className="rail py-8">

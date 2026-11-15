@@ -7,7 +7,8 @@
  */
 import { useRef } from "react";
 import { Box, Check, Download, FileCode2, ShieldCheck, Terminal } from "lucide-react";
-import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc, useTocHidden } from "@/components/guide/kit";
+import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc } from "@/components/guide/kit";
+import { useTocHidden } from "@/components/guide/nav";
 import PenduloFiacao from "./PenduloFiacao";
 import { guia, sketchHref } from "@/data/penduloGuia";
 import { cn } from "@/lib/utils";

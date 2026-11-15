@@ -795,14 +795,3 @@ export const resultados: Resultado[] = [
     arquivos: [{ label: "G-code", detail: "1 KB", href: `${A}/gcode/testes/teste_velocidades.gcode` }],
   },
 ];
-
-/** linha do tempo do projeto, de especificacoes.json */
-export const marcos = [
-  { data: "06/11", text: "Ligação dos motores corrigida (X ↔ Y)" },
-  { data: "07/11", text: "Primeiro desenho no papel: quadrado + círculo, em passo cheio" },
-  { data: "08/11", text: "Fins de curso instalados" },
-  { data: "10/11", text: "Carro e Pen Holder v3 projetados" },
-  { data: "12/11", text: "Micropasso 1/16, eletrônica fixada, carro v3 montado" },
-  { data: "13/11", text: "Homing, origem fixa, testes de traço e gabarito desenhado na mesa" },
-  { data: "14/11", text: "G-code do pôster do F-16 e o caminho imagem → SVG → G-code" },
-];

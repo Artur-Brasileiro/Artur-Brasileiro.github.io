@@ -7,12 +7,12 @@
  *
  * O visualizador é um só para a página toda: <PhotoViewer /> montado uma vez.
  */
-import { useSyncExternalStore } from "react";
 import { Camera, Maximize2 } from "lucide-react";
 import ZoomableImage from "@/components/ZoomableImage";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useLenisLock } from "@/components/motion/useLenisLock";
 import { cn } from "@/lib/utils";
+import { closePhoto, HALF, openPhoto, useShownPhoto } from "./photos";
 
 export type PhotoInfo = {
   n: string;
@@ -26,32 +26,14 @@ export type PhotoInfo = {
 
 /* ------------------------------------------------------------------ visualizador */
 
-type Shown = { src: string; alt: string; title: string; caption: string; n?: string };
-let shown: Shown | null = null;
-let last: Shown | null = null;
-const subs = new Set<() => void>();
-const set = (v: Shown | null) => {
-  shown = v;
-  if (v) last = v;
-  subs.forEach((f) => f());
-};
-const subscribe = (f: () => void) => {
-  subs.add(f);
-  return () => subs.delete(f);
-};
-
-export function openPhoto(p: Shown) {
-  set(p);
-}
-
 export function PhotoViewer() {
-  const cur = useSyncExternalStore(subscribe, () => shown);
+  const { cur, last } = useShownPhoto();
   // sem isso o Lenis rola a página por trás do visualizador
   useLenisLock(!!cur);
   // a última foto continua desenhada enquanto o modal anima a saída
   const p = cur ?? last;
   return (
-    <Dialog open={!!cur} onOpenChange={(open) => !open && set(null)}>
+    <Dialog open={!!cur} onOpenChange={(open) => !open && closePhoto()}>
       <DialogContent className="flex h-[90svh] w-[95vw] max-w-6xl flex-col gap-0 overflow-hidden rounded-[10px] border-foreground bg-background p-0 sm:rounded-[10px]">
         {p && (
           <>
@@ -80,12 +62,15 @@ export function PhotoFrame({
   className,
   fit = "cover",
   fallback,
+  sizes = HALF,
 }: {
   info: PhotoInfo;
   dir: string;
   alt?: string;
   className?: string;
   fit?: "cover" | "contain";
+  /** quanto da tela a foto ocupa: o navegador escolhe entre 800, 1200 e 1600 px */
+  sizes?: string;
   /** o que mostrar enquanto a foto não chega (uma prévia digital, por exemplo) */
   fallback?: React.ReactNode;
 }) {
@@ -103,7 +88,14 @@ export function PhotoFrame({
         style={ratioStyle(info.ratio)}
         aria-label={`Ampliar: ${info.title}`}
       >
-        <img src={src} alt={text} loading="lazy" decoding="async" style={info.pos ? { objectPosition: info.pos } : undefined} className={cn("h-full w-full transition-transform duration-500 group-hover:scale-[1.02]", fit === "cover" ? "object-cover" : "object-contain")} />
+        <img
+          src={src}
+          srcSet={`${dir}/${info.src.replace(/\.webp$/, "-800.webp")} 800w, ${dir}/${info.src.replace(/\.webp$/, "-1200.webp")} 1200w, ${src} 1600w`}
+          sizes={sizes}
+          alt={text}
+          loading="lazy"
+          decoding="async"
+          style={info.pos ? { objectPosition: info.pos } : undefined} className={cn("h-full w-full transition-transform duration-500 group-hover:scale-[1.02]", fit === "cover" ? "object-cover" : "object-contain")} />
         <span className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-md bg-background/90 text-foreground opacity-0 shadow-soft-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
           <Maximize2 className="h-4 w-4" aria-hidden />
         </span>
@@ -133,10 +125,10 @@ export function PhotoFrame({
 }
 
 /** foto com legenda, para o meio dos capítulos */
-export function Photo({ info, dir, className, alt }: { info: PhotoInfo; dir: string; className?: string; alt?: string }) {
+export function Photo({ info, dir, className, alt, sizes }: { info: PhotoInfo; dir: string; className?: string; alt?: string; sizes?: string }) {
   return (
     <figure className={cn("min-w-0", className)}>
-      <PhotoFrame info={info} dir={dir} alt={alt} />
+      <PhotoFrame info={info} dir={dir} alt={alt} sizes={sizes} />
       <figcaption className="mt-2.5 flex gap-2 text-[13px] leading-snug text-muted-foreground">
         <span className="shrink-0 font-mono text-[11px] leading-[1.6] text-gold">{info.n}</span>
         <span>{info.caption}</span>

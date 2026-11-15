@@ -8,7 +8,7 @@
  */
 import { useCallback, useState, type ReactNode } from "react";
 import { MousePointerClick } from "lucide-react";
-import { fmt } from "@/components/guide/kit";
+import { fmt } from "@/components/guide/fmt";
 import { guia } from "@/data/cncGuia";
 import { cn } from "@/lib/utils";
 import esquema from "./fiacao/esquema.svg?raw";

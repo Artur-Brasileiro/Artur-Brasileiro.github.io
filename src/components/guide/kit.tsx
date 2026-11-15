@@ -3,46 +3,19 @@
  * vira cartão no celular, avisos, código, números grandes, passos e o índice
  * lateral que marca o capítulo da vez. Usadas pelo guia do pêndulo e pelo da CNC.
  *
- * Os textos dos guias moram em src/data como strings simples. `fmt` entende
- * duas marcações, para não precisar de JSX nos dados: `código` e **destaque**.
+ * Os textos dos guias moram em src/data como strings simples; fmt.tsx entende
+ * `código` e **destaque** neles. Rolagem e índice ficam em nav.ts.
  */
-import { Fragment, useEffect, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AlertTriangle, Check, Lightbulb } from "lucide-react";
-import { getLenis } from "@/components/motion/SmoothScroll";
 import { cn } from "@/lib/utils";
+import { fmt } from "./fmt";
+import { goTo, LG, useMatch } from "./nav";
 
 export type Row = string[];
 export type ChapterInfo = { id: string; n: string; title: string };
 
 /* ------------------------------------------------------------------ texto */
-
-/** `código` vira <code>, **texto** vira destaque; o resto passa como está */
-export function fmt(text: ReactNode): ReactNode {
-  if (typeof text !== "string" || !/[`*]/.test(text)) return text;
-  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
-  return parts.map((p, i) => {
-    if (p.startsWith("`") && p.endsWith("`") && p.length > 1)
-      return (
-        // código curto não quebra; fórmula longa quebra, senão vaza da tela do celular
-        <code
-          key={i}
-          className={cn(
-            "rounded-[4px] border border-border bg-surface px-1 py-px font-mono text-[0.86em] text-foreground [box-decoration-break:clone]",
-            p.length > 24 ? "break-words" : "whitespace-nowrap",
-          )}
-        >
-          {p.slice(1, -1)}
-        </code>
-      );
-    if (p.startsWith("**") && p.endsWith("**") && p.length > 4)
-      return (
-        <b key={i} className="font-semibold text-foreground">
-          {p.slice(2, -2)}
-        </b>
-      );
-    return <Fragment key={i}>{p}</Fragment>;
-  });
-}
 
 /* ------------------------------------------------------------------ peças */
 
@@ -200,85 +173,38 @@ export const Bullets = ({ items, icon: Icon = Check }: { items: ReactNode[]; ico
 
 /* ------------------------------------------------------------------ índice */
 
-function useActiveChapter(ids: string[]) {
+/**
+ * O capítulo da vez é o que cruza a linha a um terço da tela. Antes isto media
+ * cada capítulo com getBoundingClientRect ao abrir e a cada rolagem: com uma
+ * página de ~38 mil px, isso forçava o layout inteiro na hora e custava ~1,5 s
+ * de CPU num celular lento. O IntersectionObserver avisa sem forçar nada; no
+ * vão entre dois capítulos, fica o anterior.
+ */
+function useActiveChapter(ids: string[], on: boolean) {
   const [active, setActive] = useState(ids[0]);
   useEffect(() => {
-    const els = ids.map((id) => document.getElementById(id)).filter((e): e is HTMLElement => !!e);
-    // o capítulo da vez é o último cujo começo já passou do terço de cima da tela;
-    // o Lenis rola a página de verdade, então o evento de rolagem chega até o fim
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const line = window.innerHeight * 0.33;
-      let cur = ids[0];
-      for (const el of els) if (el.getBoundingClientRect().top <= line) cur = el.id;
-      setActive(cur);
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, [ids]);
+    if (!on) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setActive(e.target.id);
+      },
+      { rootMargin: "-33% 0px -66% 0px" },
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    }
+    return () => io.disconnect();
+  }, [ids, on]);
   return active;
-}
-
-/** rola até um capítulo pelo Lenis; sem ele, a âncora nativa resolve */
-export function goTo(e: React.MouseEvent, id: string) {
-  const el = document.getElementById(id);
-  const lenis = getLenis();
-  if (!el || !lenis) return;
-  e.preventDefault();
-  // o Lenis já desconta o scroll-padding-top do html (96 px, a barra e um respiro).
-  // Os capítulos longe da tela têm altura estimada até aparecerem: ao chegar, se
-  // os de cima mudaram de tamanho no caminho, acerta o pouso.
-  lenis.scrollTo(el, {
-    onComplete: () => {
-      const off = el.getBoundingClientRect().top - 96;
-      if (Math.abs(off) > 4) lenis.scrollTo(el, { duration: 0.35 });
-    },
-  });
-}
-
-/**
- * Esconde o índice enquanto um bloco que sai da coluna (o diagrama largo)
- * passa pela altura dele. A faixa vigiada vai do topo do índice até o fim
- * dele, medido de verdade: um índice de 14 capítulos desce bem mais que um de
- * 7, e numa tela baixa ele ocupa a altura toda (aí qualquer pedaço do bloco à
- * vista já esconde o índice).
- */
-export function useTocHidden(wide: RefObject<HTMLElement | null>) {
-  const [hidden, setHidden] = useState(false);
-  useEffect(() => {
-    const el = wide.current;
-    if (!el) return;
-    let io: IntersectionObserver | undefined;
-    const make = () => {
-      io?.disconnect();
-      const toc = document.querySelector<HTMLElement>("[data-guide-toc]");
-      const bottom = 96 + (toc?.offsetHeight ?? 480) + 24;
-      io = new IntersectionObserver(([e]) => setHidden(e.isIntersecting), {
-        rootMargin: `-80px 0px -${Math.max(0, window.innerHeight - bottom)}px 0px`,
-      });
-      io.observe(el);
-    };
-    make();
-    window.addEventListener("resize", make);
-    return () => {
-      io?.disconnect();
-      window.removeEventListener("resize", make);
-    };
-  }, [wide]);
-  return hidden;
 }
 
 /** índice parado ao lado no desktop; `ids` precisa ser estável (fora do componente) */
 export function Toc({ chapters, ids, hidden }: { chapters: ChapterInfo[]; ids: string[]; hidden?: boolean }) {
-  const active = useActiveChapter(ids);
+  const lg = useMatch(LG);
+  const active = useActiveChapter(ids, lg);
+  // a coluna do índice continua no grid; só o conteúdo dele espera o lg
+  if (!lg) return <div aria-hidden className="hidden" />;
   return (
     <nav
       aria-label="Capítulos do guia"

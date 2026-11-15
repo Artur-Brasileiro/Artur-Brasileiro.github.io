@@ -100,7 +100,7 @@ function ResultCard({ r }: { r: Resultado }) {
   );
 
   return (
-    <article className={cn("flex min-w-0 flex-col", r.destaque && "md:row-span-2")}>
+    <article className="flex min-w-0 flex-col">
       {f ? <PhotoFrame info={f} dir={FOTOS} fallback={previa || undefined} /> : previa}
       <div className="mt-4 flex flex-1 flex-col">
         <p className="font-mono text-[11.5px] text-gold">{r.meta}</p>
@@ -465,16 +465,20 @@ export default function CncGuide() {
                   </div>
                   <P className="mt-4 text-[13.5px]">{calibracao.sentidoNota}</P>
                 </div>
-                <div>
-                  <H4>Escala</H4>
-                  <div className="mt-5">
-                    <Steps items={calibracao.escala} />
+                <div className="grid gap-8 md:grid-cols-[1.1fr_1fr] md:items-start">
+                  <div className="space-y-6">
+                    <div>
+                      <H4>Escala</H4>
+                      <div className="mt-5">
+                        <Steps items={calibracao.escala} />
+                      </div>
+                    </div>
+                    <Callout tone="warn" title="Cuidado com medição curta">
+                      {calibracao.escalaAviso}
+                    </Callout>
                   </div>
+                  <Photo info={fotos.escala} dir={FOTOS} />
                 </div>
-                <Callout tone="warn" title="Cuidado com medição curta">
-                  {calibracao.escalaAviso}
-                </Callout>
-                <Photo info={fotos.escala} dir={FOTOS} />
                 <div>
                   <H4>Homing e origem</H4>
                   <div className="mt-5">
@@ -575,8 +579,13 @@ export default function CncGuide() {
                 <div className="space-y-4">
                   <H4>Imagem → SVG: o ponto mais importante</H4>
                   <P>{gcode.centerline}</P>
-                  <Steps items={gcode.passos} />
-                  <P className="text-[14px]">{gcode.fotosDica}</P>
+                  <div className="grid gap-8 md:grid-cols-[1.1fr_1fr] md:items-start">
+                    <div className="space-y-4">
+                      <Steps items={gcode.passos} />
+                      <P className="text-[14px]">{gcode.fotosDica}</P>
+                    </div>
+                    <Photo info={fotos.f16Detalhe} dir={FOTOS} />
+                  </div>
                 </div>
                 <Card className="space-y-5">
                   <div>
@@ -642,13 +651,17 @@ export default function CncGuide() {
             <h2 className="font-display text-display-lg font-medium">O que ela já desenhou</h2>
             <p className="max-w-[52ch] leading-relaxed text-muted-foreground">Cada desenho com o G-code que o gerou, para você rodar na sua.</p>
           </div>
-          <Photo info={fotos.emAcao} dir={FOTOS} className="mt-10" />
-          {/* o pôster (em pé) ocupa duas linhas; os outros fecham a grade ao lado dele */}
-          <div className="mt-12 grid gap-x-8 gap-y-12 md:grid-cols-2 lg:grid-cols-[1.15fr_1fr_1fr]">
-            {resultados.map((r) => (
+          {/* o pôster é o destaque, com a máquina desenhando ao lado; embaixo, os outros */}
+          <div className="mt-10 grid gap-x-8 gap-y-10 md:grid-cols-[1.3fr_1fr] md:items-start">
+            {resultados.filter((r) => r.destaque).map((r) => (
               <ResultCard key={r.id} r={r} />
             ))}
-            <Photo info={fotos.f16Detalhe} dir={FOTOS} />
+            <Photo info={fotos.emAcao} dir={FOTOS} />
+          </div>
+          <div className="mt-14 grid gap-x-8 gap-y-12 border-t border-border pt-12 md:grid-cols-3">
+            {resultados.filter((r) => !r.destaque).map((r) => (
+              <ResultCard key={r.id} r={r} />
+            ))}
           </div>
         </div>
       </section>

@@ -19,6 +19,8 @@ export type PhotoInfo = {
   title: string;
   caption: string;
   ratio: string;
+  /** enquadramento quando a proporção corta a foto (object-position) */
+  pos?: string;
   src?: string;
 };
 
@@ -101,7 +103,7 @@ export function PhotoFrame({
         style={ratioStyle(info.ratio)}
         aria-label={`Ampliar: ${info.title}`}
       >
-        <img src={src} alt={text} loading="lazy" decoding="async" className={cn("h-full w-full transition-transform duration-500 group-hover:scale-[1.02]", fit === "cover" ? "object-cover" : "object-contain")} />
+        <img src={src} alt={text} loading="lazy" decoding="async" style={info.pos ? { objectPosition: info.pos } : undefined} className={cn("h-full w-full transition-transform duration-500 group-hover:scale-[1.02]", fit === "cover" ? "object-cover" : "object-contain")} />
         <span className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-md bg-background/90 text-foreground opacity-0 shadow-soft-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
           <Maximize2 className="h-4 w-4" aria-hidden />
         </span>

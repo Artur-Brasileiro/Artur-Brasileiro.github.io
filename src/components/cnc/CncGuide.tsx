@@ -7,9 +7,9 @@
  * /projetos/cnc/arquivos/; as fotos, em /projetos/cnc/fotos/ (com espaço
  * reservado enquanto não chegam).
  */
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { ArrowRight, Box, Download, ExternalLink, FileCode2, Maximize2, Power, PowerOff, ShieldCheck, Terminal } from "lucide-react";
-import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc, fmt } from "@/components/guide/kit";
+import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc, useTocHidden, fmt } from "@/components/guide/kit";
 import { Photo, PhotoFrame, PhotoRow, PhotoViewer, openPhoto } from "@/components/guide/Photo";
 import CncFiacao from "./CncFiacao";
 import { FOTOS, IMG, fotos, guia, resultados, type Download as Dl, type Resultado } from "@/data/cncGuia";
@@ -83,25 +83,25 @@ const Card = ({ children, className }: { children: React.ReactNode; className?: 
 /* ------------------------------------------------------------------ resultados */
 
 function ResultCard({ r }: { r: Resultado }) {
-  const f = fotos[r.foto];
+  const f = r.foto ? fotos[r.foto] : undefined;
   const previa = r.previa && (
     <button
       type="button"
-      onClick={() => openPhoto({ src: r.previa!.src, alt: r.previa!.alt, title: `${r.title} · prévia`, caption: "Prévia digital do G-code. A foto do papel entra aqui." })}
+      onClick={() => openPhoto({ src: r.previa!.src, alt: r.previa!.alt, title: f ? `${r.title} · prévia` : r.title, caption: f ? "Prévia digital do G-code. A foto do papel entra aqui." : "O desenho que o G-code faz." })}
       className="group relative block w-full overflow-hidden rounded-lg border border-border bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      style={{ aspectRatio: f.ratio.replace("/", " / ") }}
+      style={{ aspectRatio: (f?.ratio ?? "4/3").replace("/", " / ") }}
       aria-label={`Ampliar a prévia: ${r.title}`}
     >
       <img src={r.previa.src} alt={r.previa.alt} loading="lazy" decoding="async" className={cn("h-full w-full", r.previa.fit === "contain" ? (r.destaque ? "object-contain p-[3%] pt-10" : "object-contain p-[8%]") : "object-cover object-top")} />
       <span className="absolute left-3 top-3 rounded-[5px] border border-border bg-background/95 px-2 py-1 font-mono text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground shadow-soft-sm">
-        prévia digital · foto em breve
+        {f ? "prévia digital · foto em breve" : "prévia digital"}
       </span>
     </button>
   );
 
   return (
     <article className={cn("flex min-w-0 flex-col", r.destaque && "md:row-span-2")}>
-      <PhotoFrame info={f} dir={FOTOS} fallback={previa || undefined} />
+      {f ? <PhotoFrame info={f} dir={FOTOS} fallback={previa || undefined} /> : previa}
       <div className="mt-4 flex flex-1 flex-col">
         <p className="font-mono text-[11.5px] text-gold">{r.meta}</p>
         <h3 className="mt-1 text-lg font-semibold text-foreground">{r.title}</h3>
@@ -141,14 +141,7 @@ export default function CncGuide() {
 
   // o esquema de ligações ocupa a largura toda: enquanto ele cruza a altura do índice, o índice sai
   const wide = useRef<HTMLDivElement>(null);
-  const [tocHidden, setTocHidden] = useState(false);
-  useEffect(() => {
-    const el = wide.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => setTocHidden(e.isIntersecting), { rootMargin: "-80px 0px -55% 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  const tocHidden = useTocHidden(wide);
 
   return (
     <>
@@ -186,7 +179,7 @@ export default function CncGuide() {
           </div>
 
           {/* no celular, o índice vira uma faixa de atalhos que anda de lado */}
-          <nav aria-label="Capítulos do guia" className="-mx-6 mt-10 lg:hidden">
+          <nav aria-label="Atalhos para os capítulos" className="-mx-6 mt-10 lg:hidden">
             <ol className="flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none]" data-lenis-prevent-horizontal="">
               {c.map((ch) => (
                 <li key={ch.id} className="shrink-0">
@@ -243,7 +236,6 @@ export default function CncGuide() {
 
               {/* 02 · material */}
               <Chapter {...c[1]}>
-                <Photo info={fotos.kit} dir={FOTOS} />
                 <div className="space-y-3">
                   <H4>Mecânica</H4>
                   <Table head={["Item", "Qtd.", "Para quê"]} rows={material.mecanica} />
@@ -312,10 +304,6 @@ export default function CncGuide() {
                   <Photo info={fotos.apoioBase} dir={FOTOS} />
                   <Photo info={fotos.apoioSecundario} dir={FOTOS} />
                 </PhotoRow>
-                <div>
-                  <H4>O peso no Apoio Secundário</H4>
-                  <P className="mt-3">{mesa.peso}</P>
-                </div>
               </Chapter>
 
               {/* 05 · motores e correias */}
@@ -399,10 +387,10 @@ export default function CncGuide() {
                   <H4>Tabela de pinos</H4>
                   <Table head={["Ligação", "No shield", "Pino do Arduino", "Observação"]} rows={ligacoes.pinos} />
                 </div>
-                <PhotoRow>
-                  <Photo info={fotos.shield} dir={FOTOS} />
+                <div className="grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-center">
+                  <P>Para ajustar a corrente: fonte ligada, motores parados, ponta do multímetro no trimpot do driver. Gire devagar até ler ≈ 0,60 V.</P>
                   <Photo info={fotos.vref} dir={FOTOS} />
-                </PhotoRow>
+                </div>
                 <div className="grid gap-4 lg:grid-cols-3">
                   <Card>
                     <H4>Antes de energizar</H4>
@@ -630,15 +618,10 @@ export default function CncGuide() {
       <section className="border-b border-border bg-background">
         <div className="rail py-16 md:py-20">
           <p className="eyebrow">Lições</p>
-          <div className="mt-5 grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-end lg:gap-16">
-            <div>
-              <h2 className="font-display text-display-lg font-medium">O que deu errado antes</h2>
-              <p className="mt-5 max-w-[56ch] text-lg leading-relaxed text-muted-foreground">
-                Antes desta versão, a máquina passou por várias tentativas que não funcionaram. São elas que explicam boa parte das decisões do guia.
-              </p>
-            </div>
-            <Photo info={fotos.versoes} dir={FOTOS} />
-          </div>
+          <h2 className="font-display mt-5 text-display-lg font-medium">O que deu errado antes</h2>
+          <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-muted-foreground">
+            Antes desta versão, a máquina passou por várias tentativas que não funcionaram. São elas que explicam boa parte das decisões do guia.
+          </p>
           <ol className="mt-12 grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
             {guia.licoes.map((l, i) => (
               <li key={l.title} className="border-t border-foreground pt-4">

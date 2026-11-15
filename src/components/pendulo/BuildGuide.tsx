@@ -5,9 +5,9 @@
  * parado ao lado no desktop e marca o capítulo da vez. O conteúdo mora em
  * src/data/penduloGuia.ts; os arquivos para baixar, em /projetos/pendulo/arquivos/.
  */
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { Box, Check, Download, FileCode2, ShieldCheck, Terminal } from "lucide-react";
-import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc } from "@/components/guide/kit";
+import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc, useTocHidden } from "@/components/guide/kit";
 import PenduloFiacao from "./PenduloFiacao";
 import { guia, sketchHref } from "@/data/penduloGuia";
 import { cn } from "@/lib/utils";
@@ -22,14 +22,7 @@ export default function BuildGuide() {
 
   // o desenho da fiação ocupa a largura toda: enquanto ele cruza a altura do índice, o índice sai
   const wide = useRef<HTMLDivElement>(null);
-  const [tocHidden, setTocHidden] = useState(false);
-  useEffect(() => {
-    const el = wide.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => setTocHidden(e.isIntersecting), { rootMargin: "-80px 0px -55% 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  const tocHidden = useTocHidden(wide);
 
   return (
     <>

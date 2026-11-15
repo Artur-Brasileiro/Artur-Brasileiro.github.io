@@ -6,7 +6,7 @@
  * Os textos dos guias moram em src/data como strings simples. `fmt` entende
  * duas marcações, para não precisar de JSX nos dados: `código` e **destaque**.
  */
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode, type RefObject } from "react";
 import { AlertTriangle, Check, Lightbulb } from "lucide-react";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import { cn } from "@/lib/utils";
@@ -244,6 +244,38 @@ export function goTo(e: React.MouseEvent, id: string) {
   });
 }
 
+/**
+ * Esconde o índice enquanto um bloco que sai da coluna (o diagrama largo)
+ * passa pela altura dele. A faixa vigiada vai do topo do índice até o fim
+ * dele, medido de verdade: um índice de 14 capítulos desce bem mais que um de
+ * 7, e numa tela baixa ele ocupa a altura toda (aí qualquer pedaço do bloco à
+ * vista já esconde o índice).
+ */
+export function useTocHidden(wide: RefObject<HTMLElement | null>) {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    const el = wide.current;
+    if (!el) return;
+    let io: IntersectionObserver | undefined;
+    const make = () => {
+      io?.disconnect();
+      const toc = document.querySelector<HTMLElement>("[data-guide-toc]");
+      const bottom = 96 + (toc?.offsetHeight ?? 480) + 24;
+      io = new IntersectionObserver(([e]) => setHidden(e.isIntersecting), {
+        rootMargin: `-80px 0px -${Math.max(0, window.innerHeight - bottom)}px 0px`,
+      });
+      io.observe(el);
+    };
+    make();
+    window.addEventListener("resize", make);
+    return () => {
+      io?.disconnect();
+      window.removeEventListener("resize", make);
+    };
+  }, [wide]);
+  return hidden;
+}
+
 /** índice parado ao lado no desktop; `ids` precisa ser estável (fora do componente) */
 export function Toc({ chapters, ids, hidden }: { chapters: ChapterInfo[]; ids: string[]; hidden?: boolean }) {
   const active = useActiveChapter(ids);
@@ -253,7 +285,7 @@ export function Toc({ chapters, ids, hidden }: { chapters: ChapterInfo[]; ids: s
       aria-hidden={hidden || undefined}
       className={cn("hidden transition-opacity duration-300 lg:block", hidden && "pointer-events-none opacity-0")}
     >
-      <ol className="sticky top-24 space-y-1 border-l border-border">
+      <ol data-guide-toc="" className="sticky top-24 space-y-1 border-l border-border">
         {chapters.map((c) => (
           <li key={c.id}>
             <a

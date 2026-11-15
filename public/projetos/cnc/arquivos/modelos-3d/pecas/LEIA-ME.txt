@@ -1,0 +1,24 @@
+CNC Plotter do Artur - pecas impressas em 3D
+=============================================
+Unidade: milimetros. Os arquivos estao na posicao do modelo; gire no fatiador
+para a orientacao de impressao que preferir.
+
+Peca                          Qtd  Material  Arquivos
+----------------------------  ---  --------  ---------------------------------
+Suporte alto - base (88,7)     2   PLA       Suporte_Alto_Base.stl / .step
+Suporte alto - abracadeira     2   PLA       Suporte_Alto_Abracadeira.stl / .step
+Suporte baixo - base (60)      2   PLA       Suporte_Baixo_Base.stl / .step
+Suporte baixo - abracadeira    2   PLA       Suporte_Baixo_Abracadeira.stl / .step
+Base Principal                 1   PLA       Base_Principal.stl / .step
+Apoio Base (2 x LM12UU)        1   PLA       Apoio_Base.stl / .step
+Apoio Secundario (1 x LM12UU)  1   PLA       Apoio_Secundario.stl / .step
+Carro Principal v3             1   PETG      Carro_Principal_v3.stl
+Pen Holder v3                  1   PETG      Pen_Holder_v3.stl
+Presilha da correia GT2        2   PLA       Presilha_GT2.stl / .step
+Base do CNC Shield             1   PLA       Base_CNC_Shield.stl / .step
+
+Dicas
+- Imprima as abracadeiras com o eixo do furo de 12,2 mm na vertical: o furo sai redondo.
+- Carro e Pen Holder v3: os furos dos LM6UU tem nervuras de pressao (inscrito 11,9 mm);
+  o rolamento entra justo, sem folga.
+- Estrutura impressa numa Creality Ender; carro e Pen Holder em PETG, numa Snapmaker.

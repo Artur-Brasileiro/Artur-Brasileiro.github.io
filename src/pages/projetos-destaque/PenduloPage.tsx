@@ -1,9 +1,10 @@
-import { lazy, Suspense, useLayoutEffect } from "react";
+import { lazy, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import SiteFooter from "@/components/SiteFooter";
+import DeferredGuide from "@/components/guide/Deferred";
 import PenduloSimulator from "@/components/pendulo/PenduloSimulator";
 import { preloadPendulo } from "@/components/pendulo/preload";
 import { pendulo } from "@/data/pendulo";
@@ -183,10 +184,10 @@ const PenduloPage = () => {
         </div>
       </section>
 
-      {/* enquanto o guia não chega, a seção vazia guarda o lugar (e a âncora "Monte o seu") */}
-      <Suspense fallback={<section id="monte-o-seu" className="min-h-[100svh] border-b border-border bg-surface" aria-busy="true" />}>
+      {/* o guia só é montado perto da hora de ser lido; até lá o lugar dele guarda a âncora */}
+      <DeferredGuide id="monte-o-seu">
         <BuildGuide />
-      </Suspense>
+      </DeferredGuide>
 
       <div className="bg-background">
         <div className="rail py-8">

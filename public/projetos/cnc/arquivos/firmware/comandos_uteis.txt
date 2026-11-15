@@ -1,0 +1,14 @@
+Comandos do dia a dia (console do LaserGRBL)
+---------------------------------------------
+$H              homing (botão da casinha)
+$X              desbloquear depois de alarme (cadeado)
+?               status (o LaserGRBL esconde a resposta; use o Monitor Serial da Arduino IDE)
+$$              listar todas as configurações
+M5              caneta EM CIMA
+M3 S220         caneta EMBAIXO
+G4 P0.3         pausa de 0,3 s (espera o servo)
+G90             coordenadas absolutas (padrão)
+G91             coordenadas relativas - lembre de voltar para G90!
+G0 X0 Y0        ir para a origem do papel
+$J=G91 X10 F1000    jog: andar 10 mm em X
+G10 L2 P1 X-810 Y-390   define a origem do papel (ver configurar_origem.gcode)

@@ -5,243 +5,15 @@
  * parado ao lado no desktop e marca o capítulo da vez. O conteúdo mora em
  * src/data/penduloGuia.ts; os arquivos para baixar, em /projetos/pendulo/arquivos/.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AlertTriangle, Box, Check, Download, FileCode2, Lightbulb, ShieldCheck, Terminal } from "lucide-react";
-import { getLenis } from "@/components/motion/SmoothScroll";
+import { useRef } from "react";
+import { Box, Check, Download, FileCode2, ShieldCheck, Terminal } from "lucide-react";
+import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc } from "@/components/guide/kit";
+import { useTocHidden } from "@/components/guide/nav";
 import PenduloFiacao from "./PenduloFiacao";
-import { guia, sketchHref, type Download as Dl, type Row } from "@/data/penduloGuia";
+import { guia, sketchHref } from "@/data/penduloGuia";
 import { cn } from "@/lib/utils";
 
-/* ------------------------------------------------------------------ peças */
-
-/**
- * Capítulo do guia. Longe da tela, o navegador pula o layout dele
- * (content-visibility): a página tem ~3 mil elementos, e o primeiro layout no
- * celular caía pela metade. `eager` desliga isso para o capítulo cujo conteúdo
- * sai da própria caixa (a fiação, no 04): a contenção cortaria o desenho.
- */
-function Chapter({ id, n, title, eager, children }: { id: string; n: string; title: string; eager?: boolean; children: ReactNode }) {
-  return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-t`}
-      className={cn("border-t border-border pt-10 first:border-t-0 first:pt-0", !eager && "[contain-intrinsic-size:auto_1600px] [content-visibility:auto]")}
-    >
-      <p className="font-mono text-[12px] text-gold">{n}</p>
-      <h3 id={`${id}-t`} className="font-display mt-1 text-2xl font-medium text-foreground md:text-[28px]">
-        {title}
-      </h3>
-      <div className="mt-6 space-y-6">{children}</div>
-    </section>
-  );
-}
-
-const P = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <p className={cn("max-w-[68ch] text-[15px] leading-relaxed text-muted-foreground", className)}>{children}</p>
-);
-
-const H4 = ({ children }: { children: ReactNode }) => (
-  <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{children}</h4>
-);
-
-/** tabela simples; no celular cada linha vira um cartão, com o rótulo de cada coluna */
-function Table({ head, rows, cell }: { head: string[]; rows: Row[]; cell?: (row: Row, i: number) => ReactNode }) {
-  const show = (row: Row, i: number) => (cell ? cell(row, i) : row[i]);
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-background">
-      <ul className="divide-y divide-border sm:hidden">
-        {rows.map((row) => (
-          <li key={row[0]} className="px-4 py-3">
-            <p className="text-[14.5px] font-medium text-foreground">{show(row, 0)}</p>
-            <dl className="mt-1.5 space-y-1">
-              {head.slice(1).map((h, j) =>
-                row[j + 1] ? (
-                  <div key={h} className="flex gap-2 text-[13.5px] leading-relaxed">
-                    <dt className="shrink-0 text-[11px] uppercase leading-[1.9] tracking-wider text-muted-foreground/80">{h}</dt>
-                    <dd className="text-muted-foreground">{show(row, j + 1)}</dd>
-                  </div>
-                ) : null,
-              )}
-            </dl>
-          </li>
-        ))}
-      </ul>
-      <table className="hidden w-full text-left text-sm sm:table">
-        <thead>
-          <tr className="border-b border-border bg-surface">
-            {head.map((h) => (
-              <th key={h} scope="col" className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rows.map((row) => (
-            <tr key={row[0]} className="align-top">
-              {head.map((_, i) => (
-                <td key={i} className={cn("px-4 py-3 leading-relaxed", i === 0 ? "font-medium text-foreground" : "text-muted-foreground")}>
-                  {show(row, i)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Callout({ tone, title, children }: { tone: "warn" | "tip"; title: string; children: ReactNode }) {
-  const Icon = tone === "warn" ? AlertTriangle : Lightbulb;
-  return (
-    <div className={cn("flex gap-3 rounded-lg border p-4", tone === "warn" ? "border-gold/40 bg-gold/[0.07]" : "border-border bg-background")}>
-      <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", tone === "warn" ? "text-gold" : "text-primary")} aria-hidden />
-      <div className="text-[14.5px] leading-relaxed">
-        <p className="font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-muted-foreground">{children}</p>
-      </div>
-    </div>
-  );
-}
-
-const Code = ({ children, label }: { children: string; label?: string }) => (
-  <figure className="overflow-hidden rounded-lg border border-border bg-[hsl(220_13%_10%)]">
-    {label && <figcaption className="border-b border-white/10 px-4 py-2 font-mono text-[11px] text-white/50">{label}</figcaption>}
-    <pre className="overflow-x-auto px-4 py-3.5 font-mono text-[12.5px] leading-relaxed text-white/85">
-      <code>{children}</code>
-    </pre>
-  </figure>
-);
-
-/** números grandes com legenda, no mesmo tom da seção "Como ele pensa" */
-const Figures = ({ items }: { items: { v: string; k: string }[] }) => (
-  <dl className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4">
-    {items.map((it) => (
-      <div key={it.k} className="border-t border-foreground pt-3">
-        <dt className="sr-only">{it.k}</dt>
-        <dd className="font-display text-2xl font-medium tabular-nums text-foreground">{it.v}</dd>
-        <p className="mt-1 text-[13.5px] leading-snug text-muted-foreground">{it.k}</p>
-      </div>
-    ))}
-  </dl>
-);
-
-function FileLink({ file, className, children }: { file: Dl | { href: string }; className?: string; children: ReactNode }) {
-  return (
-    <a
-      href={file.href}
-      download
-      className={cn(
-        "inline-flex items-center gap-2 rounded-md border border-border bg-background text-foreground transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-        className,
-      )}
-    >
-      {children}
-    </a>
-  );
-}
-
-const Steps = ({ items }: { items: string[] }) => (
-  <ol className="space-y-4">
-    {items.map((s, i) => (
-      <li key={i} className="flex gap-4">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-background font-mono text-[12px] text-foreground">
-          {i + 1}
-        </span>
-        <p className="pt-0.5 text-[15px] leading-relaxed text-muted-foreground">{s}</p>
-      </li>
-    ))}
-  </ol>
-);
-
-const Bullets = ({ items, icon: Icon = Check }: { items: string[]; icon?: typeof Check }) => (
-  <ul className="space-y-2.5">
-    {items.map((s) => (
-      <li key={s} className="flex gap-3 text-[15px] leading-relaxed text-muted-foreground">
-        <Icon className="mt-1 h-4 w-4 shrink-0 text-primary" aria-hidden />
-        <span>{s}</span>
-      </li>
-    ))}
-  </ul>
-);
-
-/* ------------------------------------------------------------------ índice */
-
-function useActiveChapter(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-  useEffect(() => {
-    const els = ids.map((id) => document.getElementById(id)).filter((e): e is HTMLElement => !!e);
-    // o capítulo da vez é o último cujo começo já passou do terço de cima da tela;
-    // o Lenis rola a página de verdade, então o evento de rolagem chega até o fim
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const line = window.innerHeight * 0.33;
-      let cur = ids[0];
-      for (const el of els) if (el.getBoundingClientRect().top <= line) cur = el.id;
-      setActive(cur);
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, [ids]);
-  return active;
-}
-
 const ids = guia.capitulos.map((c) => c.id);
-
-function goTo(e: React.MouseEvent, id: string) {
-  const el = document.getElementById(id);
-  const lenis = getLenis();
-  if (!el || !lenis) return; // sem Lenis, a âncora nativa resolve
-  e.preventDefault();
-  // o Lenis já desconta o scroll-padding-top do html (96 px, a barra e um respiro).
-  // Os capítulos longe da tela têm altura estimada até aparecerem: ao chegar, se
-  // os de cima mudaram de tamanho no caminho, acerta o pouso.
-  lenis.scrollTo(el, {
-    onComplete: () => {
-      const off = el.getBoundingClientRect().top - 96;
-      if (Math.abs(off) > 4) lenis.scrollTo(el, { duration: 0.35 });
-    },
-  });
-}
-
-function Toc({ hidden }: { hidden: boolean }) {
-  const active = useActiveChapter(ids);
-  return (
-    <nav
-      aria-label="Capítulos do guia"
-      aria-hidden={hidden || undefined}
-      className={cn("hidden transition-opacity duration-300 lg:block", hidden && "pointer-events-none opacity-0")}
-    >
-      <ol className="sticky top-24 space-y-1 border-l border-border">
-        {guia.capitulos.map((c) => (
-          <li key={c.id}>
-            <a
-              href={`#${c.id}`}
-              onClick={(e) => goTo(e, c.id)}
-              aria-current={active === c.id ? "true" : undefined}
-              className={cn(
-                "-ml-px flex gap-3 border-l py-1.5 pl-4 text-[13px] leading-snug transition-colors",
-                active === c.id ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <span className="font-mono text-[11px] text-gold">{c.n}</span>
-              {c.title}
-            </a>
-          </li>
-        ))}
-      </ol>
-    </nav>
-  );
-}
 
 /* ------------------------------------------------------------------ guia */
 
@@ -251,14 +23,7 @@ export default function BuildGuide() {
 
   // o desenho da fiação ocupa a largura toda: enquanto ele cruza a altura do índice, o índice sai
   const wide = useRef<HTMLDivElement>(null);
-  const [tocHidden, setTocHidden] = useState(false);
-  useEffect(() => {
-    const el = wide.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => setTocHidden(e.isIntersecting), { rootMargin: "-80px 0px -55% 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  const tocHidden = useTocHidden(wide);
 
   return (
     <>
@@ -294,7 +59,7 @@ export default function BuildGuide() {
           </div>
 
           <div className="mt-14 grid gap-12 lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-14">
-            <Toc hidden={tocHidden} />
+            <Toc chapters={guia.capitulos} ids={ids} hidden={tocHidden} />
 
             <div className="min-w-0 space-y-14">
               {/* 01 */}

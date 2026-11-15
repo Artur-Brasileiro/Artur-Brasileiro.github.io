@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- a marca da barra: "a" + o cursor de terminal em ouro, na tinta do site -->
+  <rect width="64" height="64" rx="14" fill="#15171a"/>
+  <g transform="translate(1.4 -3)">
+    <circle cx="22" cy="35" r="10.5" fill="none" stroke="#f2f1ec" stroke-width="6.5"/>
+    <rect x="29.25" y="21.25" width="6.5" height="27.25" fill="#f2f1ec"/>
+    <rect x="40" y="21.25" width="13" height="27.25" fill="#c99a4b"/>
+  </g>
+</svg>

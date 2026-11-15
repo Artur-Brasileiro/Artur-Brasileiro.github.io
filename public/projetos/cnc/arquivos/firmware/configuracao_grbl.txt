@@ -1,0 +1,48 @@
+; =====================================================================
+;  CNC Plotter do Artur - configuração do GRBL (estado em 14/11/2026)
+;  Firmware: GRBL 1.1h com servo (fork vankesteren/grbl-servo)
+; Comentários (;) ficam em linhas separadas, para o GRBL não reclamar.
+;  Envie linha por linha pelo console do LaserGRBL (ou Monitor Serial,
+;  115200 baud). Tudo fica gravado na EEPROM do Arduino.
+; =====================================================================
+; modo laser DESLIGADO (obrigatório para o servo funcionar)
+$32=0
+; escala do PWM: S255 = 100% (com 1000, S255 seria só 25%)
+$30=255
+$31=0
+; passos/mm eixo X (micropasso 1/16, polia GT2 20T)
+$100=80
+; passos/mm eixo Y
+$101=80
+; velocidade máxima X (mm/min) = 200 mm/s
+$110=12000
+; velocidade máxima Y (mm/min)
+$111=12000
+; aceleração X (mm/s²)
+$120=800
+; aceleração Y (mm/s²)
+$121=800
+; curso útil X (mm)
+$130=810
+; curso útil Y (mm) - sobram ~2 mm até o fim mecânico (use 385 se quiser mais folga)
+$131=390
+; inverte X e Y (1 + 2) - confira o sentido na sua montagem
+$3=3
+; fins de curso NO (use 1 se ligar no NC)
+$5=0
+; limite por software ligado
+$20=1
+; limite físico desligado
+$21=0
+; homing ligado
+$22=1
+; homing no sentido + (ponte à direita, carro do lado da Base Principal)
+$23=0
+; homing: aproximação fina (mm/min)
+$24=200
+; homing: busca (mm/min) - acima de ~5000 a ponte bate forte na chave
+$25=4000
+; debounce (ms)
+$26=250
+; recuo depois de tocar a chave (mm)
+$27=3

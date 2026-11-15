@@ -48,7 +48,7 @@ export const sheets: Sheet[] = [
     kind: "draw",
     caseUrl: "/projeto/cnc-plotter",
     summary:
-      "Uma plotter de mesa com área de 818 × 402 mm. Aqui ela desenha um par de engrenagens enquanto você rola; na página do projeto, escreve o que você digitar.",
+      "Uma plotter de mesa com área de 810 × 390 mm. Aqui ela desenha um par de engrenagens enquanto você rola; na página do projeto, escreve o que você digitar.",
   },
   {
     n: "03",

@@ -116,7 +116,7 @@ const ProjectsPage = () => {
             {projectData.hardware.projects.map((project, index) => (
               <Reveal key={project.id} delay={0.06 * index}>
                 <article className="group overflow-hidden rounded-lg border border-border bg-background shadow-soft-sm transition-[border-color,box-shadow] duration-300 hover:border-primary/40 hover:shadow-soft-md">
-                  <div className="grid md:grid-cols-[minmax(0,22rem)_1fr]">
+                  <div className="grid md:grid-cols-[minmax(0,22rem)_1fr] xl:grid-cols-[minmax(0,30rem)_1fr]">
                     {/* Mídia */}
                     <div className="flex flex-col gap-4 border-b border-border p-5 md:border-b-0 md:border-r">
                       <div className="overflow-hidden rounded-md border border-border bg-surface">
@@ -170,7 +170,7 @@ const ProjectsPage = () => {
                         </ul>
                       )}
 
-                      <p className="mt-6 border-t border-border pt-6 leading-relaxed text-muted-foreground">
+                      <p className="mt-6 max-w-[75ch] border-t border-border pt-6 leading-relaxed text-muted-foreground">
                         {project.longDescription}
                       </p>
 

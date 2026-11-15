@@ -258,7 +258,7 @@ export default function CncGuide() {
                 <P>{impressao.resumo}</P>
                 <Table head={["Peça", "Qtd.", "Material", "Função"]} rows={impressao.pecas} />
                 <Bullets items={impressao.dicas} />
-                <Photo info={fotos.pecasImpressas} dir={FOTOS} />
+                <Photo info={fotos.pecasImpressas} dir={FOTOS} className="max-w-4xl" />
                 <Card className="grid gap-6 md:grid-cols-[1fr_1.1fr] md:items-center">
                   <Figure
                     src={`${IMG}/base-shield.webp`}
@@ -289,7 +289,7 @@ export default function CncGuide() {
                     <Steps items={mesa.suportes} />
                   </div>
                 </div>
-                <Photo info={fotos.suportes} dir={FOTOS} />
+                <Photo info={fotos.suportes} dir={FOTOS} className="max-w-4xl" />
                 <Callout tone="tip" title="Guiar de um lado, apoiar do outro">
                   {mesa.ideia}
                 </Callout>
@@ -317,7 +317,7 @@ export default function CncGuide() {
                     <Steps items={correias.x} />
                   </div>
                 </div>
-                <Photo info={fotos.omega} dir={FOTOS} />
+                <Photo info={fotos.omega} dir={FOTOS} className="max-w-4xl" />
                 <div>
                   <H4>Eixo Y, em laço</H4>
                   <div className="mt-5">
@@ -553,7 +553,7 @@ export default function CncGuide() {
                   <H4>Testes em 1/16, na cartolina</H4>
                   <Table head={["Teste", "Resultado (medido)"]} rows={traco.testes} />
                 </div>
-                <Photo info={fotos.cartolina} dir={FOTOS} />
+                <Photo info={fotos.cartolina} dir={FOTOS} className="max-w-4xl" />
                 <P>{traco.conclusao}</P>
                 <Callout tone="tip" title="Velocidade de trabalho">
                   {traco.decisao}

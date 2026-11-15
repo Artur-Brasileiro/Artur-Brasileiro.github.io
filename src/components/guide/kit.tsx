@@ -69,7 +69,7 @@ export function Chapter({ id, n, title, eager, children }: ChapterInfo & { eager
 }
 
 export const P = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <p className={cn("max-w-[68ch] text-[15px] leading-relaxed text-muted-foreground", className)}>{fmt(children)}</p>
+  <p className={cn("max-w-[74ch] text-[15px] leading-relaxed text-muted-foreground", className)}>{fmt(children)}</p>
 );
 
 export const H4 = ({ children, className }: { children: ReactNode; className?: string }) => (

@@ -1,5 +1,4 @@
 import { lazy, useLayoutEffect } from "react";
-import { Link } from "react-router-dom";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
 import { getLenis } from "@/components/motion/SmoothScroll";
@@ -7,7 +6,8 @@ import SiteFooter from "@/components/SiteFooter";
 import DeferredGuide from "@/components/guide/Deferred";
 import PenduloSimulator from "@/components/pendulo/PenduloSimulator";
 import { preloadPendulo } from "@/components/pendulo/preload";
-import { pendulo } from "@/data/pendulo";
+import { pendulo as penduloData } from "@/data/pendulo";
+import { Link, useLocalized, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 
 // o 3D começa a baixar junto com a página, não depois do primeiro render
@@ -37,9 +37,11 @@ function jump(e: React.MouseEvent, id: string) {
 }
 
 function Specs({ className }: { className?: string }) {
+  const pendulo = useLocalized(penduloData);
+  const t = useT();
   return (
     <div className={cn("rounded-lg border border-border bg-background p-6", className)}>
-      <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Especificações</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t("Especificações", "Specifications")}</h2>
       <dl className="mt-5 divide-y divide-border">
         {pendulo.specs.map((spec) => (
           <div key={spec.label} className="flex items-baseline justify-between gap-6 py-3 first:pt-0 last:pb-0">
@@ -53,6 +55,9 @@ function Specs({ className }: { className?: string }) {
 }
 
 const PenduloPage = () => {
+  const pendulo = useLocalized(penduloData);
+  const t = useT();
+
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -62,9 +67,9 @@ const PenduloPage = () => {
       {/* Cabeçalho */}
       <div className="border-b border-border bg-surface">
         <div className="rail py-10 md:py-16">
-          <nav aria-label="Trilha de navegação" className="flex items-center gap-2 text-sm">
+          <nav aria-label={t("Trilha de navegação", "Breadcrumb")} className="flex items-center gap-2 text-sm">
             <Link to="/" className="text-muted-foreground transition-colors hover:text-primary">
-              Início
+              {t("Início", "Home")}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
             <Link to="/hardware" className="text-muted-foreground transition-colors hover:text-primary">
@@ -96,14 +101,14 @@ const PenduloPage = () => {
                   onClick={(e) => jump(e, "simulador")}
                   className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 font-mono text-[13px] font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
                 >
-                  Ver o pêndulo subir ↓
+                  {t("Ver o pêndulo subir ↓", "Watch it swing up ↓")}
                 </a>
                 <a
                   href="#monte-o-seu"
                   onClick={(e) => jump(e, "monte-o-seu")}
                   className="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-background px-5 font-mono text-[13px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
                 >
-                  Monte o seu ↓
+                  {t("Monte o seu ↓", "Build your own ↓")}
                 </a>
               </div>
             </div>
@@ -117,12 +122,16 @@ const PenduloPage = () => {
       {/* Simulador */}
       <section id="simulador" className="scroll-mt-16 border-b border-border bg-background">
         <div className="rail py-12 md:py-16">
-          <p className="eyebrow">Simulação</p>
+          <p className="eyebrow">{t("Simulação", "Simulation")}</p>
           <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
-            <h2 className="font-display text-display-lg font-medium">Ele sobe sozinho</h2>
+            <h2 className="font-display text-display-lg font-medium">{t("Ele sobe sozinho", "It swings up on its own")}</h2>
             <p className="max-w-[52ch] leading-relaxed text-muted-foreground">
-              O modelo do CAD, peça por peça, com a física da haste e o controle do Arduino rodando a 200 Hz. Pegue a haste com o mouse e empurre, ou{" "}
-              <b className="font-medium text-foreground">desligue o controle</b> para ver o que ele está segurando.
+              {t(
+                "O modelo do CAD, peça por peça, com a física da haste e o controle do Arduino rodando a 200 Hz. Pegue a haste com o mouse e empurre, ou",
+                "The CAD model, part by part, with the rod's physics and the Arduino controller running at 200 Hz. Grab the rod with your mouse and push it, or",
+              )}{" "}
+              <b className="font-medium text-foreground">{t("desligue o controle", "turn off the controller")}</b>{" "}
+              {t("para ver o que ele está segurando.", "to see what it's holding up.")}
             </p>
           </div>
           {/* no celular o simulador vai de borda a borda */}
@@ -141,8 +150,8 @@ const PenduloPage = () => {
       {/* Como ele pensa */}
       <section className="border-b border-border bg-surface">
         <div className="rail py-16 md:py-20">
-          <p className="eyebrow">Controle</p>
-          <h2 className="font-display mt-5 text-display-lg font-medium">Como ele pensa</h2>
+          <p className="eyebrow">{t("Controle", "Control")}</p>
+          <h2 className="font-display mt-5 text-display-lg font-medium">{t("Como ele pensa", "How it thinks")}</h2>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {pendulo.modes.map((m, i) => (
               <Reveal key={m.ref} delay={0.06 * i}>
@@ -169,9 +178,14 @@ const PenduloPage = () => {
       {/* Do CAD ao trilho */}
       <section className="bg-background">
         <div className="rail py-16 md:py-20">
-          <p className="eyebrow">Projeto</p>
-          <h2 className="font-display mt-5 text-display-lg font-medium">Do CAD ao trilho</h2>
-          <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-muted-foreground">Cada número da simulação veio do aparelho: medido com paquímetro, com cronômetro ou no próprio encoder.</p>
+          <p className="eyebrow">{t("Projeto", "Design")}</p>
+          <h2 className="font-display mt-5 text-display-lg font-medium">{t("Do CAD ao trilho", "From CAD to rail")}</h2>
+          <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-muted-foreground">
+            {t(
+              "Cada número da simulação veio do aparelho: medido com paquímetro, com cronômetro ou no próprio encoder.",
+              "Every number in the simulation came from the real device: measured with calipers, with a stopwatch or on the encoder itself.",
+            )}
+          </p>
           <ol className="mt-10 grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-4">
             {pendulo.pipeline.map((s) => (
               <li key={s.n} className="border-t border-foreground pt-4">
@@ -193,7 +207,7 @@ const PenduloPage = () => {
         <div className="rail py-8">
           <Link to="/" state={{ targetId: "projetos" }} className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            Voltar para projetos
+            {t("Voltar para projetos", "Back to projects")}
           </Link>
         </div>
       </div>

@@ -96,7 +96,18 @@ test("correia: volta fechada em torno da polia e do rolo", () => {
 test("corrida da home: sobe, pega, leva o tapa e reergue, nessa ordem", () => {
   const r = recordRun();
   const t = r.marks.map((m) => m.t);
-  for (let i = 1; i < t.length; i++) assert.ok(t[i] > t[i - 1], r.marks[i].name);
+  for (let i = 1; i < t.length; i++) assert.ok(t[i] > t[i - 1], r.marks[i].name.pt);
   assert.ok(Math.abs(deg(sampleRun(r, r.duration).th)) < 2, "termina em pé");
   assert.ok(Math.abs(Math.abs(deg(sampleRun(r, 0).th)) - 180) < 1, "começa pendurada");
+});
+
+test("corrida da home: textos nos dois idiomas, vírgula decimal no PT e ponto no EN", () => {
+  const r = recordRun();
+  for (const m of r.marks) {
+    for (const k of ["label", "name", "spec"] as const) {
+      assert.ok(m[k].pt.length > 0 && m[k].en.length > 0, `${k} vazio`);
+      assert.ok(!/\d\.\d/.test(m[k].pt), `ponto decimal no PT: ${m[k].pt}`);
+      assert.ok(!/\d,\d/.test(m[k].en), `vírgula decimal no EN: ${m[k].en}`);
+    }
+  }
 });

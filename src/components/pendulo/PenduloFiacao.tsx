@@ -19,7 +19,12 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Copy, ListOrdered, X } from "lucide-react";
+import { formatNumber, tr, type Tx } from "@/i18n/core";
+import { useLocale, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
+
+/** texto nos dois idiomas (tr) ou que não muda (nome de pino, sigla) */
+type Text = string | Tx;
 
 /**
  * Longe da tela, o navegador pula o layout de cada bloco (o capítulo da
@@ -52,12 +57,12 @@ const C = {
   mark: "#94600f",
 };
 
-const NETS: Record<Net, { name: string; col: string; col2?: string }> = {
+const NETS: Record<Net, { name: Text; col: string; col2?: string }> = {
   p12: { name: "+12 V", col: C.w12 },
   p5: { name: "+5 V", col: C.w5 },
   gnd: { name: "GND", col: C.gnd },
-  coilA: { name: "Bobina A (preto/verde)", col: C.gnd, col2: C.a },
-  coilB: { name: "Bobina B (vermelho/azul)", col: C.w12, col2: C.blue },
+  coilA: { name: tr("Bobina A (preto/verde)", "Coil A (black/green)"), col: C.gnd, col2: C.a },
+  coilB: { name: tr("Bobina B (vermelho/azul)", "Coil B (red/blue)"), col: C.w12, col2: C.blue },
   step: { name: "STEP", col: C.step },
   dir: { name: "DIR", col: C.dir },
   en: { name: "EN", col: C.en },
@@ -101,37 +106,103 @@ const DIG: [number, number][] = [[13, 150], [12, 166], [11, 182], [10, 198], [9,
 const PWR: [string, number][] = [["IOREF", 152], ["RST", 168], ["3V3", 184], ["5V", 200], ["GND", 216], ["GND", 232], ["VIN", 248]];
 
 /** linhas da tabela: [rede, fio, de, para]; as que mudam com o driver levam uma função */
-type Row = { n: Net; wire: string; from: (d: Driver) => string; to: (d: Driver) => string; color?: string; dim?: (d: Driver) => boolean; tip?: (d: Driver) => string };
+type Row = { n: Net; wire: Text; from: (d: Driver) => Text; to: (d: Driver) => Text; color?: string; dim?: (d: Driver) => boolean; tip?: (d: Driver) => Text };
 const dd = (d: Driver) => d === "DRV8825";
+/* faixas da protoboard, repetidas em várias linhas */
+const RAIL12 = tr("Faixa +12 V", "+12 V rail");
+const RAIL5 = tr("Faixa +5 V", "+5 V rail");
+const GND_TOP = tr("Faixa GND de cima", "Top GND rail");
+const GND_BOT = tr("Faixa GND de baixo", "Bottom GND rail");
+const BLACK = tr("preto", "black");
+const GREEN = tr("verde", "green");
+const RED = tr("vermelho", "red");
 const ROWS: Row[] = [
-  { n: "p12", wire: "+12 V", from: () => "Borne + da P4 fêmea", to: () => "Faixa +12 V da protoboard", tip: () => "A P4 fêmea recebe o ramo do divisor Y que não vai no Arduino." },
-  { n: "gnd", wire: "GND", from: () => "Borne − da P4 fêmea", to: () => "Faixa GND de cima" },
-  { n: "p12", wire: "+12 V", from: () => "Driver VMOT", to: () => "Faixa +12 V", tip: () => "O capacitor fica entre esta faixa e o GND, perto deste pino." },
-  { n: "gnd", wire: "GND", from: () => "Driver GND (ao lado do VMOT)", to: () => "Faixa GND de cima" },
-  { n: "p5", wire: "+5 V", from: () => "Arduino 5V", to: () => "Faixa +5 V de baixo" },
-  { n: "gnd", wire: "GND", from: () => "Arduino GND", to: () => "Faixa GND de baixo", tip: () => "É este fio que junta o terra do Arduino com o do driver: sem ele, os sinais não têm referência." },
+  {
+    n: "p12",
+    wire: "+12 V",
+    from: () => tr("Borne + da P4 fêmea", "+ terminal of the female P4"),
+    to: () => tr("Faixa +12 V da protoboard", "Breadboard +12 V rail"),
+    tip: () => tr("A P4 fêmea recebe o ramo do divisor Y que não vai no Arduino.", "The female P4 takes the Y splitter branch that doesn't go to the Arduino."),
+  },
+  { n: "gnd", wire: "GND", from: () => tr("Borne − da P4 fêmea", "− terminal of the female P4"), to: () => GND_TOP },
+  { n: "p12", wire: "+12 V", from: () => "Driver VMOT", to: () => RAIL12, tip: () => tr("O capacitor fica entre esta faixa e o GND, perto deste pino.", "The capacitor goes between this rail and GND, close to this pin.") },
+  { n: "gnd", wire: "GND", from: () => tr("Driver GND (ao lado do VMOT)", "Driver GND (next to VMOT)"), to: () => GND_TOP },
+  { n: "p5", wire: "+5 V", from: () => "Arduino 5V", to: () => tr("Faixa +5 V de baixo", "Bottom +5 V rail") },
+  {
+    n: "gnd",
+    wire: "GND",
+    from: () => "Arduino GND",
+    to: () => GND_BOT,
+    tip: () =>
+      tr(
+        "É este fio que junta o terra do Arduino com o do driver: sem ele, os sinais não têm referência.",
+        "This is the wire that ties the Arduino's ground to the driver's: without it, the signals have no reference.",
+      ),
+  },
   {
     n: "p5",
     wire: "+5 V",
     from: (d) => (dd(d) ? "Driver FLT" : "Driver VDD"),
-    to: (d) => (dd(d) ? "não ligar" : "Faixa +5 V"),
+    to: (d) => (dd(d) ? tr("não ligar", "do not connect") : RAIL5),
     dim: dd,
-    tip: (d) => (dd(d) ? "No DRV8825 este pino é o FLT (falha): fica solto, ele gera a própria alimentação da lógica." : "Alimenta a lógica do driver."),
+    tip: (d) =>
+      dd(d)
+        ? tr(
+            "No DRV8825 este pino é o FLT (falha): fica solto, ele gera a própria alimentação da lógica.",
+            "On the DRV8825 this pin is FLT (fault): leave it unconnected, the driver makes its own logic supply.",
+          )
+        : tr("Alimenta a lógica do driver.", "Powers the driver's logic."),
   },
-  { n: "gnd", wire: "GND", from: () => "Driver GND (último pino)", to: () => "Faixa GND de baixo" },
-  { n: "p5", wire: "+5 V", from: (d) => (dd(d) ? "Driver M1" : "Driver MS2"), to: () => "Faixa +5 V (1/4 de passo)", tip: () => "Só este pino em 5 V: 1/4 de passo, 800 passos por volta. Os outros dois ficam soltos." },
-  { n: "jmp", wire: "jumper", from: () => "Driver RST", to: () => "Driver SLP", tip: () => "Sem esse jumper o driver fica dormindo e o motor não anda." },
-  { n: "step", wire: "STEP", from: () => "Driver STEP", to: () => "Arduino D9", tip: () => "Cada pulso é um passo; o firmware gera os pulsos pelo Timer1." },
+  { n: "gnd", wire: "GND", from: () => tr("Driver GND (último pino)", "Driver GND (last pin)"), to: () => GND_BOT },
+  {
+    n: "p5",
+    wire: "+5 V",
+    from: (d) => (dd(d) ? "Driver M1" : "Driver MS2"),
+    to: () => tr("Faixa +5 V (1/4 de passo)", "+5 V rail (1/4 step)"),
+    tip: () =>
+      tr(
+        "Só este pino em 5 V: 1/4 de passo, 800 passos por volta. Os outros dois ficam soltos.",
+        "Only this pin at 5 V: 1/4 step, 800 steps per revolution. The other two stay unconnected.",
+      ),
+  },
+  { n: "jmp", wire: "jumper", from: () => "Driver RST", to: () => "Driver SLP", tip: () => tr("Sem esse jumper o driver fica dormindo e o motor não anda.", "Without this jumper the driver stays asleep and the motor won't move.") },
+  {
+    n: "step",
+    wire: "STEP",
+    from: () => "Driver STEP",
+    to: () => "Arduino D9",
+    tip: () => tr("Cada pulso é um passo; o firmware gera os pulsos pelo Timer1.", "Each pulse is one step; the firmware generates the pulses with Timer1."),
+  },
   { n: "dir", wire: "DIR", from: () => "Driver DIR", to: () => "Arduino D8" },
-  { n: "en", wire: "EN", from: () => "Driver EN", to: () => "Arduino D10", tip: () => "LOW liga o motor." },
-  { n: "coilA", wire: "preto", color: C.gnd, from: (d) => (dd(d) ? "Driver A1" : "Driver 1A"), to: () => "Motor A+" },
-  { n: "coilA", wire: "verde", color: C.a, from: (d) => (dd(d) ? "Driver A2" : "Driver 1B"), to: () => "Motor A−", tip: () => "Preto e verde são uma bobina: no multímetro, uns 1,5 a 2 Ω entre eles." },
-  { n: "coilB", wire: "vermelho", color: C.w12, from: (d) => (dd(d) ? "Driver B1" : "Driver 2A"), to: () => "Motor B+" },
-  { n: "coilB", wire: "azul", color: C.blue, from: (d) => (dd(d) ? "Driver B2" : "Driver 2B"), to: () => "Motor B−", tip: () => "Se o motor só vibrar, inverta os dois fios de uma das bobinas." },
-  { n: "p5", wire: "vermelho", color: C.w12, from: () => "Encoder VCC", to: () => "Faixa +5 V" },
-  { n: "gnd", wire: "preto", color: C.gnd, from: () => "Encoder GND (e malha)", to: () => "Faixa GND de baixo" },
-  { n: "encA", wire: "verde", from: () => "Encoder A", to: () => "Arduino D2", tip: () => "D2 e D3 são os únicos pinos do UNO com interrupção externa." },
-  { n: "encB", wire: "branco", from: () => "Encoder B", to: () => "Arduino D3" },
+  { n: "en", wire: "EN", from: () => "Driver EN", to: () => "Arduino D10", tip: () => tr("LOW liga o motor.", "LOW enables the motor.") },
+  { n: "coilA", wire: BLACK, color: C.gnd, from: (d) => (dd(d) ? "Driver A1" : "Driver 1A"), to: () => "Motor A+" },
+  {
+    n: "coilA",
+    wire: GREEN,
+    color: C.a,
+    from: (d) => (dd(d) ? "Driver A2" : "Driver 1B"),
+    to: () => "Motor A−",
+    tip: () => tr("Preto e verde são uma bobina: no multímetro, uns 1,5 a 2 Ω entre eles.", "Black and green are one coil: on the multimeter, about 1.5 to 2 Ω between them."),
+  },
+  { n: "coilB", wire: RED, color: C.w12, from: (d) => (dd(d) ? "Driver B1" : "Driver 2A"), to: () => "Motor B+" },
+  {
+    n: "coilB",
+    wire: tr("azul", "blue"),
+    color: C.blue,
+    from: (d) => (dd(d) ? "Driver B2" : "Driver 2B"),
+    to: () => "Motor B−",
+    tip: () => tr("Se o motor só vibrar, inverta os dois fios de uma das bobinas.", "If the motor only vibrates, swap the two wires of one of the coils."),
+  },
+  { n: "p5", wire: RED, color: C.w12, from: () => "Encoder VCC", to: () => RAIL5 },
+  { n: "gnd", wire: BLACK, color: C.gnd, from: () => tr("Encoder GND (e malha)", "Encoder GND (and shield)"), to: () => GND_BOT },
+  {
+    n: "encA",
+    wire: GREEN,
+    from: () => "Encoder A",
+    to: () => "Arduino D2",
+    tip: () => tr("D2 e D3 são os únicos pinos do UNO com interrupção externa.", "D2 and D3 are the only UNO pins with external interrupts."),
+  },
+  { n: "encB", wire: tr("branco", "white"), from: () => "Encoder B", to: () => "Arduino D3" },
 ];
 
 /**
@@ -150,7 +221,6 @@ const STEPS: Step[] = [
 const STEP_OF_ROW = Object.fromEntries(STEPS.flatMap((s, i) => ("row" in s ? [[s.row, i]] : []))) as Record<number, number>;
 
 const path = (p: P[]) => "M" + p.map((q) => q.join(" ")).join(" L");
-const nf2 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function Swatch({ col, col2 }: { col: string; col2?: string }) {
   return (
@@ -192,6 +262,11 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
   const scroller = useRef<HTMLDivElement>(null);
   const focus = step === null ? (hover ?? locked) : null;
   const drv = dd(driver);
+  // todo texto sai daqui, na renderização: a troca de idioma não remonta a página
+  const t = useT();
+  const locale = useLocale();
+  /** "0,80" no português, "0.80" no inglês */
+  const nf2 = (n: number) => formatNumber(n, locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const vref = useMemo(() => {
     const I = Math.max(0, parseFloat(current.replace(",", ".")) || 0);
@@ -224,13 +299,23 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
     setStep(at);
   };
 
-  const code = `#define PIN_STEP  9
+  const ms = drv ? "M1" : "MS2";
+  const code = t(
+    `#define PIN_STEP  9
 #define PIN_DIR   8
 #define PIN_EN   10   // LOW = motor ligado
 #define ENC_A     2   // interrupção 0
 #define ENC_B     3   // interrupção 1
-// ${drv ? "M1" : "MS2"} em 5V: 1/4 de passo = 800 passos/volta
-// polia GT2 30 dentes: 60 mm/volta = 0,075 mm/passo`;
+// ${ms} em 5V: 1/4 de passo = 800 passos/volta
+// polia GT2 30 dentes: 60 mm/volta = 0,075 mm/passo`,
+    `#define PIN_STEP  9
+#define PIN_DIR   8
+#define PIN_EN   10   // LOW = motor on
+#define ENC_A     2   // interrupt 0
+#define ENC_B     3   // interrupt 1
+// ${ms} at 5V: 1/4 step = 800 steps/rev
+// GT2 pulley, 30 teeth: 60 mm/rev = 0.075 mm/step`,
+  );
 
   const copy = () => {
     navigator.clipboard
@@ -251,18 +336,31 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
     if ("note" in cur) {
       if (cur.note === "inicio")
         return {
-          title: "Com tudo desligado",
-          body: "Encaixe o driver no meio da protoboard, uma fileira de pinos de cada lado do canal, e o capacitor de 100 µF entre +12 V e GND, bem perto do VMOT. A perna mais curta vai no GND.",
+          title: t("Com tudo desligado", "With everything off"),
+          body: t(
+            "Encaixe o driver no meio da protoboard, uma fileira de pinos de cada lado do canal, e o capacitor de 100 µF entre +12 V e GND, bem perto do VMOT. A perna mais curta vai no GND.",
+            "Seat the driver across the middle of the breadboard, one row of pins on each side of the channel, and the 100 µF capacitor between +12 V and GND, right next to VMOT. The shorter leg goes to GND.",
+          ),
         };
       if (cur.note === "vref")
         return {
-          title: `Ajuste o Vref: ${nf2.format(vref)} V`,
-          body: "Ainda sem o motor: ligue a fonte e o USB, encoste a ponta vermelha do multímetro no parafuso do potenciômetro e a preta no GND, e gire até marcar o valor da calculadora abaixo. Depois desligue a fonte.",
+          title: t(`Ajuste o Vref: ${nf2(vref)} V`, `Set Vref: ${nf2(vref)} V`),
+          body: t(
+            "Ainda sem o motor: ligue a fonte e o USB, encoste a ponta vermelha do multímetro no parafuso do potenciômetro e a preta no GND, e gire até marcar o valor da calculadora abaixo. Depois desligue a fonte.",
+            "Still without the motor: turn on the power supply and plug in the USB, touch the multimeter's red probe to the potentiometer screw and the black one to GND, and turn it until it reads the value from the calculator below. Then turn off the power supply.",
+          ),
         };
-      return { title: "Pronto", body: "Todos os fios no lugar. Confira as bobinas e o encoder na lista abaixo, grave o firmware e ligue a fonte com o carro no batente do motor." };
+      return {
+        title: t("Pronto", "Done"),
+        body: t(
+          "Todos os fios no lugar. Confira as bobinas e o encoder na lista abaixo, grave o firmware e ligue a fonte com o carro no batente do motor.",
+          "Every wire in place. Check the coils and the encoder in the list below, flash the firmware and turn on the power supply with the cart against the motor-side end stop.",
+        ),
+      };
     }
     const r = ROWS[cur.row];
-    return { title: `${r.from(driver)} → ${r.to(driver)}`, body: r.tip?.(driver) ?? "", row: r };
+    const tip = r.tip?.(driver);
+    return { title: `${t(r.from(driver))} → ${t(r.to(driver))}`, body: tip ? t(tip) : "", row: r };
   })();
 
   return (
@@ -270,10 +368,12 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
       {/* a faixa larga: driver, desenho, passo a passo e legenda */}
       <div ref={wideRef} className={cn("flex flex-col gap-3", lazy(900), wideClassName)}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-mono text-[12px] text-muted-foreground">fonte 12 V · divisor Y · Arduino UNO · {driver} · NEMA 17 17HS4401S · LPD3806-1000BM</p>
+          <p className="font-mono text-[12px] text-muted-foreground">
+            {t("fonte 12 V · divisor Y", "12 V power supply · Y splitter")} · Arduino UNO · {driver} · NEMA 17 17HS4401S · LPD3806-1000BM
+          </p>
           <div className="flex items-center gap-2">
             <span className="text-[12px] text-muted-foreground">Driver:</span>
-            <div role="group" aria-label="Modelo do driver" className="flex rounded-md border border-border bg-background p-0.5">
+            <div role="group" aria-label={t("Modelo do driver", "Driver model")} className="flex rounded-md border border-border bg-background p-0.5">
               {(["A4988", "DRV8825"] as Driver[]).map((d) => (
                 <button
                   key={d}
@@ -300,10 +400,13 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                   className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3.5 font-mono text-[12px] font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
                 >
                   <ListOrdered className="h-4 w-4" aria-hidden />
-                  Montar fio a fio
+                  {t("Montar fio a fio", "Wire it step by step")}
                 </button>
                 <p className="text-[13px] text-muted-foreground">
-                  {STEPS.length} passos na ordem segura, com o motor por último. Ou toque numa cor, ou num fio, para seguir só aquela ligação.
+                  {t(
+                    `${STEPS.length} passos na ordem segura, com o motor por último. Ou toque numa cor, ou num fio, para seguir só aquela ligação.`,
+                    `${STEPS.length} steps in the safe order, with the motor last. Or tap a color, or a wire, to follow just that connection.`,
+                  )}
                 </p>
               </div>
             ) : (
@@ -313,7 +416,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                     type="button"
                     onClick={() => go(-1)}
                     disabled={step === 0}
-                    aria-label="Passo anterior"
+                    aria-label={t("Passo anterior", "Previous step")}
                     className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground transition-colors hover:bg-foreground hover:text-background disabled:pointer-events-none disabled:opacity-35"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -325,7 +428,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                     type="button"
                     onClick={() => go(1)}
                     disabled={step === STEPS.length - 1}
-                    aria-label="Próximo passo"
+                    aria-label={t("Próximo passo", "Next step")}
                     className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:pointer-events-none disabled:opacity-35"
                   >
                     <ArrowRight className="h-4 w-4" />
@@ -334,7 +437,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                 <button
                   type="button"
                   onClick={() => setStep(null)}
-                  aria-label="Sair do passo a passo"
+                  aria-label={t("Sair do passo a passo", "Exit step by step")}
                   className="col-start-3 row-start-1 flex h-9 w-9 justify-self-end items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
@@ -357,13 +460,20 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
           </div>
 
           {/* no celular o desenho fica no tamanho de leitura e anda de lado; reduzido para caber, os pinos sumiriam */}
-          <p className="border-b border-border px-3 py-2 font-mono text-[11px] text-muted-foreground lg:hidden">← arraste o desenho para os lados para ver tudo →</p>
+          <p className="border-b border-border px-3 py-2 font-mono text-[11px] text-muted-foreground lg:hidden">
+            {t("← arraste o desenho para os lados para ver tudo →", "← drag the diagram sideways to see all of it →")}
+          </p>
           <div
             ref={scroller}
             className="overflow-x-auto bg-card [background-image:linear-gradient(hsl(var(--border)/.55)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border)/.55)_1px,transparent_1px)] [background-size:20px_20px]"
             data-lenis-prevent-horizontal=""
           >
-            <svg viewBox="0 0 1110 720" className="block h-auto w-full min-w-[820px]" role="img" aria-label="Diagrama de ligação: fonte, divisor Y, Arduino, protoboard com o driver, motor e encoder">
+            <svg viewBox="0 0 1110 720" className="block h-auto w-full min-w-[820px]" role="img"
+              aria-label={t(
+                "Diagrama de ligação: fonte, divisor Y, Arduino, protoboard com o driver, motor e encoder",
+                "Wiring diagram: power supply, Y splitter, Arduino, breadboard with the driver, motor and encoder",
+              )}
+            >
               <defs>
                 <pattern id="pf-holes" width="15" height="12" patternUnits="userSpaceOnUse">
                   <rect x="6" y="4.5" width="3" height="3" rx=".6" fill="#d6d6d1" />
@@ -380,7 +490,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
               {/* fonte */}
               <rect x="24" y="40" width="150" height="64" rx="5" fill="#fff" stroke={C.edge} strokeWidth={1.5} />
               <text x="40" y="66" fontSize="15" fontFamily={mono} fontWeight={600} fill={C.edge}>
-                FONTE
+                {t("FONTE", "POWER SUPPLY")}
               </text>
               <text x="40" y="88" fontSize="13" fontFamily={mono} fill={C.edge}>
                 12 V · 5 A
@@ -389,16 +499,16 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
               {/* divisor Y */}
               <path d="M240 62 h14 l18 -6 v16 l-18 0 l18 0 v16 l-18 -6 h-14 z" fill="#fff" stroke={C.edge} strokeWidth={1.5} />
               <text x="222" y="44" fontSize="11.5" fontFamily={mono} fill={C.edge}>
-                divisor Y P4
+                {t("divisor Y P4", "P4 Y splitter")}
               </text>
 
               {/* P4 fêmea com borne */}
               <rect x="330" y="40" width="120" height="64" rx="5" fill="#fff" stroke={C.edge} strokeWidth={1.5} />
               <text x="342" y="64" fontSize="11.5" fontFamily={mono} fill={C.edge}>
-                P4 fêmea
+                {t("P4 fêmea", "female P4")}
               </text>
               <text x="342" y="80" fontSize="11.5" fontFamily={mono} fill={C.edge}>
-                + borne
+                {t("+ borne", "+ terminal")}
               </text>
               <rect x="432" y="50" width="16" height="16" rx="2" fill={C.w12} stroke={C.edge} />
               <text x="440" y="62" fontSize="12" textAnchor="middle" fill="#fff" fontWeight={700}>
@@ -433,7 +543,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                   GND
                 </text>
                 <text x="930" y="20" fontSize="11" textAnchor="end">
-                  protoboard 400 pontos
+                  {t("protoboard 400 pontos", "400-point breadboard")}
                 </text>
               </g>
 
@@ -507,16 +617,16 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                   1000 P/R · NPN
                 </text>
                 <text x="610" y="503" fontSize="9" fill="#c7cfcb">
-                  B branco
+                  {t("B branco", "B white")}
                 </text>
                 <text x="610" y="518" fontSize="9" fill="#c7cfcb">
-                  A verde
+                  {t("A verde", "A green")}
                 </text>
                 <text x="892" y="543" fontSize="10" textAnchor="end" fill="#c7cfcb">
-                  preto GND
+                  {t("preto GND", "black GND")}
                 </text>
                 <text x="892" y="566" fontSize="10" textAnchor="end" fill="#c7cfcb">
-                  vermelho 5 V
+                  {t("vermelho 5 V", "red 5 V")}
                 </text>
               </g>
 
@@ -528,7 +638,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
               </text>
               <rect x="22" y="586" width="40" height="28" rx="3" fill="#2a2e30" stroke={C.edge} />
               <text x="74" y="604" fontSize="9.5" fill={C.ardInk} fontFamily={mono}>
-                jack 12 V
+                {t("jack 12 V", "12 V jack")}
               </text>
               <rect x="134" y="424" width="248" height="13" rx="2" fill="#1d1f20" />
               <rect x="140" y="633" width="230" height="13" rx="2" fill="#1d1f20" />
@@ -555,7 +665,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                 ARDUINO UNO
               </text>
               <text x="220" y="558" fontSize="11" textAnchor="middle" fill={C.ardInk} fontFamily={mono} opacity={0.85}>
-                USB só para programar
+                {t("USB só para programar", "USB for programming only")}
               </text>
 
               {/* fios; o da vez (ou a rede em foco) por último, por cima dos outros */}
@@ -617,7 +727,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                 )}
               >
                 <Swatch col={NETS[k].col} col2={NETS[k].col2} />
-                {NETS[k].name}
+                {t(NETS[k].name)}
               </button>
             ))}
           </div>
@@ -627,8 +737,8 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
       {/* tabela */}
       <div className={cn("min-w-0 rounded-lg border border-border bg-background p-5", lazy(1100))}>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <H4>Ligações, ponto a ponto</H4>
-          <p className="text-[12px] text-muted-foreground">Toque num fio da tabela para vê-lo no desenho.</p>
+          <H4>{t("Ligações, ponto a ponto", "Connections, point to point")}</H4>
+          <p className="text-[12px] text-muted-foreground">{t("Toque num fio da tabela para vê-lo no desenho.", "Tap a wire in the table to see it in the diagram.")}</p>
         </div>
         {/* no celular cada fio é uma linha "de → para": numa tabela, o destino ficava escondido à direita */}
         <ul className="mt-3 divide-y divide-border sm:hidden">
@@ -646,12 +756,12 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                     <Swatch col={r.color ?? NETS[r.n].col} />
                   </span>
                   <span className="min-w-0 flex-1 text-[13.5px] leading-snug">
-                    <span className="text-foreground">{r.from(driver)}</span>
-                    <span className="text-muted-foreground"> → {r.to(driver)}</span>
-                    <span className="mt-0.5 block text-[12px] text-muted-foreground">fio {r.wire}</span>
+                    <span className="text-foreground">{t(r.from(driver))}</span>
+                    <span className="text-muted-foreground"> → {t(r.to(driver))}</span>
+                    <span className="mt-0.5 block text-[12px] text-muted-foreground">{t(`fio ${t(r.wire)}`, `${t(r.wire)} wire`)}</span>
                   </span>
                   <span className="pt-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
-                    {step !== null && ph === "done" ? <Check className="h-3.5 w-3.5 text-primary" aria-label="feito" /> : String(STEP_OF_ROW[i] + 1).padStart(2, "0")}
+                    {step !== null && ph === "done" ? <Check className="h-3.5 w-3.5 text-primary" aria-label={t("feito", "done")} /> : String(STEP_OF_ROW[i] + 1).padStart(2, "0")}
                   </span>
                 </button>
               </li>
@@ -662,7 +772,7 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
           <table className="w-full min-w-[480px] border-collapse text-[13.5px]">
             <thead>
               <tr className="text-left">
-                {["Fio", "De", "Para", "Passo"].map((h) => (
+                {[t("Fio", "Wire"), t("De", "From"), t("Para", "To"), t("Passo", "Step")].map((h) => (
                   <th key={h} className="border-b border-border px-2 py-2 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
                     {h}
                   </th>
@@ -683,13 +793,13 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
                     <td className="whitespace-nowrap border-b border-border px-2 py-1.5 align-top">
                       <button type="button" onClick={() => startSteps(STEP_OF_ROW[i])} className="inline-flex items-center gap-2 text-left hover:underline hover:underline-offset-4">
                         <Swatch col={r.color ?? NETS[r.n].col} />
-                        {r.wire}
+                        {t(r.wire)}
                       </button>
                     </td>
-                    <td className="border-b border-border px-2 py-1.5 align-top">{r.from(driver)}</td>
-                    <td className="border-b border-border px-2 py-1.5 align-top">{r.to(driver)}</td>
+                    <td className="border-b border-border px-2 py-1.5 align-top">{t(r.from(driver))}</td>
+                    <td className="border-b border-border px-2 py-1.5 align-top">{t(r.to(driver))}</td>
                     <td className="border-b border-border px-2 py-1.5 align-top font-mono text-[12px] tabular-nums text-muted-foreground">
-                      {step !== null && ph === "done" ? <Check className="h-3.5 w-3.5 text-primary" aria-label="feito" /> : String(STEP_OF_ROW[i] + 1).padStart(2, "0")}
+                      {step !== null && ph === "done" ? <Check className="h-3.5 w-3.5 text-primary" aria-label={t("feito", "done")} /> : String(STEP_OF_ROW[i] + 1).padStart(2, "0")}
                     </td>
                   </tr>
                 );
@@ -702,9 +812,9 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
       {/* calculadora + pinos no código */}
       <div className={cn("grid gap-4 md:grid-cols-2", lazy(560))}>
         <div className="rounded-lg border border-border bg-background p-5">
-          <H4>Ajuste da corrente (Vref)</H4>
+          <H4>{t("Ajuste da corrente (Vref)", "Current setting (Vref)")}</H4>
           <label htmlFor="pf-cur" className="mt-4 block text-[13px] font-medium text-foreground">
-            Corrente no motor (A)
+            {t("Corrente no motor (A)", "Motor current (A)")}
           </label>
           <input
             id="pf-cur"
@@ -719,79 +829,134 @@ export default function PenduloFiacao({ wideClassName, wideRef }: Props) {
           {!drv && (
             <>
               <label htmlFor="pf-rs" className="mt-3 block text-[13px] font-medium text-foreground">
-                Resistor de sensor no driver (impresso perto dos pinos)
+                {t("Resistor de sensor no driver (impresso perto dos pinos)", "Sense resistor on the driver (printed near the pins)")}
               </label>
               <select id="pf-rs" value={rs} onChange={(e) => setRs(e.target.value)} className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 font-mono text-[14px] text-foreground">
-                <option value="0.1">R100 (0,10 Ω) — o mais comum</option>
-                <option value="0.068">R068 (0,068 Ω)</option>
-                <option value="0.05">R050 (0,05 Ω)</option>
+                <option value="0.1">{t("R100 (0,10 Ω) — o mais comum", "R100 (0.10 Ω) — the most common")}</option>
+                <option value="0.068">{t("R068 (0,068 Ω)", "R068 (0.068 Ω)")}</option>
+                <option value="0.05">{t("R050 (0,05 Ω)", "R050 (0.05 Ω)")}</option>
               </select>
             </>
           )}
           <div className="mt-4 flex items-baseline gap-3 rounded-md border border-border bg-card px-4 py-3">
-            <b className="font-mono text-[30px] font-medium tabular-nums text-gold">{nf2.format(vref)}</b>
-            <span className="text-[13px] text-muted-foreground">V no potenciômetro, medido contra o GND</span>
+            <b className="font-mono text-[30px] font-medium tabular-nums text-gold">{nf2(vref)}</b>
+            <span className="text-[13px] text-muted-foreground">{t("V no potenciômetro, medido contra o GND", "V at the potentiometer, measured against GND")}</span>
           </div>
-          <p className="mt-3 text-[13px] text-muted-foreground">{drv ? "DRV8825: Vref = corrente ÷ 2." : "A4988: Vref = corrente × 8 × Rs."}</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">O 17HS4401S aguenta 1,5 A, mas 1,0 A esquenta menos o driver e já sobra força para o carro.</p>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            {drv ? t("DRV8825: Vref = corrente ÷ 2.", "DRV8825: Vref = current ÷ 2.") : t("A4988: Vref = corrente × 8 × Rs.", "A4988: Vref = current × 8 × Rs.")}
+          </p>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {t(
+              "O 17HS4401S aguenta 1,5 A, mas 1,0 A esquenta menos o driver e já sobra força para o carro.",
+              "The 17HS4401S handles 1.5 A, but 1.0 A keeps the driver cooler and still leaves plenty of force for the cart.",
+            )}
+          </p>
         </div>
 
         <div className="flex min-w-0 flex-col rounded-lg border border-border bg-background p-5">
           <div className="flex items-center justify-between gap-3">
-            <H4>Pinos no código</H4>
+            <H4>{t("Pinos no código", "Pins in the code")}</H4>
             <button
               type="button"
               onClick={copy}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 font-mono text-[11.5px] text-foreground transition-colors hover:bg-foreground/5"
             >
               {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
-              {copied ? "Copiado" : "Copiar"}
+              {copied ? t("Copiado", "Copied") : t("Copiar", "Copy")}
             </button>
           </div>
           <pre className="mt-3 overflow-x-auto rounded-md border border-border bg-card px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground">{code}</pre>
-          <p className="mt-3 text-[13px] text-muted-foreground">São os mesmos pinos do pendulo_controle.ino: mudou um fio de lugar, mude aqui também.</p>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            {t(
+              "São os mesmos pinos do pendulo_controle.ino: mudou um fio de lugar, mude aqui também.",
+              "These are the same pins as in pendulo_controle.ino: if you move a wire, change it here too.",
+            )}
+          </p>
         </div>
       </div>
 
       {/* ordem segura + conferir */}
       <div className={cn("grid gap-4 md:grid-cols-2", lazy(640))}>
         <div className="rounded-lg border border-border bg-background p-5">
-          <H4>Ordem segura para ligar</H4>
+          <H4>{t("Ordem segura para ligar", "Safe order to wire it up")}</H4>
           <ol className="mt-3 flex list-decimal flex-col gap-2 pl-5 text-[14px] leading-relaxed text-foreground marker:font-mono marker:text-gold">
-            <li>Com tudo desligado, encaixe o driver no meio da protoboard (uma fileira de cada lado do canal) e coloque o capacitor de 100 µF entre +12 V e GND, bem perto do VMOT. A perna mais curta vai no GND.</li>
-            <li>Faça todas as ligações do diagrama, menos os 4 fios do motor.</li>
-            <li>Ligue a fonte e o USB. Gire o potenciômetro do driver até o multímetro marcar o Vref da calculadora (ponta vermelha no parafuso do potenciômetro, preta no GND).</li>
-            <li>Desligue a fonte, ligue o motor e só então ligue de novo.</li>
-            <li>Se o motor só vibrar e não girar, um par de fios está trocado: inverta os dois fios de uma das bobinas.</li>
+            <li>
+              {t(
+                "Com tudo desligado, encaixe o driver no meio da protoboard (uma fileira de cada lado do canal) e coloque o capacitor de 100 µF entre +12 V e GND, bem perto do VMOT. A perna mais curta vai no GND.",
+                "With everything off, seat the driver across the middle of the breadboard (one row on each side of the channel) and place the 100 µF capacitor between +12 V and GND, right next to VMOT. The shorter leg goes to GND.",
+              )}
+            </li>
+            <li>{t("Faça todas as ligações do diagrama, menos os 4 fios do motor.", "Make every connection in the diagram except the 4 motor wires.")}</li>
+            <li>
+              {t(
+                "Ligue a fonte e o USB. Gire o potenciômetro do driver até o multímetro marcar o Vref da calculadora (ponta vermelha no parafuso do potenciômetro, preta no GND).",
+                "Turn on the power supply and plug in the USB. Turn the driver's potentiometer until the multimeter reads the Vref from the calculator (red probe on the potentiometer screw, black on GND).",
+              )}
+            </li>
+            <li>{t("Desligue a fonte, ligue o motor e só então ligue de novo.", "Turn off the power supply, connect the motor, and only then power up again.")}</li>
+            <li>
+              {t(
+                "Se o motor só vibrar e não girar, um par de fios está trocado: inverta os dois fios de uma das bobinas.",
+                "If the motor only vibrates and doesn't turn, a pair of wires is swapped: swap the two wires of one of the coils.",
+              )}
+            </li>
           </ol>
           <p className="mt-4 rounded-r-md border-l-[3px] border-destructive bg-destructive/5 px-3 py-2.5 text-[14px] text-foreground">
-            <b className="text-destructive">Nunca</b> encaixe ou tire o motor com a fonte ligada. O pico de tensão queima o driver na hora.
+            <b className="text-destructive">{t("Nunca", "Never")}</b>{" "}
+            {t(
+              "encaixe ou tire o motor com a fonte ligada. O pico de tensão queima o driver na hora.",
+              "plug or unplug the motor with the power supply on. The voltage spike burns out the driver instantly.",
+            )}
           </p>
         </div>
 
         <div className="rounded-lg border border-border bg-background p-5">
-          <H4>Para conferir antes</H4>
+          <H4>{t("Para conferir antes", "Check before you start")}</H4>
           <ul className="mt-3 flex list-disc flex-col gap-2 pl-5 text-[14px] leading-relaxed text-foreground">
             <li>
-              <b className="font-medium">Bobinas do motor:</b> as cores do desenho são as mais comuns no 17HS4401S. No multímetro em Ω, os dois fios de uma mesma bobina dão uns 1,5 a 2 Ω; fios de bobinas diferentes não dão continuidade.
+              <b className="font-medium">{t("Bobinas do motor:", "Motor coils:")}</b>{" "}
+              {t(
+                "as cores do desenho são as mais comuns no 17HS4401S. No multímetro em Ω, os dois fios de uma mesma bobina dão uns 1,5 a 2 Ω; fios de bobinas diferentes não dão continuidade.",
+                "the colors in the diagram are the most common ones on the 17HS4401S. With the multimeter on Ω, the two wires of the same coil read about 1.5 to 2 Ω; wires from different coils show no continuity.",
+              )}
             </li>
             <li>
-              <b className="font-medium">Fios do encoder:</b> vermelho 5 V, preto GND, verde A, branco B. Se tiver um fio sem capa (malha), ele vai no GND. Se a contagem sair invertida, troque o sinal no código (SINAL_ENCODER).
+              <b className="font-medium">{t("Fios do encoder:", "Encoder wires:")}</b>{" "}
+              {t(
+                "vermelho 5 V, preto GND, verde A, branco B. Se tiver um fio sem capa (malha), ele vai no GND. Se a contagem sair invertida, troque o sinal no código (SINAL_ENCODER).",
+                "red 5 V, black GND, green A, white B. If there's a bare wire (the shield), it goes to GND. If the count comes out reversed, flip the sign in the code (SINAL_ENCODER).",
+              )}
             </li>
             <li>
-              <b className="font-medium">Faixas da protoboard:</b> confira qual está marcada + e qual está −. Algumas protoboards de 400 pontos têm a faixa partida no meio.
+              <b className="font-medium">{t("Faixas da protoboard:", "Breadboard rails:")}</b>{" "}
+              {t(
+                "confira qual está marcada + e qual está −. Algumas protoboards de 400 pontos têm a faixa partida no meio.",
+                "check which one is marked + and which is −. Some 400-point breadboards have the rail split in the middle.",
+              )}
             </li>
             {drv ? (
               <li>
-                <b className="font-medium">Pino FLT:</b> no DRV8825, onde o A4988 tem o VDD, fica o pino de falha. Deixe ele solto (o fio tracejado no desenho): o DRV8825 gera a própria alimentação da lógica.
+                <b className="font-medium">{t("Pino FLT:", "FLT pin:")}</b>{" "}
+                {t(
+                  "no DRV8825, onde o A4988 tem o VDD, fica o pino de falha. Deixe ele solto (o fio tracejado no desenho): o DRV8825 gera a própria alimentação da lógica.",
+                  "on the DRV8825, the fault pin sits where the A4988 has VDD. Leave it unconnected (the dashed wire in the diagram): the DRV8825 makes its own logic supply.",
+                )}
               </li>
             ) : (
               <li>
-                <b className="font-medium">Pino VDD:</b> no A4988 ele recebe os 5 V do Arduino, que alimentam a lógica do driver.
+                <b className="font-medium">{t("Pino VDD:", "VDD pin:")}</b>{" "}
+                {t(
+                  "no A4988 ele recebe os 5 V do Arduino, que alimentam a lógica do driver.",
+                  "on the A4988 it takes the Arduino's 5 V, which powers the driver's logic.",
+                )}
               </li>
             )}
             <li>
-              <b className="font-medium">Opcional:</b> 2 resistores de 4,7 kΩ do A e do B do encoder para o 5 V. O código já liga o pull-up interno, mas com eles a leitura fica mais limpa em giros rápidos.
+              <b className="font-medium">{t("Opcional:", "Optional:")}</b>{" "}
+              {t(
+                "2 resistores de 4,7 kΩ do A e do B do encoder para o 5 V. O código já liga o pull-up interno, mas com eles a leitura fica mais limpa em giros rápidos.",
+                "two 4.7 kΩ resistors from the encoder's A and B to 5 V. The code already enables the internal pull-ups, but with them the reading is cleaner on fast spins.",
+              )}
             </li>
           </ul>
         </div>

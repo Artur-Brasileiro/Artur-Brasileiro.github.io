@@ -44,6 +44,11 @@ test("currentPath não deixa o seletor virar link para outro site", () => {
   assert.equal(currentPath("///a"), "/a");
   assert.equal(currentPath("/hardware"), "/hardware");
   assert.equal(localizePath(currentPath("//evil.com"), "en"), "/en/evil.com");
+  // a barra dupla depois do /en
+  assert.equal(currentPath("/en//evil.com"), "/en/evil.com");
+  assert.equal(stripLocale("/en//evil.com"), "/evil.com");
+  assert.equal(localizePath(stripLocale(currentPath("/en//evil.com")), "pt"), "/evil.com");
+  assert.equal(localizePath("/en//evil.com", "pt"), "/evil.com");
 });
 
 test("detecção: escolha salva, robô, navegador, região", () => {

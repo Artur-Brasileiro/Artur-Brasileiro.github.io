@@ -114,7 +114,7 @@ function walk(v: unknown, locale: Locale): unknown {
  * digitado com barra dupla) vira "/x.com/y", senão seria um link para outro site.
  */
 export function currentPath(pathname: string): string {
-  return pathname.replace(/^\/{2,}/, "/") || "/";
+  return pathname.replace(/\/{2,}/g, "/") || "/";
 }
 
 export function localeFromPath(pathname: string): Locale {
@@ -123,7 +123,9 @@ export function localeFromPath(pathname: string): Locale {
 
 /** o caminho sem o prefixo do idioma ("/en/hardware" → "/hardware", "/en" → "/") */
 export function stripLocale(pathname: string): string {
-  return localeFromPath(pathname) === "en" ? pathname.slice(3) || "/" : pathname;
+  const bare = localeFromPath(pathname) === "en" ? pathname.slice(3) || "/" : pathname;
+  // "/en//x" não pode virar "//x" (endereço de outro site)
+  return bare.replace(/^\/{2,}/, "/");
 }
 
 /**

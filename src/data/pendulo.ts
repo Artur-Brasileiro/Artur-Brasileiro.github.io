@@ -88,4 +88,79 @@ export const pendulo = {
     { value: "~5 s", label: tr("do batente até ficar em pé", "from the end stop to upright") },
     { value: "~2 s", label: tr("para reerguer depois de um tapa", "to recover after a tap") },
   ],
+  /**
+   * Fotos do aparelho montado (recortes das figuras do artigo, ~630 px: um
+   * tamanho só, sem -800/-1200). Arquivos em public/projetos/pendulo/fotos.
+   */
+  fotos: [
+    {
+      n: "01",
+      title: tr("Equilibrando sozinho", "Balancing on its own"),
+      caption: tr(
+        "A haste de 50 cm em pé sobre o carro, segura pelo controle a 200 Hz. Na ponta esquerda, o motor, o Arduino e a protoboard; na direita, o esticador.",
+        "The 50 cm rod standing on the cart, held up by the 200 Hz controller. At the left end, the motor, the Arduino and the breadboard; at the right, the tensioner.",
+      ),
+      ratio: "1/1",
+      src: "visao-geral.webp",
+      single: true,
+    },
+    {
+      n: "02",
+      title: tr("Um toque na ponta", "A tap on the tip"),
+      caption: tr(
+        "O teste de perturbação: um toque com o dedo na ponta da haste equilibrada.",
+        "The disturbance test: a finger tap on the tip of the balanced rod.",
+      ),
+      ratio: "1/1",
+      src: "toque-ponta.webp",
+      single: true,
+    },
+    {
+      n: "03",
+      title: tr("O carro corrige", "The cart corrects"),
+      caption: tr(
+        "A haste inclinada logo depois do toque, com o carro correndo para voltar para baixo dela.",
+        "The rod tilted right after the tap, with the cart moving to get back under it.",
+      ),
+      ratio: "1/1",
+      src: "toque-correcao.webp",
+      single: true,
+    },
+    {
+      n: "04",
+      title: tr("Carro do encoder", "Encoder cart"),
+      caption: tr(
+        "O carro impresso sobre o bloco MGN15H, com o encoder óptico e o cubo que segura a haste.",
+        "The printed cart on the MGN15H block, with the optical encoder and the hub that holds the rod.",
+      ),
+      ratio: "1/1",
+      src: "carro-encoder.webp",
+      single: true,
+    },
+    {
+      n: "05",
+      title: tr("Suporte do motor", "Motor mount"),
+      caption: tr(
+        "O NEMA 17 no suporte impresso, com a polia GT2 de 30 dentes também impressa. Atrás, o Arduino e a protoboard com o driver.",
+        "The NEMA 17 on its printed mount, with the printed 30-tooth GT2 pulley. Behind it, the Arduino and the breadboard with the driver.",
+      ),
+      ratio: "1/1",
+      src: "suporte-motor.webp",
+      single: true,
+    },
+    {
+      n: "06",
+      title: tr("Esticador da correia", "Belt tensioner"),
+      caption: tr(
+        "Um parafuso M5 puxa o carrinho do esticador e dá tensão na correia; o rolo gira em dois rolamentos 625ZZ.",
+        "An M5 screw pulls the tensioner carriage and tensions the belt; the roller spins on two 625ZZ bearings.",
+      ),
+      ratio: "1/1",
+      src: "esticador.webp",
+      single: true,
+    },
+  ],
 };
+
+/** onde moram as fotos do aparelho */
+export const FOTOS_PENDULO = "/projetos/pendulo/fotos";

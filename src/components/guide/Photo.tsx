@@ -23,6 +23,8 @@ export type PhotoInfo = {
   /** enquadramento quando a proporção corta a foto (object-position) */
   pos?: string;
   src?: string;
+  /** a foto só existe num tamanho (sem -800/-1200): sem srcset, o navegador usa o arquivo */
+  single?: boolean;
 };
 
 /* ------------------------------------------------------------------ visualizador */
@@ -93,8 +95,8 @@ export function PhotoFrame({
       >
         <img
           src={src}
-          srcSet={`${dir}/${info.src.replace(/\.webp$/, "-800.webp")} 800w, ${dir}/${info.src.replace(/\.webp$/, "-1200.webp")} 1200w, ${src} 1600w`}
-          sizes={sizes}
+          srcSet={info.single ? undefined : `${dir}/${info.src.replace(/\.webp$/, "-800.webp")} 800w, ${dir}/${info.src.replace(/\.webp$/, "-1200.webp")} 1200w, ${src} 1600w`}
+          sizes={info.single ? undefined : sizes}
           alt={text}
           loading="lazy"
           decoding="async"

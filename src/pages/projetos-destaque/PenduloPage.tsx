@@ -6,7 +6,8 @@ import SiteFooter from "@/components/SiteFooter";
 import DeferredGuide from "@/components/guide/Deferred";
 import PenduloSimulator from "@/components/pendulo/PenduloSimulator";
 import { preloadPendulo } from "@/components/pendulo/preload";
-import { pendulo as penduloData } from "@/data/pendulo";
+import { Photo, PhotoViewer } from "@/components/guide/Photo";
+import { FOTOS_PENDULO, pendulo as penduloData } from "@/data/pendulo";
 import { Link, useLocalized, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 
@@ -149,6 +150,28 @@ const PenduloPage = () => {
             <PenduloSimulator />
           </div>
         </div>
+      </section>
+
+      {/* O aparelho de verdade: depois da simulação, a prova de que ele existe */}
+      <section id="fotos" className="scroll-mt-16 border-b border-border bg-surface">
+        <div className="rail py-12 md:py-16">
+          <p className="eyebrow">{t("Na bancada", "On the bench")}</p>
+          <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
+            <h2 className="font-display text-display-lg font-medium">{t("O aparelho de verdade", "The real machine")}</h2>
+            <p className="max-w-[52ch] leading-relaxed text-muted-foreground">
+              {t(
+                "Montado, equilibrando sozinho e aguentando um toque na ponta da haste. Toque numa foto para ampliar.",
+                "Assembled, balancing on its own and taking a tap on the tip of the rod. Tap a photo to enlarge it.",
+              )}
+            </p>
+          </div>
+          <div className="mt-8 grid gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
+            {pendulo.fotos.map((f) => (
+              <Photo key={f.n} info={f} dir={FOTOS_PENDULO} />
+            ))}
+          </div>
+        </div>
+        <PhotoViewer />
       </section>
 
       <section className="border-b border-border bg-surface lg:hidden">

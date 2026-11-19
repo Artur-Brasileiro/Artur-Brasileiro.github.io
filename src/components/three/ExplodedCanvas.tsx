@@ -26,7 +26,8 @@ const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: r
 
 
 type SceneProps = {
-  cfg: PartsConfig;
+  /** só geometria e coreografia: nomes e etapas ficam com o HUD */
+  cfg: Pick<PartsConfig, "model" | "groups" | "camera">;
   baseUrl: string;
   studio: Studio;
   zoom: number;

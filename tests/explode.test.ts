@@ -4,7 +4,19 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { boxShift, explosionFrame, fitDistance, isGroupOut, seg, stageAt, type PartGroup, type PartsConfig } from "../src/components/three/explode.ts";
+import { readFileSync } from "node:fs";
+import {
+  boxShift,
+  explosionFrame,
+  fitDistance,
+  isGroupOut,
+  localizeParts,
+  seg,
+  stageAt,
+  type PartGroup,
+  type PartsConfig,
+  type PartsConfigJson,
+} from "../src/components/three/explode.ts";
 
 const group = (stage: [number, number]): PartGroup => ({ id: "x", ref: "X1", name: "X", explode: [0, 0, 10], stage });
 
@@ -65,6 +77,61 @@ test("stageAt: etapa vigente pelo limiar", () => {
 
 test("stageAt: sem config, etapa vazia", () => {
   assert.deepEqual(stageAt(null, 0.5), { stage: "", stageIndex: 0 });
+});
+
+const bilingual: PartsConfigJson = {
+  model: "m.glb",
+  groups: [
+    { ...group([0, 0.3]), name: "Moldura", name_en: "Frame", spec: "placa de 1,50 mm", spec_en: "1.50 mm plate" },
+    // sem inglês: fica o português
+    { ...group([0, 0]), id: "y", name: "Placa", spec: "FR-4" },
+  ],
+  stages: [
+    [0, "Conjunto montado", "Assembled"],
+    [0.5, "Bandeja inferior"],
+  ],
+};
+
+test("localizeParts: português fica igual", () => {
+  const pt = localizeParts(bilingual, "pt");
+  assert.deepEqual(
+    pt.groups.map((g) => [g.name, g.spec]),
+    [
+      ["Moldura", "placa de 1,50 mm"],
+      ["Placa", "FR-4"],
+    ],
+  );
+  assert.deepEqual(pt.stages, [
+    [0, "Conjunto montado"],
+    [0.5, "Bandeja inferior"],
+  ]);
+});
+
+test("localizeParts: inglês ao lado, e o português quando falta o inglês", () => {
+  const en = localizeParts(bilingual, "en");
+  assert.deepEqual(
+    en.groups.map((g) => [g.name, g.spec]),
+    [
+      ["Frame", "1.50 mm plate"],
+      ["Placa", "FR-4"],
+    ],
+  );
+  assert.deepEqual(stageAt(en, 0), { stage: "Assembled", stageIndex: 0 });
+  assert.deepEqual(stageAt(en, 0.6), { stage: "Bandeja inferior", stageIndex: 1 });
+  // a coreografia não muda com o idioma, e as chaves _en não vazam para o HUD
+  assert.deepEqual(en.groups[0].stage, [0, 0.3]);
+  assert.ok(!("name_en" in en.groups[0]) && !("spec_en" in en.groups[0]));
+});
+
+test("parts.json do macropad: todo texto que a página mostra tem inglês", () => {
+  const raw = JSON.parse(readFileSync(new URL("../public/projetos/macropad/parts.json", import.meta.url), "utf8")) as PartsConfigJson;
+  for (const g of raw.groups) {
+    assert.ok(g.name_en, `name_en de ${g.id}`);
+    if (g.spec) assert.ok(g.spec_en, `spec_en de ${g.id}`);
+    // vírgula decimal é do português: "1,50 mm" vira "1.50 mm"
+    assert.doesNotMatch(`${g.name_en} ${g.spec_en ?? ""}`, /d,d/, g.id);
+  }
+  for (const [at, pt, en] of raw.stages) assert.ok(en, `etapa ${at} (${pt})`);
 });
 
 test("explosionFrame: explosão completa ocupa a faixa inteira e centra entre os extremos", () => {

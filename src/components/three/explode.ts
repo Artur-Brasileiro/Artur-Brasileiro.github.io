@@ -6,6 +6,8 @@
  * testes rodam direto no Node.
  */
 
+import type { Locale } from "../../i18n/core.ts";
+
 export type PartGroup = {
   id: string;
   ref: string;
@@ -31,6 +33,32 @@ export type PartsConfig = {
   /** dist: multiplicador do raio do modelo, do montado ao explodido */
   camera?: { dist: [number, number]; lift?: number };
 };
+
+/** Um grupo como está no parts.json: nome e especificação em português, com o inglês ao lado. */
+export type PartGroupJson = PartGroup & { name_en?: string; spec_en?: string };
+
+/**
+ * O parts.json como está no arquivo. Cada etapa é [limiar, português, inglês].
+ * Sem o inglês, a página em inglês mostra o português (um parts.json antigo segue funcionando).
+ */
+export type PartsConfigJson = Omit<PartsConfig, "groups" | "stages"> & {
+  groups: PartGroupJson[];
+  stages: [number, string, string?][];
+};
+
+/** O parts.json no idioma da página: cada nome, especificação e etapa vira um texto só. */
+export function localizeParts(raw: PartsConfigJson, locale: Locale): PartsConfig {
+  const en = locale === "en";
+  return {
+    ...raw,
+    groups: raw.groups.map(({ name_en, spec_en, ...g }) => ({
+      ...g,
+      name: (en && name_en) || g.name,
+      spec: (en && spec_en) || g.spec,
+    })),
+    stages: raw.stages.map(([at, pt, english]): [number, string] => [at, (en && english) || pt]),
+  };
+}
 
 export type ExplodedState = {
   /** progresso suavizado da explosão, 0 a 1 */

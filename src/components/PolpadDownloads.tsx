@@ -11,7 +11,9 @@
  */
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
-import { macropad, POLPAD_REPO, type Installer } from "@/data/macropad";
+import { macropad as macropadData, POLPAD_REPO, type Installer } from "@/data/macropad";
+import { LANG_TAG, type Locale } from "@/i18n/core";
+import { useLocale, useLocalized, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 
 type Release = { version: string; date: string; sizes: Record<string, number> };
@@ -58,9 +60,13 @@ function detectOS(): Installer["os"] | null {
 }
 
 const mb = (bytes: number) => `${Math.round(bytes / 1e6)} MB`;
-const date = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "short", year: "numeric" });
+const date = (iso: string, locale: Locale) =>
+  new Date(iso).toLocaleDateString(LANG_TAG[locale], { day: "numeric", month: "short", year: "numeric" });
 
 export default function PolpadDownloads({ compact = false, className }: { compact?: boolean; className?: string }) {
+  const t = useT();
+  const locale = useLocale();
+  const macropad = useLocalized(macropadData);
   const rel = useLatestRelease();
   const [os, setOs] = useState<Installer["os"] | null>(null);
   useEffect(() => setOs(detectOS()), []);
@@ -108,16 +114,17 @@ export default function PolpadDownloads({ compact = false, className }: { compac
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
           {rel ? (
             <>
-              Versão <span className="font-mono text-foreground">{rel.version}</span>, de {date(rel.date)}.{" "}
+              {t("Versão", "Version")} <span className="font-mono text-foreground">{rel.version}</span>,{" "}
+              {t("de", "released")} {date(rel.date, locale)}.{" "}
             </>
           ) : (
-            "Sempre a versão mais nova. "
+            t("Sempre a versão mais nova. ", "Always the latest version. ")
           )}
-          O app avisa e se atualiza sozinho.{" "}
+          {t("O app avisa e se atualiza sozinho.", "The app lets you know and updates itself.")}{" "}
           <a href={macropad.releases} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-primary">
-            Notas de versão e firmware
+            {t("Notas de versão e firmware", "Release notes and firmware")}
           </a>
-          {os === null && <> · O app roda no Windows e no Linux.</>}
+          {os === null && <> · {t("O app roda no Windows e no Linux.", "The app runs on Windows and Linux.")}</>}
         </p>
       )}
     </div>

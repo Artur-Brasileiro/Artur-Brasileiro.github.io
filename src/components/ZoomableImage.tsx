@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Minus, Plus, Scan } from "lucide-react";
+import { useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 
 const MAX = 5;
@@ -16,6 +17,7 @@ type View = { s: number; x: number; y: number };
 const FIT: View = { s: 1, x: 0, y: 0 };
 
 export default function ZoomableImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const t = useT();
   const box = useRef<HTMLDivElement>(null);
   const img = useRef<HTMLImageElement>(null);
   const [view, setView] = useState<View>(FIT);
@@ -156,16 +158,16 @@ export default function ZoomableImage({ src, alt, className }: { src: string; al
       </div>
 
       <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-border bg-background/90 p-1 shadow-soft-sm backdrop-blur-sm">
-        <button type="button" className={btn} onClick={() => zoomAt(view.s / STEP)} disabled={!zoomed} aria-label="Diminuir zoom">
+        <button type="button" className={btn} onClick={() => zoomAt(view.s / STEP)} disabled={!zoomed} aria-label={t("Diminuir zoom", "Zoom out")}>
           <Minus className="h-4 w-4" />
         </button>
         <span className="tabular w-12 text-center font-mono text-xs text-muted-foreground" aria-live="polite">
           {Math.round(view.s * 100)}%
         </span>
-        <button type="button" className={btn} onClick={() => zoomAt(view.s * STEP)} disabled={view.s >= MAX} aria-label="Aumentar zoom">
+        <button type="button" className={btn} onClick={() => zoomAt(view.s * STEP)} disabled={view.s >= MAX} aria-label={t("Aumentar zoom", "Zoom in")}>
           <Plus className="h-4 w-4" />
         </button>
-        <button type="button" className={btn} onClick={() => setView(FIT)} disabled={!zoomed} aria-label="Ver a foto inteira">
+        <button type="button" className={btn} onClick={() => setView(FIT)} disabled={!zoomed} aria-label={t("Ver a foto inteira", "Show the whole photo")}>
           <Scan className="h-4 w-4" />
         </button>
       </div>

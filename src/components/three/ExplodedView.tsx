@@ -11,7 +11,8 @@
  * com o .glb e o parts.json; nada aqui muda.
  */
 import { Component, forwardRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { EL_LIMIT, stageAt, type DragState, type ExplodedState, type FitBox, type PartsConfig, type Shift } from "./explode";
+import { useLocale } from "@/i18n/react";
+import { EL_LIMIT, localizeParts, stageAt, type DragState, type ExplodedState, type FitBox, type PartsConfigJson, type Shift } from "./explode";
 import { loadCanvas, loadConfig } from "./preload";
 
 const ExplodedCanvas = lazy(loadCanvas);
@@ -61,7 +62,11 @@ const ExplodedView = forwardRef<HTMLElement, Props>(function ExplodedView(
   { configUrl, trackVh = 480, className = "", style, studio = "light", shift, zoom = 1, fit, children },
   ref,
 ) {
-  const [cfg, setCfg] = useState<PartsConfig | null>(null);
+  const [raw, setRaw] = useState<PartsConfigJson | null>(null);
+  // os textos do parts.json no idioma da página. Trocar de idioma não remonta a
+  // página: o HUD recebe a versão nova e o canvas segue com o mesmo `raw`
+  const locale = useLocale();
+  const cfg = useMemo(() => (raw ? localizeParts(raw, locale) : null), [raw, locale]);
   // sem parts.json não há o que desmontar: a trilha encolhe para uma tela
   const [cfgFailed, setCfgFailed] = useState(false);
   const [q, setQ] = useState(0);
@@ -97,7 +102,7 @@ const ExplodedView = forwardRef<HTMLElement, Props>(function ExplodedView(
     let alive = true;
     loadConfig(configUrl)
       .then((d) => {
-        if (alive) setCfg(d);
+        if (alive) setRaw(d);
       })
       .catch((e) => {
         console.warn("parts.json indisponível:", e);
@@ -180,11 +185,11 @@ const ExplodedView = forwardRef<HTMLElement, Props>(function ExplodedView(
         onPointerUp={onUp}
         onPointerCancel={onUp}
       >
-        {cfg && (
+        {raw && (
           <CanvasBoundary onError={onCanvasError}>
             <Suspense fallback={null}>
               <ExplodedCanvas
-                cfg={cfg}
+                cfg={raw}
                 baseUrl={baseUrl}
                 studio={studio}
                 zoom={zoom}

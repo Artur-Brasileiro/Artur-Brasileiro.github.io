@@ -4,6 +4,7 @@ import { Component, Suspense, useMemo, useRef, useState, useEffect, type ReactNo
 import { useReducedMotion } from 'framer-motion';
 import { Loader2, Box } from 'lucide-react';
 import { useStudioEnvironment } from '@/components/three/studio';
+import { useT } from '@/i18n/react';
 
 /**
  * Resolve o caminho do modelo contra a base do site.
@@ -54,6 +55,19 @@ function FrameNudge() {
   return null;
 }
 
+/** Aviso no lugar do modelo que não carregou (componente à parte: a fronteira é classe, sem hooks). */
+function ModelFailed() {
+  const t = useT();
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-surface text-muted-foreground">
+      <Box className="h-6 w-6" />
+      <span className="px-4 text-center text-xs">
+        {t('Não foi possível carregar o modelo 3D.', "Couldn't load the 3D model.")}
+      </span>
+    </div>
+  );
+}
+
 /**
  * Isola a falha do WebGL/GLTF. Sem esta fronteira, um modelo que não carrega
  * propaga a exceção pela árvore inteira e derruba a página toda.
@@ -70,16 +84,7 @@ class ModelErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
   }
 
   render() {
-    if (this.state.failed) {
-      return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-surface text-muted-foreground">
-          <Box className="h-6 w-6" />
-          <span className="px-4 text-center text-xs">
-            Não foi possível carregar o modelo 3D.
-          </span>
-        </div>
-      );
-    }
+    if (this.state.failed) return <ModelFailed />;
     return this.props.children;
   }
 }

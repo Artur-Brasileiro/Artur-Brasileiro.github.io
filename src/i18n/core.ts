@@ -109,6 +109,14 @@ function walk(v: unknown, locale: Locale): unknown {
 
 // ─── endereços ──────────────────────────────────────────────────────────────
 
+/**
+ * O caminho da página atual, seguro para virar link: "//x.com/y" (endereço
+ * digitado com barra dupla) vira "/x.com/y", senão seria um link para outro site.
+ */
+export function currentPath(pathname: string): string {
+  return pathname.replace(/^\/{2,}/, "/") || "/";
+}
+
 export function localeFromPath(pathname: string): Locale {
   return pathname === "/en" || pathname.startsWith("/en/") ? "en" : "pt";
 }

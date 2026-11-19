@@ -4,7 +4,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Tx, detectLocale, localeFromPath, localize, localizePath, stripLocale, tr } from "../src/i18n/core.ts";
+import { Tx, currentPath, detectLocale, localeFromPath, localize, localizePath, stripLocale, tr } from "../src/i18n/core.ts";
 
 test("o idioma vem do prefixo /en", () => {
   assert.equal(localeFromPath("/"), "pt");
@@ -37,6 +37,13 @@ test("localizePath troca o idioma e mantém âncora e busca", () => {
   assert.equal(localizePath("https://github.com", "en"), "https://github.com");
   assert.equal(localizePath("//cdn.x/y", "en"), "//cdn.x/y");
   assert.equal(localizePath("#guia", "en"), "#guia");
+});
+
+test("currentPath não deixa o seletor virar link para outro site", () => {
+  assert.equal(currentPath("//evil.com/x"), "/evil.com/x");
+  assert.equal(currentPath("///a"), "/a");
+  assert.equal(currentPath("/hardware"), "/hardware");
+  assert.equal(localizePath(currentPath("//evil.com"), "en"), "/en/evil.com");
 });
 
 test("detecção: escolha salva, robô, navegador, região", () => {

@@ -3,7 +3,7 @@
  * /en e não fala português vai para a versão em inglês do mesmo endereço.
  * Endereços com /en nunca são trocados: quem mandou o link escolheu o idioma.
  */
-import { BOT_UA, SAVED_KEY, detectLocale, localeFromPath, localizePath, setCurrentLocale } from "./core";
+import { BOT_UA, SAVED_KEY, currentPath, detectLocale, localeFromPath, localizePath, setCurrentLocale } from "./core";
 
 function readSaved(): string | null {
   try {
@@ -22,7 +22,8 @@ function timeZone(): string | undefined {
 }
 
 export function redirectToPreferredLocale() {
-  const { pathname, search, hash } = window.location;
+  const { search, hash } = window.location;
+  const pathname = currentPath(window.location.pathname);
   if (localeFromPath(pathname) === "en") return;
   const locale = detectLocale({
     saved: readSaved(),

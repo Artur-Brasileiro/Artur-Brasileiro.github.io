@@ -10,6 +10,7 @@ import {
   LANG_TAG,
   SAVED_KEY,
   Tx,
+  currentPath,
   localeFromPath,
   localize,
   localizePath,
@@ -69,7 +70,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setMeta('meta[name="description"]', "content", m.description);
     setMeta('meta[property="og:title"]', "content", m.title);
     setMeta('meta[property="og:locale"]', "content", m.ogLocale);
-    const bare = stripLocale(pathname);
+    const bare = stripLocale(currentPath(pathname));
     const url = (l: Locale) => SITE + localizePath(bare, l);
     setMeta('link[rel="canonical"]', "href", url(locale));
     setMeta('meta[property="og:url"]', "content", url(locale));
@@ -142,5 +143,5 @@ export function saveLocale(locale: Locale) {
 /** O endereço atual no outro idioma, com âncora e busca, para o seletor. */
 export function useLocaleHref(target: Locale): string {
   const { pathname, search, hash } = useLocation();
-  return localizePath(stripLocale(pathname), target) + search + hash;
+  return localizePath(stripLocale(currentPath(pathname)), target) + search + hash;
 }

@@ -9,9 +9,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useLenisLock } from "@/components/motion/useLenisLock";
+import { formatNumber } from "@/i18n/core";
+import { useLocale, useT } from "@/i18n/react";
 import { formatDuration, gcodeFile, inkLength, type Cmd } from "./machine";
-
-const nf = new Intl.NumberFormat("pt-BR");
 
 type Props = {
   open: boolean;
@@ -27,6 +27,8 @@ type Props = {
 
 export default function GcodeDialog({ open, onClose, label, file, cmds, current, seconds }: Props) {
   useLenisLock(open);
+  const locale = useLocale();
+  const t = useT();
   const list = useRef<HTMLOListElement>(null);
   const [copied, setCopied] = useState(false);
   const text = useMemo(() => gcodeFile(cmds), [cmds]);
@@ -69,14 +71,16 @@ export default function GcodeDialog({ open, onClose, label, file, cmds, current,
         <div className="border-b border-border py-3.5 pl-5 pr-12">
           <DialogTitle className="font-mono text-[15px] font-medium leading-tight tracking-tight">G-code</DialogTitle>
           <DialogDescription className="mt-1 font-mono text-[11.5px] leading-relaxed">
-            {label} · {nf.format(cmds.length)} linhas · ~{formatDuration(seconds)} a 1× · {(ink / 1000).toFixed(2).replace(".", ",")} m de tinta
+            {locale === "pt"
+              ? `${label} · ${formatNumber(cmds.length, "pt")} linhas · ~${formatDuration(seconds)} a 1× · ${(ink / 1000).toFixed(2).replace(".", ",")} m de tinta`
+              : `${label} · ${formatNumber(cmds.length, "en")} lines · ~${formatDuration(seconds)} at 1× · ${(ink / 1000).toFixed(2)} m of ink`}
           </DialogDescription>
         </div>
 
         <ol
           ref={list}
           data-lenis-prevent
-          aria-label="Linhas do programa"
+          aria-label={t("Linhas do programa", "Program lines")}
           className="min-h-0 flex-1 overflow-auto overscroll-contain bg-foreground py-2 font-mono text-[11.5px] leading-[1.65] text-[#d8dbe0]"
         >
           {cmds.map((c, i) => (
@@ -96,7 +100,7 @@ export default function GcodeDialog({ open, onClose, label, file, cmds, current,
             className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 font-mono text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
           >
             <Download className="h-4 w-4" />
-            Baixar {file}
+            {t("Baixar", "Download")} {file}
           </button>
           <button
             type="button"
@@ -104,10 +108,13 @@ export default function GcodeDialog({ open, onClose, label, file, cmds, current,
             className="inline-flex h-10 items-center gap-2 rounded-md border border-border px-3 font-mono text-[12px] text-foreground transition-colors hover:border-foreground"
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {copied ? "Copiado" : "Copiar"}
+            {copied ? t("Copiado", "Copied") : t("Copiar", "Copy")}
           </button>
           <p className="basis-full text-[11.5px] leading-relaxed text-muted-foreground sm:ml-auto sm:basis-auto sm:text-right">
-            G0 vai com a caneta no ar, G1 desenha. M3 e M5 descem e sobem a caneta.
+            {t(
+              "G0 vai com a caneta no ar, G1 desenha. M3 e M5 descem e sobem a caneta.",
+              "G0 moves with the pen up, G1 draws. M3 and M5 lower and raise the pen.",
+            )}
           </p>
         </div>
       </DialogContent>

@@ -16,22 +16,29 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Eraser, FileCode2, Maximize2, Minimize2, Pause, PenLine, Play, RotateCcw, Sparkles } from "lucide-react";
 import { useLenisLock } from "@/components/motion/useLenisLock";
 import { getLenis } from "@/components/motion/SmoothScroll";
+import { formatNumber, tr, type Locale, type Tx } from "@/i18n/core";
+import { useLocale, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import GcodeDialog from "./GcodeDialog";
 import { CNC_3D_KB, CNC_GLB, CNC_POSTER, constrainedNetwork, loadFont, loadScene, pickQuality } from "./preload";
 import { demoProgram, formatDuration, SERVO_W, STEPS_MM, TH_DOWN, TH_UP, V_DRAW, V_RAPID, X_MAX, Y_MAX, type Cmd } from "./machine";
-import { FONT_CREDIT, FONT_IDS, FONT_LABEL, MAX_CHARS, normalizeText, textProgram, type FontId, type StrokeFont, type TextLayout } from "./text";
+import { FONT_CREDIT, FONT_IDS, FONT_LABEL, MAX_CHARS, isFont, normalizeText, textProgram, type FontId, type StrokeFont, type TextLayout } from "./text";
 import type { CncScene, Snapshot, ViewName } from "./CncScene";
 
 type Phase = "wait" | "loading" | "ready" | "error" | "nowebgl";
 type Tab = "escrever" | "eixos" | "exibir";
-type Program = { kind: "demo" | "texto"; label: string; cmds: Cmd[]; file: string };
+/**
+ * O programa guarda a receita, não o G-code pronto: os comentários do G-code
+ * saem no idioma da página, e trocar de idioma refaz só o texto (a geometria
+ * é a mesma, então a cena segue desenhando o que já tinha).
+ */
+type Program = { kind: "demo" | "texto"; label: string | Tx; build: (locale: Locale) => Cmd[]; file: string };
 
-const VIEWS: [ViewName, string][] = [
-  ["geral", "Geral"],
-  ["ponte", "Ponte"],
-  ["carro", "Carro"],
-  ["baixo", "Por baixo"],
+const VIEWS: [ViewName, Tx][] = [
+  ["geral", tr("Geral", "Overview")],
+  ["ponte", tr("Ponte", "Gantry")],
+  ["carro", tr("Carro", "Carriage")],
+  ["baixo", tr("Por baixo", "Underside")],
 ];
 const SPEEDS = [1, 5, 20];
 
@@ -55,9 +62,13 @@ function remainingTimes(P: Cmd[]): Float64Array {
   return out;
 }
 
-const nf = new Intl.NumberFormat("pt-BR");
-
-const DEMO: Program = { kind: "demo", label: "Desenho de demonstração", cmds: demoProgram(), file: "cnc-demo.gcode" };
+const demoCmds: Partial<Record<Locale, Cmd[]>> = {};
+const DEMO: Program = {
+  kind: "demo",
+  label: tr("Desenho de demonstração", "Demo drawing"),
+  build: (l) => (demoCmds[l] ??= demoProgram(l)),
+  file: "cnc-demo.gcode",
+};
 
 export default function CncSimulator() {
   const viewport = useRef<HTMLDivElement>(null);
@@ -84,14 +95,21 @@ export default function CncSimulator() {
   /** a linha do programa que rodava quando a pessoa abriu o G-code (null: fechado) */
   const [gcodeAt, setGcodeAt] = useState<number | null>(null);
 
+  const locale = useLocale();
+  const t = useT();
+
   // o que a cena precisa ler sem re-render
   const visible = useRef(false);
   const autoplay = useRef(true);
   const programRef = useRef(program);
   programRef.current = program;
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const speedRef = useRef(speed);
   speedRef.current = speed;
-  const remaining = useMemo(() => remainingTimes(program.cmds), [program]);
+  /** o G-code no idioma da página (o da cena pode ser do idioma anterior: só a geometria importa para ela) */
+  const cmds = useMemo(() => program.build(locale), [program, locale]);
+  const remaining = useMemo(() => remainingTimes(cmds), [cmds]);
   const remainingRef = useRef(remaining);
   remainingRef.current = remaining;
 
@@ -110,24 +128,50 @@ export default function CncSimulator() {
   };
   const lastI = useRef(0);
   const flags = useRef({ penTargetDown: false, finished: false, started: false });
+  /** a última leitura, para reescrever os textos ao vivo quando o idioma muda */
+  const lastSnap = useRef<Snapshot | null>(null);
 
   const onSnapshot = useCallback((s: Snapshot) => {
     const o = out;
+    const l = localeRef.current;
+    const pt = l === "pt";
+    lastSnap.current = s;
     if (o.x.current) o.x.current.textContent = `${s.x.toFixed(1)} mm`;
     if (o.y.current) o.y.current.textContent = `${s.y.toFixed(1)} mm`;
     if (o.sx.current && document.activeElement !== o.sx.current) o.sx.current.value = String(s.x);
     if (o.sy.current && document.activeElement !== o.sy.current) o.sy.current.value = String(s.y);
-    if (o.stx.current) o.stx.current.textContent = nf.format(Math.round(s.x * STEPS_MM));
-    if (o.sty.current) o.sty.current.textContent = nf.format(Math.round(s.y * STEPS_MM));
-    if (o.ink.current) o.ink.current.textContent = `${(s.ink / 1000).toFixed(2).replace(".", ",")} m`;
+    if (o.stx.current) o.stx.current.textContent = formatNumber(Math.round(s.x * STEPS_MM), l);
+    if (o.sty.current) o.sty.current.textContent = formatNumber(Math.round(s.y * STEPS_MM), l);
+    if (o.ink.current) {
+      const m = (s.ink / 1000).toFixed(2);
+      o.ink.current.textContent = `${pt ? m.replace(".", ",") : m} m`;
+    }
     if (o.pen.current) {
       o.pen.current.dataset.down = String(s.penDown);
-      o.pen.current.lastChild!.textContent = s.penDown ? "caneta ↓ no papel" : `caneta ↑ ${s.lift.toFixed(1)} mm`;
+      const lift = s.lift.toFixed(1);
+      o.pen.current.lastChild!.textContent = s.penDown
+        ? pt
+          ? "caneta ↓ no papel"
+          : "pen ↓ on paper"
+        : pt
+          ? `caneta ↑ ${lift} mm`
+          : `pen ↑ ${lift} mm`;
     }
     if (o.bar.current) o.bar.current.style.transform = `scaleX(${s.len ? s.i / s.len : 0})`;
     if (o.eta.current) {
       const left = (remainingRef.current[Math.min(s.i, remainingRef.current.length - 1)] ?? 0) / speedRef.current;
-      o.eta.current.textContent = s.finished ? "concluído" : s.i === 0 && !s.running ? `~${formatDuration(left)} a ${speedRef.current}×` : `faltam ~${formatDuration(left)}`;
+      const d = formatDuration(left);
+      o.eta.current.textContent = s.finished
+        ? pt
+          ? "concluído"
+          : "done"
+        : s.i === 0 && !s.running
+          ? pt
+            ? `~${d} a ${speedRef.current}×`
+            : `~${d} at ${speedRef.current}×`
+          : pt
+            ? `faltam ~${d}`
+            : `~${d} left`;
     }
     lastI.current = s.i;
     // só o que muda texto de botão passa pelo React, e só quando muda
@@ -175,7 +219,7 @@ export default function CncSimulator() {
         if (import.meta.env.DEV) (window as unknown as { __cnc?: CncScene }).__cnc = sc;
         sc.setSpeed(speedRef.current);
         sc.setTouchMode("page");
-        sc.setProgram(programRef.current.cmds, false);
+        sc.setProgram(programRef.current.build(localeRef.current), false);
         sc.setActive(visible.current);
         return sc.load(CNC_GLB, (p) => setProgress(Math.round(p * 100))).then(() => {
           if (disposed) return;
@@ -197,6 +241,12 @@ export default function CncSimulator() {
       scene.current = null;
     };
   }, [want3d, attempt, onSnapshot]);
+
+  /* trocar de idioma não remonta nada: reescreve as leituras ao vivo e o rótulo do canvas */
+  useEffect(() => {
+    scene.current?.setLocale(locale);
+    if (lastSnap.current) onSnapshot(lastSnap.current);
+  }, [locale, onSnapshot]);
 
   /* fora da tela, a cena para (inclusive o relógio do programa) */
   useEffect(() => {
@@ -275,11 +325,11 @@ export default function CncSimulator() {
     const s = sc();
     if (!s) return; // ainda carregando: a cena pega o programa quando montar
     s.clearPaper();
-    s.setProgram(p.cmds, true);
+    s.setProgram(p.build(localeRef.current), true);
   };
 
-  const write = (cmds: Cmd[], text: string) => {
-    startProgram({ kind: "texto", label: `“${text}”`, cmds, file: `cnc-${slug(text)}.gcode` });
+  const write = (font: StrokeFont, text: string) => {
+    startProgram({ kind: "texto", label: `“${text}”`, build: (l) => textProgram(font, text, l).program, file: `cnc-${slug(text)}.gcode` });
     // no celular o painel fica abaixo do 3D: volta para a máquina ver a escrita
     const el = viewport.current;
     if (el && !full) {
@@ -310,11 +360,11 @@ export default function CncSimulator() {
   const coarse = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   const hint = coarse
     ? full
-      ? "Arraste para girar · pinça para zoom"
-      : "Deslize de lado para girar · toque numa peça"
+      ? t("Arraste para girar · pinça para zoom", "Drag to rotate · pinch to zoom")
+      : t("Deslize de lado para girar · toque numa peça", "Swipe sideways to rotate · tap a part")
     : full
-      ? "Arraste para girar · role para zoom · passe o mouse nas peças"
-      : "Arraste para girar · Ctrl + roda para zoom · passe o mouse nas peças";
+      ? t("Arraste para girar · role para zoom · passe o mouse nas peças", "Drag to rotate · scroll to zoom · hover over the parts")
+      : t("Arraste para girar · Ctrl + roda para zoom · passe o mouse nas peças", "Drag to rotate · Ctrl + wheel to zoom · hover over the parts");
 
   return (
     <div
@@ -325,7 +375,7 @@ export default function CncSimulator() {
       data-cnc-sim=""
       role={full ? "dialog" : undefined}
       aria-modal={full || undefined}
-      aria-label={full ? "Simulador da CNC em tela cheia" : undefined}
+      aria-label={full ? t("Simulador da CNC em tela cheia", "CNC simulator, full screen") : undefined}
     >
       {/* ---------- o 3D ---------- */}
       <div
@@ -347,7 +397,7 @@ export default function CncSimulator() {
           <source type="image/webp" srcSet={`${CNC_POSTER}-800.webp 800w, ${CNC_POSTER}-1400.webp 1400w`} sizes="(min-width: 1024px) 860px, 100vw" />
           <img
             src={`${CNC_POSTER}-800.jpg`}
-            alt="A CNC plotter sobre a mesa de pinus, com o papel em branco"
+            alt={t("A CNC plotter sobre a mesa de pinus, com o papel em branco", "The CNC plotter on the pine table, with blank paper")}
             className="h-full w-full object-cover"
             width={1400}
             height={900}
@@ -361,7 +411,7 @@ export default function CncSimulator() {
             <div className="max-w-[320px] rounded-md border border-border bg-background/90 px-5 py-4 text-center font-mono text-[12px] text-muted-foreground shadow-soft-sm backdrop-blur-sm">
               {phase === "loading" && (
                 <>
-                  <p className="text-foreground">{progress > 0 ? "Carregando o modelo 3D" : "Preparando o 3D"}</p>
+                  <p className="text-foreground">{progress > 0 ? t("Carregando o modelo 3D", "Loading the 3D model") : t("Preparando o 3D", "Preparing the 3D view")}</p>
                   <div className="mt-3 h-[3px] w-56 max-w-full overflow-hidden rounded bg-border">
                     <div className="h-full origin-left bg-gold transition-transform duration-200" style={{ transform: `scaleX(${Math.max(0.04, progress / 100)})` }} />
                   </div>
@@ -370,21 +420,28 @@ export default function CncSimulator() {
               )}
               {phase === "wait" && (
                 <>
-                  <p className="text-foreground">Sua conexão está no modo econômico.</p>
+                  <p className="text-foreground">{t("Sua conexão está no modo econômico.", "Your connection is in data saver mode.")}</p>
                   <button type="button" onClick={() => setWant3d(true)} className="mt-3 rounded-md bg-primary px-4 py-2.5 text-[12px] font-medium text-primary-foreground hover:bg-primary-hover">
-                    Carregar a simulação 3D (~{nf.format(CNC_3D_KB)} KB)
+                    {t("Carregar a simulação 3D", "Load the 3D simulation")} (~{formatNumber(CNC_3D_KB, locale)} KB)
                   </button>
                 </>
               )}
               {phase === "error" && (
                 <>
-                  <p className="text-foreground">Não foi possível carregar o modelo 3D.</p>
+                  <p className="text-foreground">{t("Não foi possível carregar o modelo 3D.", "Couldn't load the 3D model.")}</p>
                   <button type="button" onClick={() => setAttempt((a) => a + 1)} className="mt-3 rounded-md bg-primary px-4 py-2.5 text-[12px] font-medium text-primary-foreground hover:bg-primary-hover">
-                    Tentar de novo
+                    {t("Tentar de novo", "Try again")}
                   </button>
                 </>
               )}
-              {phase === "nowebgl" && <p className="text-foreground">Este navegador não abriu o WebGL. Ative a aceleração de hardware ou tente outro navegador para ver a máquina em 3D.</p>}
+              {phase === "nowebgl" && (
+                <p className="text-foreground">
+                  {t(
+                    "Este navegador não abriu o WebGL. Ative a aceleração de hardware ou tente outro navegador para ver a máquina em 3D.",
+                    "This browser couldn't start WebGL. Turn on hardware acceleration or try another browser to see the machine in 3D.",
+                  )}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -393,7 +450,7 @@ export default function CncSimulator() {
         <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
           <div
             role="group"
-            aria-label="Vistas da câmera"
+            aria-label={t("Vistas da câmera", "Camera views")}
             className="flex max-w-full gap-0.5 overflow-x-auto rounded-md border border-border bg-background/85 p-0.5 backdrop-blur-sm [scrollbar-width:none]"
           >
             {VIEWS.map(([id, label]) => (
@@ -408,15 +465,15 @@ export default function CncSimulator() {
                   view === id ? "bg-foreground text-background" : "text-foreground hover:bg-foreground/5",
                 )}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
           <button
             type="button"
             onClick={() => setFull((f) => !f)}
-            aria-label={full ? "Sair da tela cheia" : "Abrir em tela cheia"}
-            title={full ? "Sair da tela cheia (Esc)" : "Tela cheia"}
+            aria-label={full ? t("Sair da tela cheia", "Exit full screen") : t("Abrir em tela cheia", "Open full screen")}
+            title={full ? t("Sair da tela cheia (Esc)", "Exit full screen (Esc)") : t("Tela cheia", "Full screen")}
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-background/85 text-foreground backdrop-blur-sm transition-colors hover:bg-background"
           >
             {full ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -431,7 +488,9 @@ export default function CncSimulator() {
               interacted && !wheelHint ? "opacity-0" : "opacity-100",
             )}
           >
-            <span className="rounded bg-background/80 px-1.5 py-0.5 backdrop-blur-sm">{wheelHint ? "Use Ctrl + roda (ou a pinça do trackpad) para dar zoom" : hint}</span>
+            <span className="rounded bg-background/80 px-1.5 py-0.5 backdrop-blur-sm">
+              {wheelHint ? t("Use Ctrl + roda (ou a pinça do trackpad) para dar zoom", "Use Ctrl + wheel (or pinch on the trackpad) to zoom") : hint}
+            </span>
           </p>
         )}
 
@@ -458,7 +517,7 @@ export default function CncSimulator() {
         <div className="border-b border-border p-4">
           <div className="flex items-center justify-between gap-3">
             <p className="min-w-0 truncate font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              programa · <span className="normal-case tracking-normal text-foreground">{program.label}</span>
+              {t("programa", "program")} · <span className="normal-case tracking-normal text-foreground">{t(program.label)}</span>
             </p>
             <span ref={out.eta} className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground" />
           </div>
@@ -470,17 +529,17 @@ export default function CncSimulator() {
               className="inline-flex h-10 min-w-[120px] items-center whitespace-nowrap justify-center gap-2 rounded-md bg-primary px-4 font-mono text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {running ? <Pause className="h-4 w-4" /> : finished ? <RotateCcw className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {running ? "Pausar" : finished ? "Repetir" : started ? "Continuar" : "Desenhar"}
+              {running ? t("Pausar", "Pause") : finished ? t("Repetir", "Replay") : started ? t("Continuar", "Resume") : t("Desenhar", "Draw")}
             </button>
-            <IconButton label="Limpar papel" onClick={() => sc()?.clearPaper()} disabled={!ready}>
+            <IconButton label={t("Limpar papel", "Clear paper")} onClick={() => sc()?.clearPaper()} disabled={!ready}>
               <Eraser className="h-4 w-4" />
             </IconButton>
             {program.kind === "texto" && (
-              <IconButton label="Voltar ao desenho de demonstração" onClick={() => startProgram(DEMO)} disabled={!ready}>
+              <IconButton label={t("Voltar ao desenho de demonstração", "Back to the demo drawing")} onClick={() => startProgram(DEMO)} disabled={!ready}>
                 <Sparkles className="h-4 w-4" />
               </IconButton>
             )}
-            <div role="group" aria-label="Velocidade da simulação" className="ml-auto flex rounded-md border border-border p-0.5">
+            <div role="group" aria-label={t("Velocidade da simulação", "Simulation speed")} className="ml-auto flex rounded-md border border-border p-0.5">
               {SPEEDS.map((s) => (
                 <button
                   key={s}
@@ -507,18 +566,18 @@ export default function CncSimulator() {
             className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11.5px] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
           >
             <FileCode2 className="h-3.5 w-3.5" />
-            Ver e baixar o G-code
+            {t("Ver e baixar o G-code", "View and download the G-code")}
           </button>
         </div>
 
         {/* abas */}
-        <div role="tablist" aria-label="Controles" className="flex border-b border-border">
+        <div role="tablist" aria-label={t("Controles", "Controls")} className="flex border-b border-border">
           {(
             [
-              ["escrever", "Escrever"],
-              ["eixos", "Eixos"],
-              ["exibir", "Exibir"],
-            ] as [Tab, string][]
+              ["escrever", tr("Escrever", "Write")],
+              ["eixos", tr("Eixos", "Axes")],
+              ["exibir", tr("Exibir", "Display")],
+            ] as [Tab, Tx][]
           ).map(([id, label]) => (
             <button
               key={id}
@@ -533,7 +592,7 @@ export default function CncSimulator() {
                 tab === id ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
@@ -546,13 +605,17 @@ export default function CncSimulator() {
           <div role="tabpanel" id="cnc-panel-eixos" aria-labelledby="cnc-tab-eixos" hidden={tab !== "eixos"}>
             <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
               <b className="font-mono text-[13px]">X</b>
-              <input ref={out.sx} type="range" min={0} max={X_MAX} step={0.5} defaultValue={0} onInput={jog} disabled={!ready} aria-label="Eixo X (longo), em mm" className="w-full accent-[#15171a]" />
+              <input ref={out.sx} type="range" min={0} max={X_MAX} step={0.5} defaultValue={0} onInput={jog} disabled={!ready} aria-label={t("Eixo X (longo), em mm", "X axis (long), in mm")} className="w-full accent-[#15171a]" />
               <output ref={out.x} className="min-w-[64px] text-right font-mono text-[12px] tabular-nums">0.0 mm</output>
-              <small className="col-span-2 col-start-2 -mt-1 text-[11px] text-muted-foreground">eixo longo · barras de 12 mm · motor em ômega</small>
+              <small className="col-span-2 col-start-2 -mt-1 text-[11px] text-muted-foreground">
+                {t("eixo longo · barras de 12 mm · motor em ômega", "long axis · 12 mm rods · omega-drive motor")}
+              </small>
               <b className="mt-2 font-mono text-[13px]">Y</b>
-              <input ref={out.sy} type="range" min={0} max={Y_MAX} step={0.5} defaultValue={0} onInput={jog} disabled={!ready} aria-label="Eixo Y (curto), em mm" className="mt-2 w-full accent-[#15171a]" />
+              <input ref={out.sy} type="range" min={0} max={Y_MAX} step={0.5} defaultValue={0} onInput={jog} disabled={!ready} aria-label={t("Eixo Y (curto), em mm", "Y axis (short), in mm")} className="mt-2 w-full accent-[#15171a]" />
               <output ref={out.y} className="mt-2 min-w-[64px] text-right font-mono text-[12px] tabular-nums">0.0 mm</output>
-              <small className="col-span-2 col-start-2 -mt-1 text-[11px] text-muted-foreground">eixo curto · barras de 6 mm · fim de curso em Y0</small>
+              <small className="col-span-2 col-start-2 -mt-1 text-[11px] text-muted-foreground">
+                {t("eixo curto · barras de 6 mm · fim de curso em Y0", "short axis · 6 mm rods · limit switch at Y0")}
+              </small>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
@@ -565,20 +628,23 @@ export default function CncSimulator() {
                 className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 font-mono text-[12px] transition-colors hover:border-foreground disabled:opacity-50"
               >
                 <PenLine className="h-3.5 w-3.5" />
-                {penTargetDown ? "Levantar caneta" : "Baixar caneta"}
+                {penTargetDown ? t("Levantar caneta", "Raise pen") : t("Baixar caneta", "Lower pen")}
               </button>
               <span ref={out.pen} data-down="false" className="group inline-flex items-center gap-1.5 font-mono text-[12px]">
                 <i className="h-2 w-2 rounded-full bg-[#b7791f] group-data-[down=true]:bg-[#1f9d55]" />
-                <span>caneta ↑</span>
+                <span>{t("caneta ↑", "pen ↑")}</span>
               </span>
             </div>
             <dl className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4">
-              <Stat label="Passos X" r={out.stx} />
-              <Stat label="Passos Y" r={out.sty} />
-              <Stat label="Tinta no papel" r={out.ink} />
+              <Stat label={t("Passos X", "X steps")} r={out.stx} />
+              <Stat label={t("Passos Y", "Y steps")} r={out.sty} />
+              <Stat label={t("Tinta no papel", "Ink on paper")} r={out.ink} />
             </dl>
             <p className="mt-3 text-[11.5px] leading-relaxed text-muted-foreground">
-              Com a caneta abaixada, mover os eixos desenha. Passos com 1/16 de micropasso: {STEPS_MM} por mm.
+              {t(
+                `Com a caneta abaixada, mover os eixos desenha. Passos com 1/16 de micropasso: ${STEPS_MM} por mm.`,
+                `With the pen down, moving the axes draws. Steps at 1/16 microstepping: ${STEPS_MM} per mm.`,
+              )}
             </p>
           </div>
 
@@ -592,7 +658,7 @@ export default function CncSimulator() {
                   sc()?.setColors(!colors);
                 }}
               >
-                Cor por peça
+                {t("Cor por peça", "Color by part")}
               </Chip>
               <Chip
                 on={xray}
@@ -602,12 +668,20 @@ export default function CncSimulator() {
                   sc()?.setXray(!xray);
                 }}
               >
-                Raio-X
+                {t("Raio-X", "X-ray")}
               </Chip>
             </div>
             <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
-              <b className="font-medium text-foreground">Cor por peça</b> pinta cada peça impressa de uma cor, para ver onde uma termina e a outra começa.{" "}
-              <b className="font-medium text-foreground">Raio-X</b> deixa o PLA translúcido e mostra rolamentos, barras e o caminho das correias por dentro.
+              <b className="font-medium text-foreground">{t("Cor por peça", "Color by part")}</b>
+              {t(
+                " pinta cada peça impressa de uma cor, para ver onde uma termina e a outra começa.",
+                " paints each printed part its own color, so you can see where one ends and the next begins.",
+              )}{" "}
+              <b className="font-medium text-foreground">{t("Raio-X", "X-ray")}</b>
+              {t(
+                " deixa o PLA translúcido e mostra rolamentos, barras e o caminho das correias por dentro.",
+                " makes the PLA translucent and shows the bearings, rods and belt paths inside.",
+              )}
             </p>
           </div>
         </div>
@@ -616,9 +690,9 @@ export default function CncSimulator() {
       <GcodeDialog
         open={gcodeAt !== null}
         onClose={() => setGcodeAt(null)}
-        label={program.label}
+        label={t(program.label)}
         file={program.file}
-        cmds={program.cmds}
+        cmds={cmds}
         current={gcodeAt ?? 0}
         seconds={remaining[0]}
       />
@@ -680,14 +754,19 @@ function Stat({ label, r }: { label: string; r: React.RefObject<HTMLElement> }) 
 
 /* ---------- aba Escrever: campo, fonte, prévia e o botão ---------- */
 
-const SUGGESTIONS = ["Olá, mundo!", "Artur Brasileiro", "CNC feita em casa"];
+const SUGGESTIONS: (string | Tx)[] = [tr("Olá, mundo!", "Hello, world!"), "Artur Brasileiro", tr("CNC feita em casa", "Homemade CNC")];
 
-function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string) => void; disabled?: boolean }) {
+/** o erro guarda o motivo, não a frase: a frase segue o idioma da página */
+type WriteError = "" | "empty" | "noGlyphs";
+
+function WritePanel({ onWrite, disabled }: { onWrite: (font: StrokeFont, text: string) => void; disabled?: boolean }) {
+  const locale = useLocale();
+  const t = useT();
   const [text, setText] = useState("");
   const [fontId, setFontId] = useState<FontId>("simples");
   const [font, setFont] = useState<StrokeFont | null>(null);
   const [fontError, setFontError] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<WriteError>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -702,34 +781,41 @@ function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string
   }, [fontId]);
 
   // a prévia segue o que está digitado; a fonte certa é a do id escolhido
-  const current = font && font.name === FONT_LABEL[fontId] ? font : null;
-  const shown = normalizeText(text) || "Seu texto aqui";
-  const preview = useMemo(() => (current ? textProgram(current, shown) : null), [current, shown]);
+  const current = font && isFont(font, fontId) ? font : null;
+  const shown = normalizeText(text) || t("Seu texto aqui", "Your text here");
+  const preview = useMemo(() => (current ? textProgram(current, shown, locale) : null), [current, shown, locale]);
 
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    const t = normalizeText(text);
-    if (!t) {
-      setError("Digite algo para a máquina escrever.");
+    const typed = normalizeText(text);
+    if (!typed) {
+      setError("empty");
       inputRef.current?.focus();
       return;
     }
     if (!current || !preview) return;
     if (!preview.layout.polys.length) {
-      setError("Essa fonte não tem nenhuma dessas letras. Tente outra.");
+      setError("noGlyphs");
       return;
     }
     setError("");
     inputRef.current?.blur(); // fecha o teclado do celular
-    onWrite(preview.program, t);
+    onWrite(current, typed);
   };
+
+  const errorText =
+    error === "empty"
+      ? t("Digite algo para a máquina escrever.", "Type something for the machine to write.")
+      : error === "noGlyphs"
+        ? t("Essa fonte não tem nenhuma dessas letras. Tente outra.", "This font has none of these letters. Try another one.")
+        : "";
 
   const secs = preview ? estimate(preview.program) : 0;
 
   return (
     <form onSubmit={submit} noValidate>
       <label htmlFor="cnc-text" className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-        o que a máquina escreve
+        {t("o que a máquina escreve", "what the machine writes")}
       </label>
       <div className="mt-2 flex gap-2">
         <input
@@ -745,7 +831,7 @@ function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string
             setText(e.target.value);
             if (error) setError("");
           }}
-          placeholder="Escreva uma frase curta"
+          placeholder={t("Escreva uma frase curta", "Write a short phrase")}
           aria-invalid={!!error}
           aria-describedby="cnc-text-help"
           className="h-11 min-w-0 flex-1 rounded-md border border-border bg-card px-3 text-[16px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-foreground sm:text-[14px]"
@@ -756,12 +842,15 @@ function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string
           className="inline-flex h-11 shrink-0 items-center gap-2 rounded-md bg-primary px-4 font-mono text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <PenLine className="h-4 w-4" />
-          Escrever
+          {t("Escrever", "Write")}
         </button>
       </div>
       <div id="cnc-text-help" className="mt-1.5 flex justify-between gap-3 font-mono text-[11px] text-muted-foreground">
         <span className={cn(error && "text-destructive")} role={error ? "alert" : undefined}>
-          {error || (fontError ? "Não deu para baixar a fonte. Confira a conexão." : "Acentos e ç funcionam. Enter também escreve.")}
+          {errorText ||
+            (fontError
+              ? t("Não deu para baixar a fonte. Confira a conexão.", "Couldn't download the font. Check your connection.")
+              : t("Acentos e ç funcionam. Enter também escreve.", "Accented letters work. Enter also writes."))}
         </span>
         <span className="tabular-nums">
           {text.length}/{MAX_CHARS}
@@ -770,15 +859,18 @@ function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string
 
       {!text && (
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {SUGGESTIONS.map((s) => (
-            <button key={s} type="button" onClick={() => setText(s)} className="rounded-full border border-border px-2.5 py-1 text-[12px] text-muted-foreground transition-colors hover:border-foreground hover:text-foreground">
-              {s}
-            </button>
-          ))}
+          {SUGGESTIONS.map((x) => {
+            const s = t(x);
+            return (
+              <button key={s} type="button" onClick={() => setText(s)} className="rounded-full border border-border px-2.5 py-1 text-[12px] text-muted-foreground transition-colors hover:border-foreground hover:text-foreground">
+                {s}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      <div role="group" aria-label="Fonte" className="mt-4 flex rounded-md border border-border p-0.5">
+      <div role="group" aria-label={t("Fonte", "Font")} className="mt-4 flex rounded-md border border-border p-0.5">
         {FONT_IDS.map((id) => (
           <button
             key={id}
@@ -787,7 +879,7 @@ function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string
             onClick={() => setFontId(id)}
             className={cn("flex-1 rounded-[5px] py-1.5 font-mono text-[12px] transition-colors", fontId === id ? "bg-foreground text-background" : "text-foreground hover:bg-foreground/5")}
           >
-            {FONT_LABEL[id]}
+            {t(FONT_LABEL[id])}
           </button>
         ))}
       </div>
@@ -798,15 +890,21 @@ function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string
           <PreviewSvg layout={preview?.layout ?? null} placeholder={!normalizeText(text)} />
         </div>
         <figcaption className="mt-1.5 flex justify-between gap-3 font-mono text-[11px] text-muted-foreground">
-          <span>prévia · alcance de 818 × 402 mm no modelo</span>
+          <span>{t("prévia · alcance de 818 × 402 mm no modelo", "preview · 818 × 402 mm reach in the model")}</span>
           {preview && normalizeText(text) && (
             <span className="tabular-nums">
-              letra de {Math.round(preview.layout.em * 0.7)} mm · {formatDuration(secs / 5)} a 5×
+              {t(
+                `letra de ${Math.round(preview.layout.em * 0.7)} mm · ${formatDuration(secs / 5)} a 5×`,
+                `${Math.round(preview.layout.em * 0.7)} mm letters · ${formatDuration(secs / 5)} at 5×`,
+              )}
             </span>
           )}
         </figcaption>
       </figure>
-      <p className="mt-3 text-[10.5px] leading-relaxed text-muted-foreground">Fonte de traço único, feita para plotter: {FONT_CREDIT[fontId]}.</p>
+      <p className="mt-3 text-[10.5px] leading-relaxed text-muted-foreground">
+        {t("Fonte de traço único, feita para plotter: ", "Single-stroke font, made for plotters: ")}
+        {t(FONT_CREDIT[fontId])}.
+      </p>
     </form>
   );
 }
@@ -814,13 +912,14 @@ function WritePanel({ onWrite, disabled }: { onWrite: (cmds: Cmd[], text: string
 const estimate = (P: Cmd[]) => remainingTimes(P)[0];
 
 function PreviewSvg({ layout, placeholder }: { layout: TextLayout | null; placeholder: boolean }) {
+  const t = useT();
   // o papel visto da vista geral: X da máquina cresce para a esquerda (ver text.ts)
   const d = useMemo(() => {
     if (!layout) return "";
     return layout.polys.map((p) => "M" + p.map(([x, y]) => `${(X_MAX - x).toFixed(1)} ${(Y_MAX - y).toFixed(1)}`).join("L")).join("");
   }, [layout]);
   return (
-    <svg viewBox={`-10 -10 ${X_MAX + 20} ${Y_MAX + 20}`} className="block h-auto w-full" role="img" aria-label="Prévia do texto no papel">
+    <svg viewBox={`-10 -10 ${X_MAX + 20} ${Y_MAX + 20}`} className="block h-auto w-full" role="img" aria-label={t("Prévia do texto no papel", "Preview of the text on the paper")}>
       <rect x={0} y={0} width={X_MAX} height={Y_MAX} fill="none" stroke="#d7d7d3" strokeDasharray="6 6" strokeWidth={1.5} />
       {d && <path d={d} fill="none" stroke={placeholder ? "#b9bcc4" : "#1b3bb8"} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />}
     </svg>

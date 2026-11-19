@@ -6,6 +6,7 @@
  * Tudo em coordenadas da máquina (mm, X de 0 a 818, Y de 0 a 402). Círculos não
  * têm lado certo, então não há a inversão de X que o texto precisa.
  */
+import { getLocale, tr, type Locale, type Tx } from "../../i18n/core.ts";
 import { X_MAX, Y_MAX, programFromPolylines, type Cmd, type Polyline } from "./machine.ts";
 
 /** módulo e ângulo de pressão: o par padrão de qualquer livro de elementos de máquina */
@@ -112,8 +113,9 @@ function dashed(a: [number, number], b: [number, number], dash: number, gap: num
 export type DrawingPart = {
   /** referência curta, na lista da home */
   ref: string;
-  name: string;
-  spec: string;
+  /** nos dois idiomas: a home escolhe na hora de mostrar, sem refazer o desenho */
+  name: Tx;
+  spec: Tx;
   polys: Polyline[];
 };
 
@@ -124,35 +126,37 @@ function parts(): DrawingPart[] {
     holes.push(circle(C1[0] + 92 * Math.cos(a), C1[1] + 92 * Math.sin(a), 25, a + Math.PI));
   }
   const ext = 18;
+  const d1 = Math.round(2 * (r1 + M));
+  const d2 = Math.round(2 * (r2 + M));
   return [
     {
       ref: "01",
-      name: "Coroa de 24 dentes",
-      spec: `módulo ${M} · Ø ${Math.round(2 * (r1 + M))} mm`,
+      name: tr("Coroa de 24 dentes", "24-tooth gear"),
+      spec: tr(`módulo ${M} · Ø ${d1} mm`, `module ${M} · Ø ${d1} mm`),
       polys: [gearOutline(C1[0], C1[1], N1, 0)],
     },
     {
       ref: "02",
-      name: "Cubo e furos de alívio",
-      spec: "6 furos Ø 50 · cubo Ø 92",
+      name: tr("Cubo e furos de alívio", "Hub and lightening holes"),
+      spec: tr("6 furos Ø 50 · cubo Ø 92", "6 holes Ø 50 · hub Ø 92"),
       polys: [circle(C1[0], C1[1], 46), ...holes],
     },
     {
       ref: "03",
-      name: "Furo com chaveta",
-      spec: "Ø 40 · rasgo 12 × 5",
+      name: tr("Furo com chaveta", "Keyed bore"),
+      spec: tr("Ø 40 · rasgo 12 × 5", "Ø 40 · keyway 12 × 5"),
       polys: [keyedBore(C1[0], C1[1], 20, 12, 5)],
     },
     {
       ref: "04",
-      name: "Pinhão de 12 dentes",
-      spec: `engrenado · Ø ${Math.round(2 * (r2 + M))} mm`,
+      name: tr("Pinhão de 12 dentes", "12-tooth pinion"),
+      spec: tr(`engrenado · Ø ${d2} mm`, `meshed · Ø ${d2} mm`),
       polys: [gearOutline(C2[0], C2[1], N2, Math.PI / N2), keyedBore(C2[0], C2[1], 13, 8, 3.5)],
     },
     {
       ref: "05",
-      name: "Linhas de centro",
-      spec: `entre eixos ${r1 + r2} mm`,
+      name: tr("Linhas de centro", "Center lines"),
+      spec: tr(`entre eixos ${r1 + r2} mm`, `center distance ${r1 + r2} mm`),
       polys: [
         ...dashed([C1[0] - r1 - M - ext, C1[1]], [C2[0] + r2 + M + ext, C2[1]], 26, 7),
         ...dashed([C1[0], C1[1] - r1 - M - ext], [C1[0], C1[1] + r1 + M + ext], 26, 7),
@@ -167,12 +171,17 @@ function parts(): DrawingPart[] {
  * cabeçalho, as notas + "G21" + caneta ↑; e para cada polilinha de n pontos,
  * G0 + caneta ↓ + (n − 1) G1 + caneta ↑ = n + 2 comandos.
  */
-export function gearDrawing(): { program: Cmd[]; parts: (DrawingPart & { firstCmd: number })[] } {
+export function gearDrawing(locale: Locale = getLocale()): { program: Cmd[]; parts: (DrawingPart & { firstCmd: number })[] } {
   const ps = parts();
-  const header = [`; par de engrenagens · coroa ${N1} + pinhão ${N2} · módulo ${M}`];
+  const header = [
+    locale === "pt"
+      ? `; par de engrenagens · coroa ${N1} + pinhão ${N2} · módulo ${M}`
+      : `; gear pair · ${N1}-tooth gear + ${N2}-tooth pinion · module ${M}`,
+  ];
   const program = programFromPolylines(
     ps.flatMap((p) => p.polys),
     header,
+    locale,
   );
   let at = header.length + 2;
   const out = ps.map((p) => {

@@ -114,6 +114,31 @@ test("texto: o comentário do G-code leva o texto, e o programa termina", () => 
   assert.equal(program[program.length - 1].g, "M2        ; fim");
 });
 
+test("idioma: os comentários do G-code saem em inglês, com a mesma geometria", async () => {
+  const { gearDrawing } = await import("../src/components/cnc/gear.ts");
+  const strip = (P: { t: string; g: string }[]) => P.map((c) => (c.t === "note" || c.t === "pen" ? c.t : c.g));
+  const pt = demoProgram("pt");
+  const en = demoProgram("en");
+  assert.deepEqual(strip(en), strip(pt));
+  assert.equal(en[0].g, "; demo · frame + spirograph + rose");
+  assert.match(gcodeFile(en), /\nG21 G90 {3}; mm, absolute\nM5 {8}; pen ↑\n/);
+  assert.equal(en[en.length - 1].g, "M2        ; end");
+  const { program } = textProgram(font("cursiva"), "Hi", "en");
+  assert.match(program[0].g, /^; text: "Hi" · font Cursive/);
+  const gears = gearDrawing("en");
+  assert.match(gears.program[0].g, /^; gear pair · 24-tooth gear \+ 12-tooth pinion · module 13/);
+  assert.deepEqual(strip(gears.program), strip(gearDrawing("pt").program));
+  assert.equal(gears.parts[0].name.en, "24-tooth gear");
+  assert.equal(gears.parts[0].name.pt, "Coroa de 24 dentes");
+});
+
+test("idioma: os textos de exemplo em inglês têm glifo em todas as fontes", () => {
+  for (const id of ["simples", "cursiva", "moderna"]) {
+    const f = font(id);
+    for (const t of ["Your text here", "Hello, world!", "Homemade CNC"]) for (const ch of t) assert.ok(f.g[ch], `${id}: falta "${ch}"`);
+  }
+});
+
 test("linha do tempo: soma o tempo do programa e acha a máquina em qualquer instante", async () => {
   const { buildTimeline, sampleTimeline } = await import("../src/components/cnc/machine.ts");
   const P = programFromPolylines([[[100, 0], [200, 0]]], []);

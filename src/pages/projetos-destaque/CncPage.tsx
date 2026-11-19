@@ -1,5 +1,4 @@
 import { lazy, useLayoutEffect } from "react";
-import { Link } from "react-router-dom";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
 import { getLenis } from "@/components/motion/SmoothScroll";
@@ -8,7 +7,8 @@ import DeferredGuide from "@/components/guide/Deferred";
 import { scrollToEl, whenGuideHas } from "@/components/guide/nav";
 import CncSimulator from "@/components/cnc/CncSimulator";
 import { preloadCnc } from "@/components/cnc/preload";
-import { cnc } from "@/data/cnc";
+import { cnc as cncData } from "@/data/cnc";
+import { Link, useLocalized, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 
 // o 3D começa a baixar junto com a página, não depois do primeiro render
@@ -42,9 +42,11 @@ function jump(e: React.MouseEvent, id: string) {
 }
 
 function Specs({ className }: { className?: string }) {
+  const cnc = useLocalized(cncData);
+  const t = useT();
   return (
     <div className={cn("rounded-lg border border-border bg-background p-6", className)}>
-      <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Especificações</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t("Especificações", "Specifications")}</h2>
       <dl className="mt-5 divide-y divide-border">
         {cnc.specs.map((spec) => (
           <div key={spec.label} className="flex items-baseline justify-between gap-6 py-3 first:pt-0 last:pb-0">
@@ -58,6 +60,9 @@ function Specs({ className }: { className?: string }) {
 }
 
 const CncPage = () => {
+  const cnc = useLocalized(cncData);
+  const t = useT();
+
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -67,9 +72,9 @@ const CncPage = () => {
       {/* Cabeçalho */}
       <div className="border-b border-border bg-surface">
         <div className="rail py-10 md:py-16">
-          <nav aria-label="Trilha de navegação" className="flex items-center gap-2 text-sm">
+          <nav aria-label={t("Trilha de navegação", "Breadcrumb")} className="flex items-center gap-2 text-sm">
             <Link to="/" className="text-muted-foreground transition-colors hover:text-primary">
-              Início
+              {t("Início", "Home")}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
             <Link to="/hardware" className="text-muted-foreground transition-colors hover:text-primary">
@@ -102,21 +107,21 @@ const CncPage = () => {
                   onClick={(e) => jump(e, "simulador")}
                   className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 font-mono text-[13px] font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
                 >
-                  Ver a máquina desenhar ↓
+                  {t("Ver a máquina desenhar ↓", "Watch the machine draw ↓")}
                 </a>
                 <a
                   href="#monte-a-sua"
                   onClick={(e) => jump(e, "monte-a-sua")}
                   className="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-background px-5 font-mono text-[13px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
                 >
-                  Monte a sua ↓
+                  {t("Monte a sua ↓", "Build your own ↓")}
                 </a>
                 <a
                   href="#resultados"
                   onClick={(e) => jump(e, "resultados")}
                   className="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-background px-5 font-mono text-[13px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
                 >
-                  Desenhos ↓
+                  {t("Desenhos ↓", "Drawings ↓")}
                 </a>
               </div>
             </div>
@@ -130,11 +135,13 @@ const CncPage = () => {
       {/* Simulador */}
       <section id="simulador" className="scroll-mt-16 border-b border-border bg-background">
         <div className="rail py-12 md:py-16">
-          <p className="eyebrow">Simulação</p>
+          <p className="eyebrow">{t("Simulação", "Simulation")}</p>
           <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
-            <h2 className="font-display text-display-lg font-medium">A máquina, desenhando</h2>
+            <h2 className="font-display text-display-lg font-medium">{t("A máquina, desenhando", "The machine, drawing")}</h2>
             <p className="max-w-[52ch] leading-relaxed text-muted-foreground">
-              Este é o modelo de verdade, peça por peça. Ela desenha sozinha; na aba <b className="font-medium text-foreground">Escrever</b>, digite uma frase e ela escreve no papel.
+              {t("Este é o modelo de verdade, peça por peça. Ela desenha sozinha; na aba ", "This is the real model, part by part. It draws on its own; in the ")}
+              <b className="font-medium text-foreground">{t("Escrever", "Write")}</b>
+              {t(", digite uma frase e ela escreve no papel.", " tab, type a phrase and it writes it on the paper.")}
             </p>
           </div>
           {/* no celular o simulador vai de borda a borda: cada pixel de largura é modelo */}
@@ -153,13 +160,13 @@ const CncPage = () => {
       {/* Como funciona */}
       <section className="border-b border-border bg-surface">
         <div className="rail py-16 md:py-20">
-          <p className="eyebrow">Mecânica</p>
-          <h2 className="font-display mt-5 text-display-lg font-medium">Como ela se move</h2>
+          <p className="eyebrow">{t("Mecânica", "Mechanics")}</p>
+          <h2 className="font-display mt-5 text-display-lg font-medium">{t("Como ela se move", "How it moves")}</h2>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {cnc.mechanics.map((m, i) => (
               <Reveal key={m.ref} delay={0.06 * i}>
                 <article className="h-full rounded-lg border border-border bg-background p-6">
-                  <span className="font-mono text-[12px] text-gold">eixo {m.ref}</span>
+                  <span className="font-mono text-[12px] text-gold">{t(`eixo ${m.ref}`, `${m.ref} axis`)}</span>
                   <h3 className="mt-2 text-lg font-semibold text-foreground">{m.title}</h3>
                   <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{m.text}</p>
                 </article>
@@ -181,10 +188,15 @@ const CncPage = () => {
       {/* Diário de bordo */}
       <section className="border-b border-border bg-background">
         <div className="rail py-16 md:py-20">
-          <p className="eyebrow">Diário de bordo</p>
+          <p className="eyebrow">{t("Diário de bordo", "Build log")}</p>
           <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
-            <h2 className="font-display text-display-lg font-medium">Do primeiro traço ao pôster</h2>
-            <p className="max-w-[52ch] leading-relaxed text-muted-foreground">Uma semana de novembro de 2026: dos motores trocados de lugar ao pôster de 600 × 385 mm.</p>
+            <h2 className="font-display text-display-lg font-medium">{t("Do primeiro traço ao pôster", "From the first line to the poster")}</h2>
+            <p className="max-w-[52ch] leading-relaxed text-muted-foreground">
+              {t(
+                "Uma semana de novembro de 2026: dos motores trocados de lugar ao pôster de 600 × 385 mm.",
+                "One week in November 2026: from swapped motors to a 600 × 385 mm poster.",
+              )}
+            </p>
           </div>
           <ol className="mt-10 grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-7">
             {cnc.marcos.map((m, i) => (
@@ -207,7 +219,7 @@ const CncPage = () => {
         <div className="rail py-8">
           <Link to="/" state={{ targetId: "projetos" }} className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            Voltar para projetos
+            {t("Voltar para projetos", "Back to projects")}
           </Link>
         </div>
       </div>

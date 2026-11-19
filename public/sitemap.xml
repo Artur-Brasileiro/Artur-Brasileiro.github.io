@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- cada página nos dois idiomas; os hreflang dizem ao Google qual é a versão de cada um -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://arturbrasileiro.com.br/</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/en</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/programacao</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/programacao"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/programacao"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/programacao"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/en/programacao</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/programacao"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/programacao"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/programacao"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/hardware</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/hardware"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/hardware"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/hardware"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/en/hardware</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/hardware"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/hardware"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/hardware"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/projeto/macropad</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/projeto/macropad"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/projeto/macropad"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/projeto/macropad"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/en/projeto/macropad</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/projeto/macropad"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/projeto/macropad"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/projeto/macropad"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/projeto/cnc-plotter</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/projeto/cnc-plotter"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/projeto/cnc-plotter"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/projeto/cnc-plotter"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/en/projeto/cnc-plotter</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/projeto/cnc-plotter"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/projeto/cnc-plotter"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/projeto/cnc-plotter"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/projeto/pendulo-invertido</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/projeto/pendulo-invertido"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/projeto/pendulo-invertido"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/projeto/pendulo-invertido"/>
+  </url>
+  <url>
+    <loc>https://arturbrasileiro.com.br/en/projeto/pendulo-invertido</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://arturbrasileiro.com.br/projeto/pendulo-invertido"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://arturbrasileiro.com.br/en/projeto/pendulo-invertido"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://arturbrasileiro.com.br/projeto/pendulo-invertido"/>
+  </url>
+</urlset>

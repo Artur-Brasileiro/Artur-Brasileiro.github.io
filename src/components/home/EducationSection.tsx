@@ -1,26 +1,31 @@
 import { useState } from "react";
 import CertificateModal from "@/components/CertificateModal";
-import { education, type EducationItem } from "@/data/education";
+import { education } from "@/data/education";
+import { useLocalized, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import SectionLabel from "./SectionLabel";
 
 /** 03 · formação — graduação e certificações; a certificação abre o certificado. */
 const EducationSection = () => {
-  // o item fica guardado depois de fechar: a animação de saída ainda mostra a imagem
-  const [item, setItem] = useState<EducationItem | null>(null);
+  const t = useT();
+  const items = useLocalized(education);
+  // o item fica guardado depois de fechar: a animação de saída ainda mostra a imagem.
+  // Guarda a posição, não o texto: trocar de idioma com o modal aberto troca o título junto.
+  const [index, setIndex] = useState<number | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const show = (e: EducationItem) => {
-    setItem(e);
+  const item = index === null ? null : items[index];
+  const show = (i: number) => {
+    setIndex(i);
     setIsOpen(true);
   };
 
   return (
     <section id="formacao" className="grid gap-10 border-t border-border py-20 lg:grid-cols-[260px_1fr]">
-      <SectionLabel n="03">formação</SectionLabel>
+      <SectionLabel n="03">{t("formação", "education")}</SectionLabel>
       <ul>
-        {education.map((e, i) => (
+        {items.map((e, i) => (
           <li
-            key={e.title}
+            key={e.imageUrl ?? e.period}
             className={cn(
               "relative grid grid-cols-[100px_1fr] gap-4 border-t py-4 sm:grid-cols-[120px_1fr_140px]",
               i === 0 ? "border-foreground" : "border-border",
@@ -32,7 +37,7 @@ const EducationSection = () => {
               <h3 className="font-mono text-[15px] font-medium text-foreground">
                 {e.imageUrl ? (
                   // o botão estica sobre a linha inteira: clicar em qualquer parte abre o certificado
-                  <button type="button" onClick={() => show(e)} className="text-left after:absolute after:inset-0 after:content-['']">
+                  <button type="button" onClick={() => show(i)} className="text-left after:absolute after:inset-0 after:content-['']">
                     {e.title}
                   </button>
                 ) : (
@@ -44,7 +49,7 @@ const EducationSection = () => {
               </p>
             </div>
             <span className="hidden text-right font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground sm:block">
-              {e.imageUrl ? "ver certificado ↗" : "graduação"}
+              {e.imageUrl ? t("ver certificado ↗", "view certificate ↗") : t("graduação", "degree")}
             </span>
           </li>
         ))}

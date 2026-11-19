@@ -9,8 +9,8 @@
  * desenho), marcas de corte e o carimbo com etapa e progresso.
  */
 import { forwardRef, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
-import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Pause, Play, RotateCcw } from "lucide-react";
+import { Link, useLocale, useT } from "@/i18n/react";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import ExplodedView from "@/components/three/ExplodedView";
 import CncDrawView from "@/components/cnc/CncDrawView";
@@ -86,6 +86,8 @@ function CropMarks() {
  * especificação e fica só referência e nome; abaixo de 520 px some a lista.
  */
 function PartsList({ cfg, q, play, title }: Pick<ExplodedState, "cfg" | "q" | "play"> & { title: string }) {
+  // nomes e especificações podem vir como tr() das cenas: t() aceita os dois
+  const t = useT();
   if (!cfg) return null;
   // nas folhas que tocam como vídeo, as linhas acendem pelo relógio (e nenhuma antes do play)
   const p = play ? (play.started ? play.u : -1) : q;
@@ -103,9 +105,9 @@ function PartsList({ cfg, q, play, title }: Pick<ExplodedState, "cfg" | "q" | "p
         >
           <span className="text-[10px] tracking-[0.06em] text-gold">{g.ref}</span>
           <span className="font-sans text-[12px] leading-tight text-foreground">
-            {g.name}
+            {t(g.name)}
             {g.spec && (
-              <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground [@media(max-height:680px)]:hidden">{g.spec}</span>
+              <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground [@media(max-height:680px)]:hidden">{t(g.spec)}</span>
             )}
           </span>
         </div>
@@ -121,6 +123,7 @@ function PartsList({ cfg, q, play, title }: Pick<ExplodedState, "cfg" | "q" | "p
  */
 const SheetSwitcher = forwardRef<HTMLDivElement, { index: number; onSelect: (i: number) => void; className?: string; style?: React.CSSProperties }>(
   function SheetSwitcher({ index, onSelect, className, style }, ref) {
+    const t = useT();
     const pos = READY.indexOf(index);
     const go = (d: number) => onSelect(READY[(pos + d + READY.length) % READY.length]);
     const near = (d: number) => {
@@ -139,20 +142,20 @@ const SheetSwitcher = forwardRef<HTMLDivElement, { index: number; onSelect: (i: 
       <div
         ref={ref}
         role="group"
-        aria-label="Projetos em 3D"
+        aria-label={t("Projetos em 3D", "3D projects")}
         className={cn("pointer-events-auto flex items-stretch border border-foreground bg-background/90 font-mono backdrop-blur-[2px]", className)}
         style={style}
       >
-        <button type="button" className={arrow} onClick={() => go(-1)} onPointerEnter={() => near(-1)} onFocus={() => near(-1)} onTouchStart={() => near(-1)} aria-label={`Projeto anterior: ${prev.full}`}>
+        <button type="button" className={arrow} onClick={() => go(-1)} onPointerEnter={() => near(-1)} onFocus={() => near(-1)} onTouchStart={() => near(-1)} aria-label={t(`Projeto anterior: ${t(prev.full)}`, `Previous project: ${t(prev.full)}`)}>
           <ArrowLeft className="h-4 w-4" />
         </button>
         <p className="flex w-[22ch] min-w-0 flex-col items-center justify-center border-x border-border px-2 text-center leading-tight" aria-live="polite">
           <span className="text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
-            folha <span className="text-gold">{sheet.n}</span>/{pad(sheets.length)}
+            {t("folha", "sheet")} <span className="text-gold">{sheet.n}</span>/{pad(sheets.length)}
           </span>
-          <span className="w-full truncate text-[12px] font-medium text-foreground">{sheet.name}</span>
+          <span className="w-full truncate text-[12px] font-medium text-foreground">{t(sheet.name)}</span>
         </p>
-        <button type="button" className={arrow} onClick={() => go(1)} onPointerEnter={() => near(1)} onFocus={() => near(1)} onTouchStart={() => near(1)} aria-label={`Próximo projeto: ${next.full}`}>
+        <button type="button" className={arrow} onClick={() => go(1)} onPointerEnter={() => near(1)} onFocus={() => near(1)} onTouchStart={() => near(1)} aria-label={t(`Próximo projeto: ${t(next.full)}`, `Next project: ${t(next.full)}`)}>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>
@@ -179,6 +182,8 @@ const clock = (s: number) => {
  * aquele instante — e o tempo. Fica na base do carimbo, no lugar da barra.
  */
 function PlayBar({ play }: { play: Playback }) {
+  const t = useT();
+  const locale = useLocale();
   const bar = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const seekAt = (clientX: number) => {
@@ -186,8 +191,10 @@ function PlayBar({ play }: { play: Playback }) {
     if (r && r.width) play.seek((clientX - r.left) / r.width);
   };
   const Icon = play.ended ? RotateCcw : play.playing ? Pause : Play;
-  const label = play.ended ? "Ver de novo" : play.playing ? "Pausar" : "Reproduzir";
+  const label = play.ended ? t("Ver de novo", "Replay") : play.playing ? t("Pausar", "Pause") : t("Reproduzir", "Play");
   const step = 5 / play.duration;
+  // vírgula decimal no português, ponto no inglês
+  const speed = locale === "pt" ? String(play.speed).replace(".", ",") : String(play.speed);
   return (
     <div className="pointer-events-auto grid grid-cols-[auto_1fr_auto] items-center border-t border-border">
       <button
@@ -203,11 +210,11 @@ function PlayBar({ play }: { play: Playback }) {
         ref={bar}
         role="slider"
         tabIndex={0}
-        aria-label="Linha do tempo da animação"
+        aria-label={t("Linha do tempo da animação", "Animation timeline")}
         aria-valuemin={0}
         aria-valuemax={Math.round(play.duration)}
         aria-valuenow={Math.round(play.t)}
-        aria-valuetext={`${clock(play.t)} de ${clock(play.duration)}`}
+        aria-valuetext={t(`${clock(play.t)} de ${clock(play.duration)}`, `${clock(play.t)} of ${clock(play.duration)}`)}
         className="group relative mx-3 h-9 cursor-pointer touch-none focus-visible:outline-none lg:h-8"
         onPointerDown={(e) => {
           dragging.current = true;
@@ -237,7 +244,14 @@ function PlayBar({ play }: { play: Playback }) {
       </div>
       <span className="whitespace-nowrap border-l border-border px-2.5 py-1.5 tabular-nums text-muted-foreground">
         {clock(play.t)}/{clock(play.duration)}
-        {play.speed !== 1 && <span className="ml-1.5 text-gold" title={`${String(play.speed).replace(".", ",")} vezes mais rápido que a máquina`}>{String(play.speed).replace(".", ",")}×</span>}
+        {play.speed !== 1 && (
+          <span
+            className="ml-1.5 text-gold"
+            title={t(`${speed} vezes mais rápido que a máquina`, `${speed} times faster than the real machine`)}
+          >
+            {speed}×
+          </span>
+        )}
       </span>
     </div>
   );
@@ -247,21 +261,22 @@ type StampProps = { sheet: Sheet; state: ExplodedState };
 
 /** Carimbo completo (desktop): projeto, folha, etapa e progresso, no canto. */
 function Stamp({ sheet, state: { q, cfg, stage, stageIndex, play } }: StampProps) {
+  const t = useT();
   return (
     <div className="absolute bottom-10 right-12 hidden w-[400px] border border-foreground bg-background/90 text-[10px] lg:block">
       <div className="grid grid-cols-[92px_1fr_auto] border-b border-border">
-        <span className={cell}>projeto</span>
-        <span className="truncate px-2.5 py-1.5 font-medium text-foreground">{sheet.full}</span>
+        <span className={cell}>{t("projeto", "project")}</span>
+        <span className="truncate px-2.5 py-1.5 font-medium text-foreground">{t(sheet.full)}</span>
         <span className="border-l border-border px-2.5 py-1.5 uppercase tracking-[0.12em] text-muted-foreground">
-          folha {sheet.n}/{pad(sheets.length)}
+          {t("folha", "sheet")} {sheet.n}/{pad(sheets.length)}
         </span>
       </div>
       <div className="grid grid-cols-[92px_1fr]">
         <span className={cell}>
-          etapa {pad(stageIndex + 1)}/{pad(cfg?.stages.length ?? 1)}
+          {t("etapa", "step")} {pad(stageIndex + 1)}/{pad(cfg?.stages.length ?? 1)}
         </span>
         <span className="truncate px-2.5 py-1.5 font-sans text-[12px] text-foreground" aria-live="polite">
-          {stage}
+          {t(stage)}
         </span>
       </div>
       {play ? <PlayBar play={play} /> : <Progress q={q} />}
@@ -274,14 +289,15 @@ function Stamp({ sheet, state: { q, cfg, stage, stageIndex, play } }: StampProps
  * O nome do projeto já está nas setas e na legenda.
  */
 const StampCompact = forwardRef<HTMLDivElement, StampProps>(function StampCompact({ state: { q, cfg, stage, stageIndex, play } }, ref) {
+  const t = useT();
   return (
     <div ref={ref} className="absolute inset-x-4 bottom-4 border border-foreground bg-background/90 text-[10px] lg:hidden">
       <div className="grid grid-cols-[84px_1fr]">
         <span className={cell}>
-          etapa {pad(stageIndex + 1)}/{pad(cfg?.stages.length ?? 1)}
+          {t("etapa", "step")} {pad(stageIndex + 1)}/{pad(cfg?.stages.length ?? 1)}
         </span>
         <span className="truncate px-2.5 py-1.5 font-sans text-[12px] text-foreground" aria-live="polite">
-          {stage}
+          {t(stage)}
         </span>
       </div>
       {play ? <PlayBar play={play} /> : <Progress q={q} />}
@@ -323,6 +339,7 @@ function Hud({
   /** centro horizontal do modelo no desktop, em fração da largura */
   modelX: number;
 }) {
+  const tx = useT();
   const { q } = state;
   const draw = sheet.kind === "draw";
   const run = sheet.kind === "run";
@@ -392,7 +409,7 @@ function Hud({
           artur <br className="[@media(max-height:500px)_and_(orientation:landscape)]:hidden" />
           brasileiro
         </h1>
-        <p className="mt-5 max-w-[46ch] font-sans text-[14px] leading-relaxed text-muted-foreground md:mt-6 md:text-[15px] [@media(max-height:500px)_and_(orientation:landscape)]:hidden">{heroLead}</p>
+        <p className="mt-5 max-w-[46ch] font-sans text-[14px] leading-relaxed text-muted-foreground md:mt-6 md:text-[15px] [@media(max-height:500px)_and_(orientation:landscape)]:hidden">{tx(heroLead)}</p>
       </div>
 
       {/* legenda da figura, no lugar do título */}
@@ -402,16 +419,30 @@ function Hud({
         style={{ opacity: 1 - intro }}
         aria-hidden={intro > 0.5}
       >
-        <span className="text-gold">fig. {sheet.n}</span> — {sheet.full.toLowerCase()}, {draw ? "desenhando" : run ? "funcionando" : "vista explodida"}
+        <span className="text-gold">fig. {sheet.n}</span> — {tx(sheet.full).toLowerCase()},{" "}
+        {draw ? tx("desenhando", "drawing") : run ? tx("funcionando", "running") : tx("vista explodida", "exploded view")}
       </p>
 
       <SheetSwitcher ref={switcher} index={index} onSelect={onSelect} className="absolute" style={switcherStyle} />
 
-      <PartsList cfg={state.cfg} q={q} play={state.play} title={draw ? "o que ela desenha" : run ? "o que acontece" : "lista de materiais"} />
+      <PartsList
+        cfg={state.cfg}
+        q={q}
+        play={state.play}
+        title={draw ? tx("o que ela desenha", "what it draws") : run ? tx("o que acontece", "what happens") : tx("lista de materiais", "bill of materials")}
+      />
 
       {/* no celular o texto de cima já diz para rolar, e aqui o carimbo cobriria a dica */}
       <p className="absolute bottom-10 left-12 hidden text-[11px] text-muted-foreground lg:block">
-        {q < 0.02 && !state.play?.started ? (draw ? "↓ role para a máquina desenhar" : run ? "↓ role para ligar o pêndulo" : "↓ role para desmontar") : desktop ? "arraste para girar" : ""}
+        {q < 0.02 && !state.play?.started
+          ? draw
+            ? tx("↓ role para a máquina desenhar", "↓ scroll to make the machine draw")
+            : run
+              ? tx("↓ role para ligar o pêndulo", "↓ scroll to switch on the pendulum")
+              : tx("↓ role para desmontar", "↓ scroll to take it apart")
+          : desktop
+            ? tx("arraste para girar", "drag to rotate")
+            : ""}
       </p>
 
       <Stamp sheet={sheet} state={state} />
@@ -421,6 +452,7 @@ function Hud({
 }
 
 export default function SheetsHero() {
+  const tx = useT();
   const desktop = useMediaQuery("(min-width: 1024px)");
   const [index, setIndex] = useState(READY[0] ?? 0);
 
@@ -519,13 +551,13 @@ export default function SheetsHero() {
       {(sheet.summary || sheet.caseUrl) && (
         <div className="border-y border-border">
           <div className="frame flex flex-col items-start justify-between gap-4 py-8 md:flex-row md:items-center">
-            {sheet.summary && <p className="max-w-[60ch] text-[15px] text-muted-foreground">{sheet.summary}</p>}
+            {sheet.summary && <p className="max-w-[60ch] text-[15px] text-muted-foreground">{tx(sheet.summary)}</p>}
             {sheet.caseUrl && (
               <Link
                 to={sheet.caseUrl}
                 className="shrink-0 rounded-[7px] bg-primary px-5 py-3 font-mono text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
               >
-                estudo de caso →
+                {tx("estudo de caso →", "case study →")}
               </Link>
             )}
           </div>

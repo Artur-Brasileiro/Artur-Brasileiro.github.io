@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useLenisLock } from "@/components/motion/useLenisLock";
+import { useT } from "@/i18n/react";
 
 export type DemoVideo = {
   title: string;
@@ -17,6 +18,7 @@ export type DemoVideo = {
  * modal está aberto — fechar para o vídeo.
  */
 const DemoVideoDialog = ({ video, onClose }: { video: DemoVideo | null; onClose: () => void }) => {
+  const t = useT();
   // sem isso o Lenis rola a página por trás do modal
   useLenisLock(!!video);
   const box = useRef<HTMLDivElement>(null);
@@ -50,7 +52,7 @@ const DemoVideoDialog = ({ video, onClose }: { video: DemoVideo | null; onClose:
                 <iframe
                   className="h-full w-full"
                   src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`}
-                  title={`Demonstração: ${video.title}`}
+                  title={t(`Demonstração: ${video.title}`, `Demo: ${video.title}`)}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
@@ -58,7 +60,7 @@ const DemoVideoDialog = ({ video, onClose }: { video: DemoVideo | null; onClose:
             </div>
             <div className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between md:gap-8">
               <DialogDescription className="line-clamp-2 max-w-[72ch] text-[13px] leading-relaxed">
-                {shown.summary ?? "Demonstração do projeto funcionando."}
+                {shown.summary ?? t("Demonstração do projeto funcionando.", "Demo of the project in action.")}
               </DialogDescription>
               {shown.github && (
                 <a
@@ -67,7 +69,7 @@ const DemoVideoDialog = ({ video, onClose }: { video: DemoVideo | null; onClose:
                   rel="noreferrer"
                   className="shrink-0 rounded-[7px] border border-foreground px-4 py-2.5 font-mono text-[12px] transition-colors hover:bg-foreground hover:text-background"
                 >
-                  código no github ↗
+                  {t("código no github ↗", "code on github ↗")}
                 </a>
               )}
             </div>

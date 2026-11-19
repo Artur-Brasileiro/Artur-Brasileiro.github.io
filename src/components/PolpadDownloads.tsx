@@ -11,7 +11,7 @@
  */
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
-import { macropad, POLPAD_REPO, type Installer } from "@/data/projects";
+import { macropad, POLPAD_REPO, type Installer } from "@/data/macropad";
 import { cn } from "@/lib/utils";
 
 type Release = { version: string; date: string; sizes: Record<string, number> };

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import SiteFooter from "@/components/SiteFooter";
 import PolpadDownloads from "@/components/PolpadDownloads";
-import { macropad, type TimelineItem, type TimelineStatus } from "@/data/projects";
+import { macropad, type TimelineItem, type TimelineStatus } from "@/data/macropad";
 import { cn } from "@/lib/utils";
 
 const statusLabel: Record<TimelineStatus, string> = {

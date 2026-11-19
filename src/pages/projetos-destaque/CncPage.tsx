@@ -8,7 +8,7 @@ import DeferredGuide from "@/components/guide/Deferred";
 import { scrollToEl, whenGuideHas } from "@/components/guide/nav";
 import CncSimulator from "@/components/cnc/CncSimulator";
 import { preloadCnc } from "@/components/cnc/preload";
-import { cnc } from "@/data/projects";
+import { cnc } from "@/data/cnc";
 import { cn } from "@/lib/utils";
 
 // o 3D começa a baixar junto com a página, não depois do primeiro render

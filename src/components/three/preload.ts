@@ -7,20 +7,20 @@
  * Fica fora do ExplodedView para o fast refresh dele seguir funcionando
  * (arquivo de componente só exporta componente).
  */
-import type { PartsConfig } from "./explode";
+import type { PartsConfigJson } from "./explode";
 
 /** o chunk do three; o mesmo import do lazy do ExplodedView, então baixa uma vez só */
 export const loadCanvas = () => import("./ExplodedCanvas");
 
-const configs = new Map<string, Promise<PartsConfig>>();
+const configs = new Map<string, Promise<PartsConfigJson>>();
 
-/** parts.json, buscado uma vez e reaproveitado por quem montar depois */
-export function loadConfig(url: string): Promise<PartsConfig> {
+/** parts.json, buscado uma vez e reaproveitado por quem montar depois (nos dois idiomas: localizeParts escolhe) */
+export function loadConfig(url: string): Promise<PartsConfigJson> {
   let p = configs.get(url);
   if (!p) {
     p = fetch(url).then((r) => {
       if (!r.ok) throw new Error(`${r.status} ${url}`);
-      return r.json() as Promise<PartsConfig>;
+      return r.json() as Promise<PartsConfigJson>;
     });
     // uma falha não fica guardada: a próxima montagem tenta de novo
     p.catch(() => configs.delete(url));

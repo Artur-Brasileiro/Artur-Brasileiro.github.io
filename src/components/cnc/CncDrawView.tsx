@@ -15,6 +15,8 @@
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EL_LIMIT, type ExplodedState, type FitBox, type PartsConfig } from "@/components/three/explode";
 import { layoutFromScroll, prefersReducedMotion, usePlayback } from "@/components/home/playback";
+import { tr, txt } from "@/i18n/core";
+import { useLocale, useT } from "@/i18n/react";
 import { buildTimeline } from "./machine";
 import { gearDrawing } from "./gear";
 import { homeScene, parkHomeScene } from "./preload";
@@ -29,9 +31,17 @@ const FULL: FitBox = { x: 0, y: 0, w: 1, h: 1 };
 
 type Phase = "loading" | "ready" | "error" | "nowebgl";
 
-/** O programa da home e o "carimbo" dele: cada parte do desenho vira uma linha da lista e uma etapa (na escala 0–1 do desenho). */
+const STAGE_START = tr("Caneta erguida, papel em branco", "Pen up, blank paper");
+const STAGE_END = tr("Pronto · a caneta volta à origem", "Done · the pen returns to the origin");
+
+/**
+ * O programa da home e o "carimbo" dele: cada parte do desenho vira uma linha da lista e uma etapa (na escala 0–1 do desenho).
+ * A geometria sai uma vez só; os textos seguem o idioma sem mexer no programa
+ * (que é dependência da cena: mudar o programa refaria a tinta toda).
+ */
 function useDrawing() {
-  return useMemo(() => {
+  const locale = useLocale();
+  const base = useMemo(() => {
     const { program, parts } = gearDrawing();
     const tl = buildTimeline(program);
     const toU = (t: number) => t / tl.duration;
@@ -42,22 +52,31 @@ function useDrawing() {
     let lastInk = 0;
     for (let k = 0; k < tl.n; k++) if (tl.draw[k]) lastInk = tl.t1[k];
     const starts = parts.map((p) => toU(startOf(p.firstCmd)));
-    const cfg: PartsConfig = {
+    return { program, parts, starts, end: toU(lastInk), duration: tl.duration };
+  }, []);
+  const cfg = useMemo((): PartsConfig => {
+    const { parts, starts, end } = base;
+    return {
       model: "",
       groups: parts.map((p, i) => ({
         id: p.ref,
-        ref: `DES-${p.ref}`,
-        name: p.name,
-        spec: p.spec,
+        // DES = desenho; em inglês, DWG (drawing), a sigla de folha técnica
+        ref: locale === "pt" ? `DES-${p.ref}` : `DWG-${p.ref}`,
+        name: txt(p.name, locale),
+        spec: txt(p.spec, locale),
         explode: [0, 0, 0],
         stage: [0, 0],
         // acende quando a caneta começa esta parte
         reveal: [starts[i], starts[i] + 0.004],
       })),
-      stages: [[0, "Caneta erguida, papel em branco"], ...parts.map((p, i): [number, string] => [starts[i], p.name]), [toU(lastInk), "Pronto · a caneta volta à origem"]],
+      stages: [
+        [0, txt(STAGE_START, locale)],
+        ...parts.map((p, i): [number, string] => [starts[i], txt(p.name, locale)]),
+        [end, txt(STAGE_END, locale)],
+      ],
     };
-    return { program, cfg, duration: tl.duration };
-  }, []);
+  }, [base, locale]);
+  return { program: base.program, cfg, duration: base.duration };
 }
 
 type Props = {
@@ -71,6 +90,8 @@ type Props = {
 
 const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackVh = 160, className = "", fit, children }, ref) {
   const { program, cfg, duration } = useDrawing();
+  const locale = useLocale();
+  const t = useT();
   const track = useRef<HTMLElement | null>(null);
   const stick = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
@@ -194,6 +215,11 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
     };
   }, [program, framing, attempt]);
 
+  /* a cena é reaproveitada entre folhas e idiomas: o rótulo do canvas segue a página */
+  useEffect(() => {
+    if (phase === "ready") scene.current?.setLocale(locale);
+  }, [phase, locale]);
+
   /* fora da tela: a cena não desenha e o vídeo pausa; de volta, continua */
   useEffect(() => {
     const t = track.current;
@@ -274,7 +300,10 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
           >
             {phase === "loading" && (
               <div className="w-48 text-center">
-                <p>carregando o modelo 3D{loaded > 0 ? ` · ${loaded}%` : "…"}</p>
+                <p>
+                  {t("carregando o modelo 3D", "loading the 3D model")}
+                  {loaded > 0 ? ` · ${loaded}%` : "…"}
+                </p>
                 <div className="mt-2 h-[2px] overflow-hidden bg-border">
                   <div className="h-full origin-left bg-gold transition-transform duration-200" style={{ transform: `scaleX(${Math.max(0.04, loaded / 100)})` }} />
                 </div>
@@ -282,13 +311,20 @@ const CncDrawView = forwardRef<HTMLElement, Props>(function CncDrawView({ trackV
             )}
             {phase === "error" && (
               <p className="pointer-events-auto text-center">
-                não deu para carregar o modelo 3D.{" "}
+                {t("não deu para carregar o modelo 3D.", "couldn't load the 3D model.")}{" "}
                 <button type="button" onClick={() => setAttempt((a) => a + 1)} className="text-foreground underline underline-offset-4">
-                  tentar de novo
+                  {t("tentar de novo", "try again")}
                 </button>
               </p>
             )}
-            {phase === "nowebgl" && <p className="max-w-[34ch] text-center">este navegador não abriu o WebGL, então a máquina não aparece em 3D.</p>}
+            {phase === "nowebgl" && (
+              <p className="max-w-[34ch] text-center">
+                {t(
+                  "este navegador não abriu o WebGL, então a máquina não aparece em 3D.",
+                  "this browser couldn't start WebGL, so the machine can't be shown in 3D.",
+                )}
+              </p>
+            )}
           </div>
         )}
 

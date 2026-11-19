@@ -22,6 +22,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { applyGaussianPrefilter } from "@/components/three/pmrem";
 import type { FitBox } from "@/components/three/explode";
+import { getLocale, tr, txt, type Locale, type Tx } from "@/i18n/core";
 import {
   BELT_THICKNESS,
   BELT_X_AXIS_Z,
@@ -71,7 +72,8 @@ export type Snapshot = {
   finished: boolean;
 };
 
-type Label = [string, string];
+/** nome e descrição da peça; nos dois idiomas, escolhido na hora de mostrar a dica */
+type Label = [string | Tx, string | Tx];
 
 /* ---------- cores: o artifact (three r147) lia o hex como valor linear ---------- */
 const lin = (hex: number) => new THREE.Color().setHex(hex, THREE.LinearSRGBColorSpace);
@@ -117,35 +119,64 @@ const FUNC: Record<string, number> = {
 };
 
 /* ---------- rótulos do tooltip ---------- */
-const LABELS: [string, string, string][] = [
-  ["Barra12mm", "Barra de aço Ø12 × 1000 mm", "Guia do eixo X (longo)"],
-  ["Barra6mm", "Barra de aço Ø6 × 500 mm", "Guia do eixo Y (curto)"],
-  ["SuporteLateral3", "Suporte lateral alto", "Barra esquerda a 80 mm da mesa"],
-  ["SuporteLateral4", "Suporte lateral alto", "Barra esquerda a 80 mm da mesa"],
-  ["SuporteLateral", "Suporte lateral baixo", "Barra direita a 51 mm · âncora da correia do X"],
-  ["BasePrincipal", "Base Principal", "Carrega os dois motores e o fim de curso"],
-  ["ApoioBase", "Apoio Base", "2 × LM12UU na barra da direita"],
-  ["ApoioSecundario", "Apoio Secundário", "1 × LM12UU centralizado + polia louca do Y"],
-  ["Rolamento", "Rolamento linear LM12UU", "Esferas recirculantes na barra de 12"],
-  ["CarroPrincipal", "Carro Principal", "No modelo, a v2 · na máquina já roda a v3 em PETG, com rasgo aberto e canal em V"],
-  ["PenHolder", "Pen Holder", "Sobe e desce em LM6UU · a v3 tem 2 por haste e mola"],
-  ["LM6UU", "Rolamento linear LM6UU", "Ø12 × 19 mm"],
-  ["Haste6mm", "Haste Ø6 × 73,4 mm", "Guia vertical do Pen Holder"],
-  ["Presilha", "Presilha da correia (GT2 belt end)", "A correia dá a volta no pino e trava em si mesma · M3 no rasgo do carro, ajustável"],
-  ["Servo", "Servo MG90S", "Levanta a caneta empurrando o pino do Pen Holder"],
-  ["Horn", "Braço do servo (horn)", "Gira para cima e ergue o Pen Holder"],
-  ["Caneta", "Caneta", "Desce pelo próprio peso quando o servo abaixa"],
-  ["MotorY", "Motor do eixo Y (curto)", "NEMA 17 · 17HS4401 · preso por baixo da placa"],
-  ["MotorX", "Motor do eixo X (longo)", "NEMA 17 · 17HS4401 · tração em ômega"],
-  ["FimDeCurso", "Fim de curso (microswitch)", "Acionado pelo dedo do carro no fundo (Y+, o home)"],
+const LABELS: [string, string | Tx, string | Tx][] = [
+  ["Barra12mm", tr("Barra de aço Ø12 × 1000 mm", "Ø12 × 1000 mm steel rod"), tr("Guia do eixo X (longo)", "X axis guide (long)")],
+  ["Barra6mm", tr("Barra de aço Ø6 × 500 mm", "Ø6 × 500 mm steel rod"), tr("Guia do eixo Y (curto)", "Y axis guide (short)")],
+  ["SuporteLateral3", tr("Suporte lateral alto", "Tall side support"), tr("Barra esquerda a 80 mm da mesa", "Left rod 80 mm above the table")],
+  ["SuporteLateral4", tr("Suporte lateral alto", "Tall side support"), tr("Barra esquerda a 80 mm da mesa", "Left rod 80 mm above the table")],
+  [
+    "SuporteLateral",
+    tr("Suporte lateral baixo", "Short side support"),
+    tr("Barra direita a 51 mm · âncora da correia do X", "Right rod at 51 mm · X belt anchor"),
+  ],
+  ["BasePrincipal", tr("Base Principal", "Main Base"), tr("Carrega os dois motores e o fim de curso", "Carries both motors and the limit switch")],
+  ["ApoioBase", tr("Apoio Base", "Base Support"), tr("2 × LM12UU na barra da direita", "2 × LM12UU on the right rod")],
+  [
+    "ApoioSecundario",
+    tr("Apoio Secundário", "Secondary Support"),
+    tr("1 × LM12UU centralizado + polia louca do Y", "1 × centered LM12UU + Y idler pulley"),
+  ],
+  ["Rolamento", tr("Rolamento linear LM12UU", "LM12UU linear bearing"), tr("Esferas recirculantes na barra de 12", "Recirculating balls on the 12 mm rod")],
+  [
+    "CarroPrincipal",
+    tr("Carro Principal", "Main Carriage"),
+    tr(
+      "No modelo, a v2 · na máquina já roda a v3 em PETG, com rasgo aberto e canal em V",
+      "v2 in the model · the machine already runs v3 in PETG, with an open slot and a V-groove",
+    ),
+  ],
+  ["PenHolder", "Pen Holder", tr("Sobe e desce em LM6UU · a v3 tem 2 por haste e mola", "Slides up and down on LM6UU · v3 has 2 per rod and a spring")],
+  ["LM6UU", tr("Rolamento linear LM6UU", "LM6UU linear bearing"), "Ø12 × 19 mm"],
+  ["Haste6mm", tr("Haste Ø6 × 73,4 mm", "Ø6 × 73.4 mm rod"), tr("Guia vertical do Pen Holder", "Vertical guide for the Pen Holder")],
+  [
+    "Presilha",
+    tr("Presilha da correia (GT2 belt end)", "Belt clamp (GT2 belt end)"),
+    tr(
+      "A correia dá a volta no pino e trava em si mesma · M3 no rasgo do carro, ajustável",
+      "The belt wraps around the pin and locks onto itself · M3 in the carriage slot, adjustable",
+    ),
+  ],
+  ["Servo", tr("Servo MG90S", "MG90S servo"), tr("Levanta a caneta empurrando o pino do Pen Holder", "Lifts the pen by pushing the Pen Holder pin")],
+  ["Horn", tr("Braço do servo (horn)", "Servo horn"), tr("Gira para cima e ergue o Pen Holder", "Swings up and lifts the Pen Holder")],
+  ["Caneta", tr("Caneta", "Pen"), tr("Desce pelo próprio peso quando o servo abaixa", "Drops under its own weight when the servo swings down")],
+  ["MotorY", tr("Motor do eixo Y (curto)", "Y axis motor (short)"), tr("NEMA 17 · 17HS4401 · preso por baixo da placa", "NEMA 17 · 17HS4401 · mounted under the plate")],
+  ["MotorX", tr("Motor do eixo X (longo)", "X axis motor (long)"), tr("NEMA 17 · 17HS4401 · tração em ômega", "NEMA 17 · 17HS4401 · omega drive")],
+  [
+    "FimDeCurso",
+    tr("Fim de curso (microswitch)", "Limit switch (microswitch)"),
+    tr("Acionado pelo dedo do carro no fundo (Y+, o home)", "Triggered by the carriage finger at the far end (Y+, home)"),
+  ],
 ];
 const SUBS: Record<string, Label> = {
-  PX: ["Polia GT2 20 dentes", "Motor do eixo X"],
-  PY: ["Polia GT2 20 dentes", "Motor do eixo Y"],
-  IX: ["Polia louca GT2 20T", "Retorno da correia do eixo Y"],
-  IY1: ["Polia louca", "Ômega do eixo X"],
-  IY2: ["Polia louca", "Ômega do eixo X"],
+  PX: [tr("Polia GT2 20 dentes", "GT2 20-tooth pulley"), tr("Motor do eixo X", "X axis motor")],
+  PY: [tr("Polia GT2 20 dentes", "GT2 20-tooth pulley"), tr("Motor do eixo Y", "Y axis motor")],
+  IX: [tr("Polia louca GT2 20T", "GT2 20T idler pulley"), tr("Retorno da correia do eixo Y", "Y axis belt return")],
+  IY1: [tr("Polia louca", "Idler pulley"), tr("Ômega do eixo X", "X axis omega")],
+  IY2: [tr("Polia louca", "Idler pulley"), tr("Ômega do eixo X", "X axis omega")],
 };
+
+/** o rótulo do canvas para leitores de tela */
+const CANVAS_LABEL = tr("Modelo 3D interativo da CNC plotter. Arraste para girar.", "Interactive 3D model of the CNC plotter. Drag to rotate.");
 function labelFor(group: string, key: string): Label {
   if (SUBS[group]) return SUBS[group];
   for (const [k, a, b] of LABELS) if (key.startsWith(k)) return [a, b];
@@ -566,7 +597,7 @@ export class CncScene {
     canvas.style.height = "100%";
     canvas.style.outline = "none";
     canvas.tabIndex = 0;
-    canvas.setAttribute("aria-label", "Modelo 3D interativo da CNC plotter. Arraste para girar.");
+    canvas.setAttribute("aria-label", txt(CANVAS_LABEL, getLocale()));
     container.appendChild(canvas);
 
     // reflexos: o RoomEnvironment do artifact, com o pré-filtro rápido do site
@@ -621,7 +652,7 @@ export class CncScene {
     const table = new THREE.Mesh(new THREE.BoxGeometry(TABLE.x1 - TABLE.x0, TABLE.y1 - TABLE.y0, TABLE.z1 - TABLE.z0), [edge, edge, edge, edge, top, edge]);
     table.position.set((TABLE.x0 + TABLE.x1) / 2, (TABLE.y0 + TABLE.y1) / 2, (TABLE.z0 + TABLE.z1) / 2);
     table.receiveShadow = true;
-    table.userData.label = ["Mesa de pinus", "Base de madeira onde os suportes são parafusados"] as Label;
+    table.userData.label = [tr("Mesa de pinus", "Pine table"), tr("Base de madeira onde os suportes são parafusados", "Wooden base the supports are screwed to")] as Label;
     this.scene.add(table, groundShadow());
 
     const paper = new THREE.Mesh(
@@ -630,7 +661,10 @@ export class CncScene {
     );
     paper.position.set((PAPER.x0 + PAPER.x1) / 2, (PAPER.y0 + PAPER.y1) / 2, PAPER.z);
     paper.receiveShadow = true;
-    paper.userData.label = ["Papel 420 × 860 mm", "Alcance da caneta no modelo: 818 × 402 mm · útil 810 × 390"] as Label;
+    paper.userData.label = [
+      tr("Papel 420 × 860 mm", "420 × 860 mm paper"),
+      tr("Alcance da caneta no modelo: 818 × 402 mm · útil 810 × 390", "Pen reach in the model: 818 × 402 mm · usable 810 × 390"),
+    ] as Label;
     this.scene.add(paper, this.cornerMarks());
     this.pickables.push(table, paper);
 
@@ -671,11 +705,17 @@ export class CncScene {
     this.matBeltY = new THREE.MeshStandardMaterial({ color: 0xffffff, map: beltTexture(), roughness: 0.85 });
     this.beltS = new THREE.Mesh(new THREE.BufferGeometry(), this.matBeltX);
     this.beltS.castShadow = true;
-    this.beltS.userData.label = ["Correia GT2 6 mm · eixo Y", "Aberta: cada ponta dá a volta no pino de uma presilha e trava em si mesma"] as Label;
+    this.beltS.userData.label = [
+      tr("Correia GT2 6 mm · eixo Y", "GT2 6 mm belt · Y axis"),
+      tr("Aberta: cada ponta dá a volta no pino de uma presilha e trava em si mesma", "Open-ended: each end wraps around the pin of a clamp and locks onto itself"),
+    ] as Label;
     this.gantry.add(this.beltS);
     this.beltX = new THREE.Mesh(new THREE.BufferGeometry(), this.matBeltY);
     this.beltX.castShadow = true;
-    this.beltX.userData.label = ["Correia GT2 6 mm · eixo X", 'Presa nos dois suportes; o motor "escala" a correia (ômega)'] as Label;
+    this.beltX.userData.label = [
+      tr("Correia GT2 6 mm · eixo X", "GT2 6 mm belt · X axis"),
+      tr('Presa nos dois suportes; o motor "escala" a correia (ômega)', 'Fixed to both supports; the motor "climbs" the belt (omega)'),
+    ] as Label;
     this.scene.add(this.beltX);
     this.pickables.push(this.beltS, this.beltX);
 
@@ -1262,6 +1302,12 @@ export class CncScene {
     this.renderer.domElement.style.touchAction = mode === "full" ? "none" : "pan-y";
   }
 
+  /** o idioma da página mudou (a cena continua montada): refaz o rótulo do canvas e esconde a dica velha */
+  setLocale(locale: Locale) {
+    this.renderer.domElement.setAttribute("aria-label", txt(CANVAS_LABEL, locale));
+    this.hideTip();
+  }
+
   /** a roda do mouse dá zoom só quando a interface deixa (Ctrl, pinça do trackpad, tela cheia) */
   setWheelZoom(on: boolean) {
     this.controls.enableZoom = on;
@@ -1518,9 +1564,11 @@ export class CncScene {
   private showTip(label: Label, clientX: number, clientY: number) {
     const tip = this.opts.tip;
     if (!tip) return;
+    // o idioma é lido agora: trocar de idioma não recria a cena
+    const locale = getLocale();
     const [a, b] = label;
-    (tip.firstElementChild as HTMLElement).textContent = a;
-    (tip.lastElementChild as HTMLElement).textContent = b;
+    (tip.firstElementChild as HTMLElement).textContent = txt(a, locale);
+    (tip.lastElementChild as HTMLElement).textContent = txt(b, locale);
     const host = this.container.getBoundingClientRect();
     tip.style.opacity = "1";
     const x = Math.min(clientX - host.left + 14, host.width - tip.offsetWidth - 8);

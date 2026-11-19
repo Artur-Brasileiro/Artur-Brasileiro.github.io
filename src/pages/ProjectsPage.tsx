@@ -7,52 +7,61 @@ import {
   Github,
   PlayCircle,
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import DemoVideoDialog, { type DemoVideo } from "@/components/DemoVideoDialog";
 import SiteFooter from "@/components/SiteFooter";
 import { Reveal } from "@/components/motion/Reveal";
-import { projectData, projectCategories, type ProjectItem } from "@/data/projects";
+import { projectData as projectDataRaw, projectCategories as projectCategoriesRaw } from "@/data/projects";
+import { Link, useLocalized, useT } from "@/i18n/react";
 
 const ProjectsPage = () => {
+  const t = useT();
+  const projectData = useLocalized(projectDataRaw);
+  const projectCategories = useLocalized(projectCategoriesRaw);
   const { category } = useParams<{ category: string }>();
   const categoryData =
     category && category in projectData
       ? projectData[category as keyof typeof projectData]
       : undefined;
 
-  // o modal de vídeo trava o Lenis por conta própria
-  const [video, setVideo] = useState<DemoVideo | null>(null);
+  // o modal de vídeo trava o Lenis por conta própria.
+  // Guarda o id do projeto, não o texto: o vídeo aberto acompanha a troca de idioma.
+  const [videoId, setVideoId] = useState<number | null>(null);
+  const videoProject = projectData.hardware.projects.find((p) => p.id === videoId && p.youtubeId);
+  const video: DemoVideo | null = videoProject
+    ? {
+        title: videoProject.name,
+        youtubeId: videoProject.youtubeId!,
+        summary: videoProject.longDescription ?? videoProject.description,
+        github: videoProject.technicalLink,
+      }
+    : null;
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [category]);
 
-  const handleOpenVideo = (project: ProjectItem) => {
+  const handleOpenVideo = (project: { id: number; youtubeId?: string }) => {
     if (!project.youtubeId) return;
-    setVideo({
-      title: project.name,
-      youtubeId: project.youtubeId,
-      summary: project.longDescription ?? project.description,
-      github: project.technicalLink,
-    });
+    setVideoId(project.id);
   };
 
   if (!categoryData) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-6 pt-14">
         <div className="max-w-md text-center">
-          <p className="eyebrow">Erro 404</p>
+          <p className="eyebrow">{t("Erro 404", "Error 404")}</p>
           <h1 className="font-display mt-4 text-display-lg font-medium">
-            Categoria não encontrada
+            {t("Categoria não encontrada", "Category not found")}
           </h1>
           <p className="mt-4 text-muted-foreground">
-            A categoria de projetos solicitada não existe.
+            {t("A categoria de projetos solicitada não existe.", "The requested project category doesn't exist.")}
           </p>
           <Link
             to="/"
             className="mt-8 inline-flex h-11 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
           >
-            Voltar para a página inicial
+            {t("Voltar para a página inicial", "Back to the home page")}
           </Link>
         </div>
       </div>
@@ -68,9 +77,9 @@ const ProjectsPage = () => {
       {/* Cabeçalho da página */}
       <div className="border-b border-border bg-surface">
         <div className="rail py-12 md:py-16">
-          <nav aria-label="Trilha de navegação" className="flex items-center gap-2 text-sm">
+          <nav aria-label={t("Trilha de navegação", "Breadcrumb")} className="flex items-center gap-2 text-sm">
             <Link to="/" className="text-muted-foreground transition-colors hover:text-primary">
-              Início
+              {t("Início", "Home")}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
             <Link
@@ -78,11 +87,11 @@ const ProjectsPage = () => {
               state={{ targetId: "projetos" }}
               className="text-muted-foreground transition-colors hover:text-primary"
             >
-              Projetos
+              {t("Projetos", "Projects")}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
             <span className="font-medium text-foreground">
-              {isHardware ? "Hardware" : "Programação"}
+              {isHardware ? "Hardware" : t("Programação", "Software")}
             </span>
           </nav>
 
@@ -107,7 +116,7 @@ const ProjectsPage = () => {
           className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar para projetos
+          {t("Voltar para projetos", "Back to projects")}
         </Link>
 
         {isHardware ? (
@@ -122,7 +131,7 @@ const ProjectsPage = () => {
                       <div className="overflow-hidden rounded-md border border-border bg-surface">
                         <img
                           src={`${import.meta.env.BASE_URL}${project.image}`}
-                          alt={`Projeto ${project.name}`}
+                          alt={t(`Projeto ${project.name}`, `${project.name} project`)}
                           loading="lazy"
                           className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                         />
@@ -133,7 +142,7 @@ const ProjectsPage = () => {
                           to={project.internalLink}
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
                         >
-                          Ver página do projeto
+                          {t("Ver página do projeto", "View project page")}
                           <ArrowRight className="h-4 w-4" />
                         </Link>
                       ) : (
@@ -143,7 +152,7 @@ const ProjectsPage = () => {
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft-sm transition-colors hover:bg-primary-hover"
                         >
                           <PlayCircle className="h-4 w-4" />
-                          Ver demonstração
+                          {t("Ver demonstração", "Watch demo")}
                         </button>
                       )}
                     </div>
@@ -183,7 +192,7 @@ const ProjectsPage = () => {
                             className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground shadow-soft-sm transition-colors hover:bg-surface hover:text-primary"
                           >
                             <Github className="h-4 w-4" />
-                            Detalhes técnicos no GitHub
+                            {t("Detalhes técnicos no GitHub", "Technical details on GitHub")}
                             <ExternalLink className="h-3.5 w-3.5" />
                           </a>
                         </div>
@@ -210,7 +219,7 @@ const ProjectsPage = () => {
                 </div>
 
                 <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {subsection.projects.map((project: ProjectItem, index) => (
+                  {subsection.projects.map((project, index) => (
                     <Reveal key={project.id} delay={0.05 * index} className="h-full">
                       <article className="flex h-full flex-col rounded-lg border border-border bg-background p-5 shadow-soft-sm transition-[border-color,box-shadow] duration-300 hover:border-primary/40 hover:shadow-soft-md">
                         <h3 className="text-base font-semibold text-foreground">{project.name}</h3>
@@ -226,7 +235,7 @@ const ProjectsPage = () => {
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary-hover"
                             >
-                              Acessar site
+                              {t("Acessar site", "Visit site")}
                               <ExternalLink className="h-3.5 w-3.5" />
                             </a>
                           )}
@@ -264,13 +273,13 @@ const ProjectsPage = () => {
 
             <span className="min-w-0 flex-1">
               <span className="block text-xs uppercase tracking-wider text-muted-foreground">
-                Ver também
+                {t("Ver também", "See also")}
               </span>
               <span className="mt-0.5 block text-sm font-semibold text-foreground">
                 {otherCategory.title}
               </span>
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                <span className="tabular">{otherCategory.count}</span> projetos ·{" "}
+                <span className="tabular">{otherCategory.count}</span> {t("projetos", "projects")} ·{" "}
                 {otherCategory.summary}
               </span>
             </span>
@@ -281,7 +290,7 @@ const ProjectsPage = () => {
       </div>
 
       <SiteFooter />
-      <DemoVideoDialog video={video} onClose={() => setVideo(null)} />
+      <DemoVideoDialog video={video} onClose={() => setVideoId(null)} />
     </div>
   );
 };

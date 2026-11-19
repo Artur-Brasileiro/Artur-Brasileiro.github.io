@@ -1,16 +1,20 @@
 import { Code2, Cpu, type LucideIcon } from "lucide-react";
+import { tr, type Tx } from "@/i18n/core";
 
 /** Projetos em destaque (home), catálogo completo (rotas de categoria) e os cases do Polpad e da CNC. */
+
+/** texto que muda com o idioma (tr) ou que é igual nos dois (nomes próprios, siglas) */
+type Text = string | Tx;
 
 export type FeaturedProject = {
   id: string;
   title: string;
   category: string;
-  description: string;
+  description: Text;
   image: string;
   /** Arte é um logo: exibir contido com respiro, não recortado. */
   logoCover: boolean;
-  tags: string[];
+  tags: Text[];
   demoLink: string;
   githubLink: string;
   /** `true` quando demoLink é uma rota interna do próprio site. */
@@ -22,8 +26,10 @@ export const featuredProjects: FeaturedProject[] = [
     id: "viewcongresso",
     title: "ViewCongresso",
     category: "Software",
-    description:
+    description: tr(
       "Plataforma corporativa para organização e participação em congressos e simpósios, oferecendo gestão de submissão de trabalhos, inscrições e avaliação por pares.",
+      "Enterprise platform for organizing and attending conferences and symposiums, with paper submission management, registration and peer review.",
+    ),
     image: "viewcongresso.svg",
     logoCover: true,
     tags: ["Next.js", "React", "TypeScript"],
@@ -35,8 +41,10 @@ export const featuredProjects: FeaturedProject[] = [
     id: "atlas-fluency",
     title: "Atlas Fluency",
     category: "Software",
-    description:
+    description: tr(
       "Plataforma de aprendizado de idiomas e SaaS de gestão para professores: registro de aulas, controle de pagamentos e atribuição de atividades criadas dentro da própria plataforma.",
+      "Language-learning platform and management SaaS for teachers: lesson records, payment tracking and assigning activities created right inside the platform.",
+    ),
     image: "atlasfluency-logo.svg",
     logoCover: true,
     tags: ["React", "TypeScript", "Tailwind CSS"],
@@ -48,11 +56,13 @@ export const featuredProjects: FeaturedProject[] = [
     id: "macropad-oled",
     title: "Polpad",
     category: "Hardware",
-    description:
+    description: tr(
       "Macropad open source com display OLED e app para Windows e Linux que troca as funções das teclas conforme o programa em uso.",
+      "Open-source macropad with an OLED display and a Windows and Linux app that switches the key functions based on the program in use.",
+    ),
     image: "capa_macropad.jpg",
     logoCover: false,
-    tags: ["C++", "Python", "Integração de Hardware"],
+    tags: ["C++", "Python", tr("Integração de Hardware", "Hardware Integration")],
     demoLink: "/projeto/macropad",
     githubLink: "https://github.com/gabriel-re-pires/polpad",
     isInternal: true,
@@ -61,30 +71,30 @@ export const featuredProjects: FeaturedProject[] = [
 
 export type ProjectItem = {
   id: number;
-  name: string;
-  description: string;
+  name: Text;
+  description: Text;
   githubLink?: string;
   siteLink?: string;
   image?: string;
   youtubeId?: string;
-  longDescription?: string;
+  longDescription?: Text;
   technicalLink?: string;
-  tags?: string[];
+  tags?: Text[];
   internalLink?: string;
 };
 
 export type SoftwareCategory = {
   slug: "programacao";
-  title: string;
-  lead: string;
+  title: Text;
+  lead: Text;
   icon: LucideIcon;
-  subsections: { title: string; projects: ProjectItem[] }[];
+  subsections: { title: Text; projects: ProjectItem[] }[];
 };
 
 export type HardwareCategory = {
   slug: "hardware";
-  title: string;
-  lead: string;
+  title: Text;
+  lead: Text;
   icon: LucideIcon;
   projects: ProjectItem[];
 };
@@ -95,98 +105,124 @@ export const projectData: {
 } = {
   programacao: {
     slug: "programacao",
-    title: "Projetos de Programação",
-    lead: "Aplicações web, experimentos em inteligência artificial e automações em ciência de dados.",
+    title: tr("Projetos de Programação", "Software Projects"),
+    lead: tr(
+      "Aplicações web, experimentos em inteligência artificial e automações em ciência de dados.",
+      "Web applications, artificial intelligence experiments and data science automations.",
+    ),
     icon: Code2,
     subsections: [
       {
-        title: "Inteligência Artificial",
+        title: tr("Inteligência Artificial", "Artificial Intelligence"),
         projects: [
           {
             id: 9,
-            name: "Introdução IA",
-            description:
+            name: tr("Introdução IA", "Intro to AI"),
+            description: tr(
               "Projeto onde registro meu aprendizado e evolução no estudo de Inteligência Artificial.",
+              "A project where I log what I learn and how I progress as I study Artificial Intelligence.",
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Introducao-IA",
           },
           {
             id: 5,
-            name: "Perceptron Reconhecedor",
-            description:
+            name: tr("Perceptron Reconhecedor", "Perceptron Recognizer"),
+            description: tr(
               'Desenvolvimento e treinamento de uma IA simples (Perceptron) para classificar a letra "A".',
+              'Building and training a simple AI (a Perceptron) to classify the letter "A".',
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Perceptron-Reconhecedor",
           },
           {
             id: 10,
-            name: "Algoritmo KNN",
-            description:
+            name: tr("Algoritmo KNN", "KNN Algorithm"),
+            description: tr(
               "Implementação do algoritmo KNN para classificar dados com base nos vizinhos mais próximos.",
+              "An implementation of the KNN algorithm that classifies data based on its nearest neighbors.",
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Algoritmo-KNN",
           },
         ],
       },
       {
-        title: "Desenvolvimento Web",
+        title: tr("Desenvolvimento Web", "Web Development"),
         projects: [
           {
             id: 15,
             name: "ViewCongresso",
-            description:
+            description: tr(
               "Plataforma web para organização e participação em congressos e eventos acadêmicos, com submissão de trabalhos, inscrições e avaliação por pares.",
+              "Web platform for organizing and attending conferences and academic events, with paper submission, registration and peer review.",
+            ),
             siteLink: "https://viewcongresso.com.br",
           },
           {
             id: 11,
             name: "Atlas Fluency",
-            description:
+            description: tr(
               "Plataforma de aprendizado de idiomas e SaaS de gestão para professores: registro de aulas, controle de pagamentos e atribuição de atividades criadas na própria plataforma.",
+              "Language-learning platform and management SaaS for teachers: lesson records, payment tracking and assigning activities created in the platform itself.",
+            ),
             siteLink: "https://atlasfluency.com.br",
           },
           {
             id: 12,
-            name: "Portfólio - Professor de Inglês",
-            description:
+            name: tr("Portfólio - Professor de Inglês", "Portfolio - English Teacher"),
+            description: tr(
               "Site portfólio para professor de inglês, destacando serviços e depoimentos.",
+              "Portfolio website for an English teacher, highlighting services and testimonials.",
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Portfolio-Professor",
             siteLink: "https://rodrigoalmeida.vercel.app/",
           },
           {
             id: 1,
-            name: "Chatbot com React",
-            description: "Desenvolvimento em React de um chatbot integrado com uma IA simples.",
+            name: tr("Chatbot com React", "React Chatbot"),
+            description: tr(
+              "Desenvolvimento em React de um chatbot integrado com uma IA simples.",
+              "A chatbot built in React and connected to a simple AI.",
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Chatbot-React",
           },
           {
             id: 2,
-            name: "Gerenciamento Familiar",
-            description:
+            name: tr("Gerenciamento Familiar", "Family Finance Manager"),
+            description: tr(
               "Criação de aplicação web feito com C# e Angular para fazer o controle financeiro de uma família.",
+              "A web app built with C# and Angular to keep track of a family's finances.",
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Gerenciamento-Familiar",
           },
         ],
       },
       {
-        title: "Ciência de Dados & Automação",
+        title: tr("Ciência de Dados & Automação", "Data Science & Automation"),
         projects: [
           {
             id: 6,
-            name: "Análise de Dados PRF",
-            description:
+            name: tr("Análise de Dados PRF", "PRF Data Analysis"),
+            description: tr(
               "Ciência de Dados aplicada em uma planilha do Excel da PRF para visualizarmos quais munícipios brasileiros tem o maior índice de acidentes em rodovias.",
+              "Data science applied to an Excel spreadsheet from the PRF (Brazil's Federal Highway Police) to see which Brazilian municipalities have the highest rate of highway accidents.",
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Analise-PRF",
           },
           {
             id: 7,
-            name: "Web Scraping Simples",
-            description:
+            name: tr("Web Scraping Simples", "Simple Web Scraping"),
+            description: tr(
               "Web Scraping no site da CEMIG utilizando Python para comparar dados anuais.",
+              "Web scraping the website of CEMIG (a Brazilian power utility) with Python to compare yearly data.",
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Web-Scraping",
           },
           {
             id: 8,
-            name: "Relação Idade x Pressão",
-            description:
+            name: tr("Relação Idade x Pressão", "Age vs. Blood Pressure"),
+            description: tr(
               "Plotagem de um gráfico simples para visualizar a relação de Idade x Pressão Sistólica.",
+              "A simple chart that plots the relationship between age and systolic blood pressure.",
+            ),
             githubLink: "https://github.com/Artur-Brasileiro/Grafico-Dispersao",
           },
         ],
@@ -195,73 +231,108 @@ export const projectData: {
   },
   hardware: {
     slug: "hardware",
-    title: "Projetos de Hardware e Embarcados",
-    lead: "Eletrônica, firmware e prototipagem — do esquemático à placa montada.",
+    title: tr("Projetos de Hardware e Embarcados", "Hardware and Embedded Projects"),
+    lead: tr(
+      "Eletrônica, firmware e prototipagem — do esquemático à placa montada.",
+      "Electronics, firmware and prototyping — from schematic to assembled board.",
+    ),
     icon: Cpu,
     projects: [
       {
         id: 3,
-        name: "Analisador de Espectro de Áudio",
-        description: "Visualização de espectro em tempo real.",
+        name: tr("Analisador de Espectro de Áudio", "Audio Spectrum Analyzer"),
+        description: tr("Visualização de espectro em tempo real.", "Real-time spectrum visualization."),
         image: "projeto_espectro.webp",
         youtubeId: "9tUq1hGooeE",
-        longDescription:
+        longDescription: tr(
           "Um analisador de áudio compacto que usa um ESP32-S3 para capturar sons, processar as frequências e exibir o espectro em uma pequena tela OLED. Mostra a forma “visual” do som em tempo real.",
+          "A compact audio analyzer that uses an ESP32-S3 to capture sound, process the frequencies and display the spectrum on a small OLED screen. It shows the “visual” shape of sound in real time.",
+        ),
         technicalLink: "https://github.com/Artur-Brasileiro/Analisador-Espectro",
-        tags: ["ESP32-S3", "OLED", "C++", "Processamento de Áudio"],
+        tags: ["ESP32-S3", "OLED", "C++", tr("Processamento de Áudio", "Audio Processing")],
       },
       {
         id: 4,
-        name: "Deauther Didático (2.4 e 5GHz)",
-        description: "Desautenticação de redes em ambiente controlado.",
+        name: tr("Deauther Didático (2.4 e 5GHz)", "Educational Deauther (2.4 and 5GHz)"),
+        description: tr(
+          "Desautenticação de redes em ambiente controlado.",
+          "Network deauthentication in a controlled environment.",
+        ),
         image: "projeto_deauther.webp",
         youtubeId: "kmqZ7n9kF94",
-        longDescription:
+        longDescription: tr(
           'Dispositivo didático baseado no BW-16 com tela OLED de 0,96", usado para estudar o funcionamento de redes Wi-Fi e entender, em ambiente controlado, como pacotes de desautenticação afetam a conexão. O projeto inclui case em impressão 3D e uma placa de circuito impresso feita manualmente, tornando o dispositivo compacto e ideal para aprendizado prático.',
+          'An educational device based on the BW-16 with a 0.96" OLED screen, used to study how Wi-Fi networks work and to understand, in a controlled environment, how deauthentication packets affect a connection. The project includes a 3D-printed case and a hand-made printed circuit board, which make the device compact and ideal for hands-on learning.',
+        ),
         technicalLink: "https://github.com/Artur-Brasileiro/Deauther-5GHz",
-        tags: ["BW-16", "Redes Wi-Fi", "PCB Customizada", "Impressão 3D"],
+        tags: [
+          "BW-16",
+          tr("Redes Wi-Fi", "Wi-Fi Networks"),
+          tr("PCB Customizada", "Custom PCB"),
+          tr("Impressão 3D", "3D Printing"),
+        ],
       },
       {
         id: 13,
-        name: "Monitor de Luminosidade com Feedback Visual",
-        description: "Sistema de leitura analógica com acionamento inteligente de atuadores.",
+        name: tr("Monitor de Luminosidade com Feedback Visual", "Light Level Monitor with Visual Feedback"),
+        description: tr(
+          "Sistema de leitura analógica com acionamento inteligente de atuadores.",
+          "Analog sensing system with smart actuator control.",
+        ),
         image: "projeto_sensorluz.webp",
         youtubeId: "rBSG0NzcMFI",
-        longDescription:
+        longDescription: tr(
           "Um projeto prático de sistemas embarcados focado em eletrônica analógica e conversão ADC. Utiliza um sensor LDR em configuração de divisor de tensão para monitorar a luz ambiente. O microcontrolador processa os sinais em tempo real e categoriza a luminosidade, acionando um semáforo de LEDs com base em limiares (thresholds) pré-definidos no código.",
+          "A hands-on embedded systems project focused on analog electronics and ADC conversion. It uses an LDR sensor in a voltage divider configuration to monitor ambient light. The microcontroller processes the signals in real time and classifies the light level, driving an LED traffic light based on thresholds predefined in the code.",
+        ),
         technicalLink: "https://github.com/Artur-Brasileiro/Sensor-Luz",
-        tags: ["Arduino", "Eletrônica Analógica", "Sensores LDR", "C++"],
+        tags: ["Arduino", tr("Eletrônica Analógica", "Analog Electronics"), tr("Sensores LDR", "LDR Sensors"), "C++"],
       },
       {
         id: 14,
         name: "Polpad",
-        description:
+        description: tr(
           "Macropad open source com display integrado e app para Windows e Linux que detecta o programa ativo.",
+          "Open-source macropad with a built-in display and a Windows and Linux app that detects the active program.",
+        ),
         image: "capa_macropad.jpg",
         internalLink: "/projeto/macropad",
-        longDescription:
+        longDescription: tr(
           "Um teclado auxiliar feito do zero, unindo circuito impresso, eletrônica embarcada e software. O app desktop em Python detecta a janela ativa e troca as funções das teclas; placa, case, firmware e app são abertos para qualquer um montar e contribuir.",
+          "An auxiliary keyboard built from scratch, combining a printed circuit board, embedded electronics and software. The Python desktop app detects the active window and switches the key functions; the board, case, firmware and app are open for anyone to build and contribute to.",
+        ),
         technicalLink: "https://github.com/gabriel-re-pires/polpad",
         tags: ["C++", "EasyEDA", "PCB", "Python"],
       },
       {
         id: 16,
         name: "CNC Plotter",
-        description: "Plotter de mesa com área de 810 × 390 mm, com simulação 3D e um guia completo para montar a sua.",
+        description: tr(
+          "Plotter de mesa com área de 810 × 390 mm, com simulação 3D e um guia completo para montar a sua.",
+          "Tabletop plotter with an 810 × 390 mm drawing area, a 3D simulation and a complete guide to build your own.",
+        ),
         image: "projetos/cnc/poster-800.webp",
         internalLink: "/projeto/cnc-plotter",
-        longDescription:
+        longDescription: tr(
           "Uma plotter grande, montada sobre uma mesa de pinus: dois motores NEMA 17 e correias GT2 levam uma caneta por uma área de 810 × 390 mm, e um servo MG90S a levanta entre um traço e outro. A página do projeto tem a máquina inteira em 3D, desenhando em tempo real, e um guia de montagem com o material, as ligações, o GRBL e o caminho da imagem ao G-code.",
+          "A large plotter built on a pine table: two NEMA 17 motors and GT2 belts move a pen across an 810 × 390 mm area, and an MG90S servo lifts it between strokes. The project page has the whole machine in 3D, drawing in real time, and a build guide with the materials, the wiring, GRBL and the path from image to G-code.",
+        ),
         tags: ["NEMA 17", "GT2", "GRBL", "FreeCAD", "G-code"],
       },
       {
         id: 17,
-        name: "Pêndulo Invertido",
-        description: "Haste de meio metro que sobe e se equilibra sozinha sobre um carrinho, com simulador 3D em que você mesmo empurra.",
+        name: tr("Pêndulo Invertido", "Inverted Pendulum"),
+        description: tr(
+          "Haste de meio metro que sobe e se equilibra sozinha sobre um carrinho, com simulador 3D em que você mesmo empurra.",
+          "A half-meter rod that swings up and balances itself on a cart, with a 3D simulator where you push it yourself.",
+        ),
         image: "projetos/pendulo/poster-800.webp",
         internalLink: "/projeto/pendulo-invertido",
-        longDescription:
+        technicalLink: "https://github.com/Artur-Brasileiro/pendulo-invertido",
+        longDescription: tr(
           "Uma haste de inox de 500 mm, em pé sobre um carrinho num trilho MGN15H levado por um NEMA 17. Ao ligar, o carro balança a haste até ela subir e depois a segura em pé com um controle LQR a 200 Hz num Arduino UNO, lendo um encoder de 4000 contagens por volta. A página do projeto roda o mesmo firmware sobre a física medida da haste (dá para empurrar, desligar o controle e ver em câmera lenta) e traz o guia completo para montar o seu, com firmware, peças e ligações.",
+          "A 500 mm stainless steel rod standing upright on a cart, on an MGN15H rail driven by a NEMA 17. At power-on, the cart swings the rod until it comes up, then holds it upright with an LQR controller at 200 Hz on an Arduino UNO, reading a 4,000-count-per-revolution encoder. The project page runs the same firmware on the rod's measured physics (you can push it, turn off the controller and watch in slow motion) and includes the complete guide to build your own, with firmware, parts and wiring.",
+        ),
         tags: ["Arduino", "LQR", "NEMA 17", "Encoder", "CadQuery"],
       },
     ],
@@ -282,223 +353,15 @@ export const projectCategories = [
   {
     to: "/programacao",
     icon: Code2,
-    title: "Programação",
-    summary: "Web, inteligência artificial e ciência de dados",
+    title: tr("Programação", "Software"),
+    summary: tr("Web, inteligência artificial e ciência de dados", "Web, artificial intelligence and data science"),
     count: softwareCount,
   },
   {
     to: "/hardware",
     icon: Cpu,
-    title: "Hardware e embarcados",
-    summary: "Eletrônica, firmware e prototipagem em PCB",
+    title: tr("Hardware e embarcados", "Hardware and embedded"),
+    summary: tr("Eletrônica, firmware e prototipagem em PCB", "Electronics, firmware and PCB prototyping"),
     count: hardwareCount,
   },
 ];
-
-/* ------------------------------------------------------------------ */
-/* Case: Polpad (antes Macropad Inteligente)                           */
-/* ------------------------------------------------------------------ */
-
-export type TimelineStatus = "completed" | "current" | "planned";
-
-export type TimelineItem = {
-  status: TimelineStatus;
-  date: string;
-  title: string;
-  description: string;
-  image?: string;
-  images?: string[];
-  modelUrl?: string;
-  /** frase ao lado do modelo 3D, dizendo o que se gira */
-  modelHint?: string;
-  /** repositório onde a fase acontece, mostrado como cartão */
-  repository?: {
-    url: string;
-    name: string;
-    description: string;
-    stack: string[];
-    /** quem mais assina o código, quando o repositório não é do Artur */
-    credit?: string;
-    /** última versão para baixar */
-    releaseUrl?: string;
-  };
-};
-
-/** O Polpad (antes "Macropad Inteligente"): repositório, licenças e os instaladores da última versão. */
-export const POLPAD_REPO = "gabriel-re-pires/polpad";
-const POLPAD_URL = `https://github.com/${POLPAD_REPO}`;
-
-export type Installer = {
-  os: "windows" | "linux";
-  label: string;
-  /** para quem é: sistema e formato */
-  detail: string;
-  /** nome do anexo no release (o link "latest" sempre aponta para a versão mais nova) */
-  asset: string;
-  url: string;
-};
-
-const latest = (asset: string) => `${POLPAD_URL}/releases/latest/download/${asset}`;
-
-export const macropad = {
-  title: "Polpad",
-  /** o nome antigo, para quem chega procurando por ele */
-  formerly: "Macropad Inteligente",
-  category: "Hardware & software livre",
-  /** o hardware está pronto; o software segue evoluindo em aberto */
-  status: "Open source",
-  statusNote: "Em desenvolvimento aberto",
-  summary:
-    "Um macropad de 18 teclas com display OLED, feito do zero — placa, case, firmware e app — e aberto para quem quiser montar o seu, adaptar e contribuir.",
-  repository: POLPAD_URL,
-  releases: `${POLPAD_URL}/releases`,
-  installers: [
-    {
-      os: "windows",
-      label: "Baixar para Windows",
-      detail: "Windows 10/11 · instalador .exe",
-      asset: "Polpad-Windows-Instalador.exe",
-      url: latest("Polpad-Windows-Instalador.exe"),
-    },
-    {
-      os: "linux",
-      label: "Baixar para Linux",
-      detail: "Linux x86-64 · pacote .tar.gz",
-      asset: "Polpad-Linux-Instalador.tar.gz",
-      url: latest("Polpad-Linux-Instalador.tar.gz"),
-    },
-  ] as Installer[],
-  rationale: [
-    "O projeto nasceu como um macropad para o TCC, feito em parceria com Gabriel R. Pires: um teclado auxiliar que se adapta ao que você está fazendo. Abriu o editor de código, as 18 teclas e a tela assumem compilar, depurar e formatar; trocou para o navegador, os atalhos mudam junto.",
-    "No caminho ele virou o Polpad, e a premissa cresceu: em vez de um aparelho fechado, uma base aberta. A placa e a case estão sob licença de hardware livre (CERN-OHL-S), o firmware e o app sob GPL-3.0, e o repositório traz os STLs e o G-code da case prontos para imprimir.",
-    "Qualquer pessoa pode montar o seu, mudar o que quiser e devolver para o projeto. No app, cada tipo de ação é uma função registrada — atalhos, comandos, chamadas HTTP, OBS Studio, Home Assistant —, então somar uma ação nova não mexe no resto do código.",
-  ],
-  specs: [
-    { label: "Teclas", value: "18 switches mecânicos" },
-    { label: "Display", value: "OLED 0,96\" · 128 × 64" },
-    { label: "Microcontrolador", value: "ESP32-C3 SuperMini" },
-    { label: "Firmware", value: "C++ · USB serial + Bluetooth LE" },
-    { label: "App", value: "Python · Qt · Windows e Linux" },
-    { label: "Placa", value: "PCB própria (EasyEDA / JLCPCB)" },
-    { label: "Case", value: "Impressão 3D, inclinação de 7°" },
-    { label: "Licenças", value: "GPL-3.0 · CERN-OHL-S" },
-  ],
-  timeline: [
-    {
-      status: "completed",
-      date: "Fase 1",
-      title: "Desenho da PCB no EasyEDA",
-      description:
-        "Elaboração do esquemático e roteamento completo da placa no EasyEDA. O layout foi cuidadosamente planejado para acomodar as 18 teclas mecânicas e o display OLED de forma ergonômica.",
-      modelUrl: "macropadpage/placa.glb",
-      modelHint: "Expanda para girar a placa montada em 3D: tela, ESP32-C3, soquetes Kailh e switches.",
-    },
-    {
-      status: "completed",
-      date: "Fase 2",
-      title: "Fabricação e Chegada da PCB",
-      description:
-        "Os arquivos Gerber foram enviados à JLCPCB e a placa foi fabricada. O protótipo chegou ao Brasil, pronto para a etapa de montagem.",
-      images: ["macropadpage/macropad1.jpg", "macropadpage/macropad2.jpg"],
-    },
-    {
-      status: "completed",
-      date: "Fase 3",
-      title: "Montagem da Placa",
-      description:
-        "Com a PCB em mãos, foi feita a montagem: soldagem dos diodos, dos switches mecânicos, do microcontrolador e a conexão do display OLED. A placa ficou montada e funcional, pronta para receber a case.",
-      image: "capa_macropad.jpg",
-    },
-    {
-      status: "completed",
-      date: "Fase 4",
-      title: "Criação da Case (Impressão 3D)",
-      description:
-        "Case sob medida impressa em 3D, em duas peças: a moldura, com a placa de encaixe dos switches integrada, e a bandeja inferior, em cunha de 7° para a digitação ficar confortável. As peças se fecham por quatro parafusos M3 que entram por baixo, em insertos de latão, então nenhum parafuso aparece. O display ganhou uma moldura elevada que deixa à vista só o vidro.",
-      modelUrl: "macropadpage/case.glb",
-      modelHint: "Expanda para girar a case em 3D.",
-    },
-    {
-      status: "completed",
-      date: "Fase 5",
-      title: "Firmware em C++ e app em Python",
-      description:
-        "O firmware no ESP32-C3 varre a matriz e desenha o que o computador manda no display; toda a lógica fica no app. Ele organiza as 18 teclas em perfis, troca de perfil sozinho conforme o programa em foco, mostra o mapa das teclas no OLED e grava o firmware pela USB. Sem o app, o Polpad vira um teclado Bluetooth com atalhos fixos.",
-    },
-    {
-      status: "current",
-      date: "Fase 6",
-      title: "Polpad, em código aberto",
-      description:
-        "O projeto ganhou nome, ícone e casa própria no GitHub, com instalador para Windows e Linux e atualização automática dentro do app. O código, a placa e a case estão abertos para quem quiser montar, adaptar ou contribuir com novas ações e integrações.",
-      repository: {
-        url: POLPAD_URL,
-        name: POLPAD_REPO,
-        description:
-          "App, firmware, protocolo e os arquivos da case (STL e G-code). Software sob GPL-3.0 e hardware sob CERN-OHL-S.",
-        stack: ["Python", "Qt", "C++", "ESP32-C3"],
-        // o repositório é do Gabriel, parceiro no TCC; o Artur contribui nele
-        credit: "Em parceria com Gabriel R. Pires",
-        releaseUrl: `${POLPAD_URL}/releases/latest`,
-      },
-    },
-  ] as TimelineItem[],
-};
-
-/* ------------------------------------------------------------------ */
-/* Case: CNC Plotter                                                   */
-/* ------------------------------------------------------------------ */
-
-export const cnc = {
-  title: "CNC Plotter",
-  category: "Hardware & mecânica",
-  status: "Funcionando",
-  statusNote: "Carro v3 · homing e origem fixa",
-  summary:
-    "Uma plotter de mesa grande, feita em casa: barras de aço de 1 metro, correias GT2 e dois NEMA 17 levam uma caneta por uma área de 810 × 390 mm, com Arduino e GRBL. A máquina inteira está modelada no FreeCAD, e é esse modelo que desenha aqui embaixo. Logo depois vem o guia para montar a sua.",
-  specs: [
-    { label: "Área útil", value: "810 × 390 mm" },
-    { label: "Eixo X", value: "2 × barra Ø12 × 1000 mm · 3 × LM12UU" },
-    { label: "Eixo Y", value: "2 × barra Ø6 × 500 mm · 4 × LM6UU" },
-    { label: "Motores", value: "2 × NEMA 17 (17HS4401S)" },
-    { label: "Transmissão", value: "Correia GT2 6 mm · polias 20T" },
-    { label: "Caneta", value: "Servo MG90S · Pen Holder em LM6UU" },
-    { label: "Controle", value: "Arduino Uno + CNC Shield · GRBL 1.1h" },
-    { label: "Resolução", value: "80 passos/mm (1/16 de micropasso)" },
-  ],
-  /** como cada eixo se move */
-  mechanics: [
-    {
-      ref: "X",
-      title: "Eixo X em ômega",
-      text: "A correia do eixo longo fica presa nos dois suportes do fundo e não se move. O motor viaja com a ponte e passa a correia por duas polias loucas e pela própria polia, num desenho de ômega: girando, ele “escala” a correia e arrasta a ponte inteira, de 1,2 kg, sobre as barras de 12 mm.",
-    },
-    {
-      ref: "Y",
-      title: "Eixo Y em laço",
-      text: "No eixo curto a correia fecha um laço entre a polia do motor, preso por baixo da Base Principal, e a polia louca do Apoio Secundário. As duas pontas dão a volta no pino de uma presilha do carro e travam dente com dente; um M3 no rasgo ajusta a tensão.",
-    },
-    {
-      ref: "Z",
-      title: "Caneta por gravidade",
-      text: "O Pen Holder corre em quatro LM6UU, em duas hastes. O braço do servo MG90S só levanta a caneta; para baixar, ele sai da frente e o Pen Holder desce pelo próprio peso e por uma mola, acompanhando qualquer ondulação da mesa.",
-    },
-  ],
-  /** linha do tempo (especificacoes.json do pacote); fica aqui e não no guia para o texto do guia não entrar no primeiro carregamento */
-  marcos: [
-    { data: "06/11", text: "Ligação dos motores corrigida (X ↔ Y)" },
-    { data: "07/11", text: "Primeiro desenho no papel: quadrado + círculo, em passo cheio" },
-    { data: "08/11", text: "Fins de curso instalados" },
-    { data: "10/11", text: "Carro e Pen Holder v3 projetados" },
-    { data: "12/11", text: "Micropasso 1/16, eletrônica fixada, carro v3 montado" },
-    { data: "13/11", text: "Homing, origem fixa, testes de traço e gabarito desenhado na mesa" },
-    { data: "14/11", text: "G-code do pôster do F-16 e o caminho imagem → SVG → G-code" },
-  ],
-  numbers: [
-    { value: "810 × 390", label: "mm de área útil" },
-    { value: "0,0125", label: "mm por micropasso" },
-    { value: "F500", label: "velocidade de desenho" },
-    { value: "200 mm/s", label: "com a caneta no ar" },
-  ],
-};
-

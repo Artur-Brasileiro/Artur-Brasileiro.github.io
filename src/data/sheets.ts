@@ -8,13 +8,15 @@
  *  - "run": o pêndulo ligando conforme a rolagem (PenduloRunView). Não usa config.
  * Folha sem nada disso fica fora das setas, sem carregar nada.
  */
+import { tr, type Tx } from "@/i18n/core";
+
 export type Sheet = {
   /** número da folha no carimbo */
   n: string;
   /** nome curto, no botão do seletor */
-  name: string;
+  name: string | Tx;
   /** nome completo, no carimbo e na legenda da figura */
-  full: string;
+  full: string | Tx;
   /** o que a rolagem faz na folha */
   kind?: "explode" | "draw" | "run";
   /** caminho do parts.json; o modelo fica na mesma pasta (só "explode") */
@@ -22,7 +24,7 @@ export type Sheet = {
   /** estudo de caso do projeto, se houver */
   caseUrl?: string;
   /** uma frase sobre o projeto, na faixa logo abaixo da vista explodida */
-  summary?: string;
+  summary?: string | Tx;
   /** ajuste fino da distância da câmera na vista explodida (menor = mais perto) */
   zoom?: { desktop?: number; mobile?: number };
 };
@@ -34,12 +36,15 @@ export const sheets: Sheet[] = [
   {
     n: "01",
     name: "Polpad",
-    full: "Polpad · macropad ESP32-C3",
+    full: tr("Polpad · macropad ESP32-C3", "Polpad · ESP32-C3 macropad"),
     config: "/projetos/macropad/parts.json",
     caseUrl: "/projeto/macropad",
-    summary:
+    summary: tr(
       "Desenhei o esquemático, roteei a placa, soldei os componentes e modelei a case. " +
-      "Hoje ele é o Polpad: firmware, app para Windows e Linux e tudo aberto no GitHub.",
+        "Hoje ele é o Polpad: firmware, app para Windows e Linux e tudo aberto no GitHub.",
+      "I drew the schematic, routed the board, soldered the components and modeled the case. " +
+        "Today it's Polpad: firmware, a Windows and Linux app, and all of it open on GitHub.",
+    ),
   },
   {
     n: "02",
@@ -47,17 +52,22 @@ export const sheets: Sheet[] = [
     full: "CNC Plotter",
     kind: "draw",
     caseUrl: "/projeto/cnc-plotter",
-    summary:
+    summary: tr(
       "Uma plotter de mesa com área de 810 × 390 mm. Aqui ela desenha um par de engrenagens enquanto você rola; na página do projeto, escreve o que você digitar.",
+      "A tabletop plotter with an 810 × 390 mm drawing area. Here it draws a pair of gears as you scroll; on the project page, it writes whatever you type.",
+    ),
   },
   {
     n: "03",
-    name: "Pêndulo",
-    full: "Pêndulo invertido",
+    name: tr("Pêndulo", "Pendulum"),
+    full: tr("Pêndulo invertido", "Inverted pendulum"),
     kind: "run",
     caseUrl: "/projeto/pendulo-invertido",
-    summary:
+    summary: tr(
       "Uma haste de meio metro em pé sobre um carrinho. Aqui ela sobe, equilibra e leva um tapa enquanto você rola; " +
-      "na página do projeto, você mesmo empurra.",
+        "na página do projeto, você mesmo empurra.",
+      "A half-meter rod standing on a cart. Here it swings up, balances and takes a tap as you scroll; " +
+        "on the project page, you push it yourself.",
+    ),
   },
 ];

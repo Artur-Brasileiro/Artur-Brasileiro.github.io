@@ -1,27 +1,30 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import { useLocation } from "react-router-dom";
-import { HashLink } from "react-router-hash-link";
+import { Link as RouterLink, useLocation } from "react-router-dom";
 import { profile } from "@/data/profile";
+import { stripLocale, tr, type Locale } from "@/i18n/core";
+import { HashLink, saveLocale, useLocale, useLocaleHref, useT } from "@/i18n/react";
 import { scrollWithOffset } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 
 /** Seções numeradas da home — os mesmos números dos rótulos de cada seção. */
 const navItems = [
-  { n: "01", name: "sobre", id: "sobre" },
-  { n: "02", name: "projetos", id: "projetos" },
-  { n: "03", name: "formação", id: "formacao" },
-  { n: "04", name: "contato", id: "contato" },
+  { n: "01", name: tr("sobre", "about"), id: "sobre" },
+  { n: "02", name: tr("projetos", "projects"), id: "projetos" },
+  { n: "03", name: tr("formação", "education"), id: "formacao" },
+  { n: "04", name: tr("contato", "contact"), id: "contato" },
 ];
 
 /** Marca: o nome como um caminho de arquivo, com o cursor do terminal em ouro. */
-const Brand = ({ onClick }: { onClick?: () => void }) => (
+const Brand = ({ onClick }: { onClick?: () => void }) => {
+  const t = useT();
+  return (
   <HashLink
     smooth
     to="/#"
     scroll={scrollWithOffset}
     onClick={onClick}
-    aria-label={`${profile.name} — início`}
+    aria-label={`${profile.name} — ${t("início", "home")}`}
     className="shrink-0 font-mono text-[14px] font-medium tracking-tight text-foreground"
   >
     {profile.name.toLowerCase().replace(" ", ".")}
@@ -29,13 +32,58 @@ const Brand = ({ onClick }: { onClick?: () => void }) => (
       ▋
     </span>
   </HashLink>
-);
+  );
+};
+
+/**
+ * PT · EN: links de verdade para o mesmo endereço no outro idioma (robôs seguem,
+ * dá para abrir em outra aba). Clicar guarda a escolha para as próximas visitas.
+ */
+const LanguageSwitch = ({ className, onPick }: { className?: string; onPick?: () => void }) => {
+  const locale = useLocale();
+  const t = useT();
+  const hrefs: Record<Locale, string> = { pt: useLocaleHref("pt"), en: useLocaleHref("en") };
+  return (
+    <div role="group" aria-label={t("Idioma", "Language")} className={cn("flex items-center text-[11px]", className)}>
+      {(["pt", "en"] as const).map((l, i) => (
+        <span key={l} className="flex items-center">
+          {i > 0 && (
+            <span aria-hidden className="px-1 text-border">
+              /
+            </span>
+          )}
+          <RouterLink
+            to={hrefs[l]}
+            replace
+            hrefLang={l === "pt" ? "pt-BR" : "en"}
+            lang={l === "pt" ? "pt-BR" : "en"}
+            aria-current={locale === l ? "true" : undefined}
+            aria-label={l === "pt" ? "Português" : "English"}
+            onClick={() => {
+              saveLocale(l);
+              onPick?.();
+            }}
+            className={cn(
+              "rounded-[4px] px-1 py-1 uppercase tracking-wide transition-colors",
+              locale === l ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {l}
+          </RouterLink>
+        </span>
+      ))}
+    </div>
+  );
+};
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("");
   const location = useLocation();
+  const t = useT();
+  /** o caminho sem /en: a home é "/" nos dois idiomas */
+  const page = stripLocale(location.pathname);
 
   // Sombra da barra ao sair do topo — listener leve com guard de rAF.
   useEffect(() => {
@@ -72,7 +120,7 @@ const Navbar = () => {
   // Scroll-spy via IntersectionObserver, só na home (as seções só existem lá).
   // Re-tenta até as seções aparecerem no DOM (Index é lazy/Suspense).
   useEffect(() => {
-    if (location.pathname !== "/") {
+    if (page !== "/") {
       setActiveSection("");
       return;
     }
@@ -108,7 +156,7 @@ const Navbar = () => {
       cancelAnimationFrame(raf);
       obs?.disconnect();
     };
-  }, [location.pathname]);
+  }, [page]);
 
   return (
     <header
@@ -121,7 +169,7 @@ const Navbar = () => {
         <Brand onClick={() => setIsMobileMenuOpen(false)} />
 
         {/* Navegação desktop — indicador ancorado na borda inferior da barra. */}
-        <nav aria-label="Seções" className="hidden items-center gap-6 md:flex">
+        <nav aria-label={t("Seções", "Sections")} className="hidden items-center gap-6 md:flex">
           {navItems.map((item) => {
             const active = activeSection === item.id;
             return (
@@ -137,7 +185,7 @@ const Navbar = () => {
                 )}
               >
                 <span className="text-gold">{item.n}</span>
-                {item.name}
+                {t(item.name)}
                 <span
                   aria-hidden
                   className={cn(
@@ -151,14 +199,16 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <span title={profile.availability} className="hidden items-center gap-2 text-[11px] text-muted-foreground sm:flex">
+          <span title={t(profile.availability)} className="hidden items-center gap-2 text-[11px] text-muted-foreground sm:flex">
             <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold-soft shadow-[0_0_8px_hsl(var(--gold-soft))]" />
-            disponível
+            {t("disponível", "available")}
           </span>
+
+          <LanguageSwitch className="ml-2" />
 
           <button
             type="button"
-            aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-label={isMobileMenuOpen ? t("Fechar menu", "Close menu") : t("Abrir menu", "Open menu")}
             aria-expanded={isMobileMenuOpen}
             onClick={() => setIsMobileMenuOpen((open) => !open)}
             className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-[6px] text-foreground transition-colors hover:bg-surface md:hidden"
@@ -171,7 +221,7 @@ const Navbar = () => {
       {/* Painel mobile — ancorado na barra, largura total. */}
       {isMobileMenuOpen && (
         <div className="border-t border-border bg-background md:hidden">
-          <nav aria-label="Seções" className="frame flex flex-col py-2 font-mono">
+          <nav aria-label={t("Seções", "Sections")} className="frame flex flex-col py-2 font-mono">
             {navItems.map((item) => {
               const active = activeSection === item.id;
               return (
@@ -187,13 +237,13 @@ const Navbar = () => {
                   )}
                 >
                   <span className="text-gold">{item.n}</span>
-                  {item.name}
+                  {t(item.name)}
                 </HashLink>
               );
             })}
             <span className="flex items-center gap-2 py-3 pl-4 text-[11px] text-muted-foreground sm:hidden">
               <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold-soft" />
-              {profile.availability.toLowerCase()}
+              {t(profile.availability).toLowerCase()}
             </span>
           </nav>
         </div>

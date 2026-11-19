@@ -10,14 +10,19 @@ import { Box, Check, Download, FileCode2, ShieldCheck, Terminal } from "lucide-r
 import { Bullets, Callout, Chapter, Code, Figures, FileLink, H4, P, Steps, Table, Toc } from "@/components/guide/kit";
 import { useTocHidden } from "@/components/guide/nav";
 import PenduloFiacao from "./PenduloFiacao";
-import { guia, sketchHref } from "@/data/penduloGuia";
+import { guia as guiaData, sketchHref } from "@/data/penduloGuia";
+import { useLocalized, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 
-const ids = guia.capitulos.map((c) => c.id);
+// os ids não mudam com o idioma; precisam ser estáveis para o índice
+const ids = guiaData.capitulos.map((c) => c.id);
 
 /* ------------------------------------------------------------------ guia */
 
 export default function BuildGuide() {
+  // todo tr() do guia vira texto do idioma da página (e muda junto na troca)
+  const guia = useLocalized(guiaData);
+  const t = useT();
   const [c1, c2, c3, c4, c5, c6, c7] = guia.capitulos;
   const { material, impressao, montagem, eletronica, testes, medicoes, ligar } = guia;
 
@@ -29,10 +34,10 @@ export default function BuildGuide() {
     <>
       <section id="monte-o-seu" className="border-b border-border bg-surface">
         <div className="rail py-16 md:py-20">
-          <p className="eyebrow">Guia de construção</p>
+          <p className="eyebrow">{t("Guia de construção", "Build guide")}</p>
           <div className="mt-5 grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-end lg:gap-16">
             <div>
-              <h2 className="font-display text-display-lg font-medium">Monte o seu</h2>
+              <h2 className="font-display text-display-lg font-medium">{t("Monte o seu", "Build your own")}</h2>
               <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-muted-foreground">{guia.intro}</p>
             </div>
             <div className="flex flex-col gap-3">
@@ -66,9 +71,9 @@ export default function BuildGuide() {
               <Chapter {...c1}>
                 <div className="grid gap-4 md:grid-cols-2">
                   {material.grupos.map((g) => (
-                    <div key={g.title} className={cn("rounded-lg border border-border bg-background p-5", g.title === "Parafusos" && "md:col-span-2")}>
+                    <div key={g.title} className={cn("rounded-lg border border-border bg-background p-5", g.wide && "md:col-span-2")}>
                       <H4>{g.title}</H4>
-                      <ul className={cn("mt-4 grid gap-x-8 gap-y-3", g.title === "Parafusos" && "md:grid-cols-2")}>
+                      <ul className={cn("mt-4 grid gap-x-8 gap-y-3", g.wide && "md:grid-cols-2")}>
                         {g.itens.map(([item, nota]) => (
                           <li key={item} className="text-[14.5px] leading-snug">
                             <span className="text-foreground">{item}</span>
@@ -93,11 +98,11 @@ export default function BuildGuide() {
                     </div>
                   ))}
                 </dl>
-                <Callout tone="warn" title="Sem suporte">
+                <Callout tone="warn" title={t("Sem suporte", "No supports")}>
                   {impressao.aviso}
                 </Callout>
                 <Table
-                  head={["Peça", "Qtd", "Preench.", "Posição e observação", "STL"]}
+                  head={[t("Peça", "Part"), t("Qtd", "Qty"), t("Preench.", "Infill"), t("Posição e observação", "Orientation and notes"), "STL"]}
                   rows={impressao.pecas}
                   cell={(row, i) =>
                     i === 0 ? (
@@ -107,7 +112,7 @@ export default function BuildGuide() {
                         href={impressao.stlBase + row[4]}
                         download
                         className="-my-2 inline-flex min-h-[40px] items-center gap-1.5 py-2 pr-2 text-foreground underline-offset-4 hover:text-primary hover:underline"
-                        aria-label={`Baixar ${row[4]}`}
+                        aria-label={t(`Baixar ${row[4]}`, `Download ${row[4]}`)}
                       >
                         <Box className="h-3.5 w-3.5" aria-hidden />
                         .stl
@@ -118,18 +123,18 @@ export default function BuildGuide() {
                   }
                 />
                 <P className="text-[13.5px]">{impressao.stlNota}</P>
-                <Callout tone="tip" title="Uma peça de teste antes da grande">
+                <Callout tone="tip" title={t("Uma peça de teste antes da grande", "A test piece before the big one")}>
                   {impressao.dicaTeste}
                 </Callout>
                 <div className="grid gap-8 md:grid-cols-[1fr_1.4fr]">
                   <div>
-                    <H4>Depois de imprimir, confira</H4>
+                    <H4>{t("Depois de imprimir, confira", "After printing, check")}</H4>
                     <div className="mt-4">
                       <Bullets items={impressao.conferir} />
                     </div>
                   </div>
                   <div>
-                    <H4>Problemas comuns</H4>
+                    <H4>{t("Problemas comuns", "Common problems")}</H4>
                     <dl className="mt-4 divide-y divide-border">
                       {impressao.problemas.map(([p, s]) => (
                         <div key={p} className="py-2.5 first:pt-0">
@@ -147,12 +152,12 @@ export default function BuildGuide() {
                 <P>{montagem.referencia}</P>
                 <Figures items={montagem.medidas} />
                 <div>
-                  <H4>Ordem de montagem</H4>
+                  <H4>{t("Ordem de montagem", "Assembly order")}</H4>
                   <div className="mt-5">
                     <Steps items={montagem.passos} />
                   </div>
                 </div>
-                <Callout tone="tip" title="Polia metálica">
+                <Callout tone="tip" title={t("Polia metálica", "Metal pulley")}>
                   {montagem.polia}
                 </Callout>
               </Chapter>
@@ -163,7 +168,7 @@ export default function BuildGuide() {
                 {/* no desktop o desenho sai da coluna do texto e usa a largura toda (210 px do índice + 56 de vão);
                     enquanto ele passa, o índice some para não ficar por cima */}
                 <PenduloFiacao wideRef={wide} wideClassName="lg:-ml-[266px]" />
-                <Table head={["Aconteceu comigo", "O que era"]} rows={eletronica.problemas} />
+                <Table head={[t("Aconteceu comigo", "What happened to me"), t("O que era", "What it was")]} rows={eletronica.problemas} />
               </Chapter>
 
               {/* 05 */}
@@ -173,7 +178,7 @@ export default function BuildGuide() {
                   {testes.sketches.map((s) => (
                     <li key={s.file} className="flex flex-col rounded-lg border border-border bg-background p-5">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="font-mono text-[12px] text-gold">teste {s.n}</span>
+                        <span className="font-mono text-[12px] text-gold">{t(`teste ${s.n}`, `test ${s.n}`)}</span>
                         <FileLink file={{ href: sketchHref(s.file) }} className="h-8 px-2.5 text-[12px]">
                           <Download className="h-3.5 w-3.5" aria-hidden />
                           <span className="font-mono">{s.file}</span>
@@ -183,7 +188,7 @@ export default function BuildGuide() {
                       <p className="mt-auto flex gap-2 pt-4 text-[13.5px] leading-relaxed text-muted-foreground">
                         <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
                         <span>
-                          <span className="font-medium text-foreground">Deu certo se: </span>
+                          <span className="font-medium text-foreground">{t("Deu certo se: ", "It worked if: ")}</span>
                           {s.ok}
                         </span>
                       </p>
@@ -195,16 +200,16 @@ export default function BuildGuide() {
               {/* 06 */}
               <Chapter {...c6}>
                 <P>{medicoes.historia}</P>
-                <Code label="medir_pendulo · Monitor Serial">{medicoes.log}</Code>
+                <Code label={t("medir_pendulo · Monitor Serial", "medir_pendulo · Serial Monitor")}>{medicoes.log}</Code>
                 <P>{medicoes.conclusao}</P>
                 <Figures items={medicoes.numeros} />
                 <div className="rounded-lg border border-border bg-background p-5">
-                  <H4>O modelo, em uma linha</H4>
+                  <H4>{t("O modelo, em uma linha", "The model, in one line")}</H4>
                   <p className="mt-4 overflow-x-auto whitespace-nowrap font-mono text-[15px] text-foreground md:text-base">{medicoes.equacao}</p>
                   <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground">{medicoes.equacaoNota}</p>
                 </div>
                 <div>
-                  <H4>Se a sua haste for diferente</H4>
+                  <H4>{t("Se a sua haste for diferente", "If your rod is different")}</H4>
                   <P className="mt-3">{medicoes.suaHaste}</P>
                 </div>
                 <Code label="terminal">{medicoes.comandos}</Code>
@@ -220,7 +225,7 @@ export default function BuildGuide() {
                   ))}
                 </div>
                 <div>
-                  <H4>Antes de ligar o motor com a haste, no computador</H4>
+                  <H4>{t("Antes de ligar o motor com a haste, no computador", "On the computer, before running the motor with the rod")}</H4>
                   <dl className="mt-4 grid gap-4 sm:grid-cols-3">
                     {medicoes.resultados.map((r) => (
                       <div key={r.k} className="rounded-lg border border-border bg-background p-4">
@@ -248,24 +253,24 @@ export default function BuildGuide() {
                 </ol>
                 <div className="grid gap-8 md:grid-cols-2">
                   <div>
-                    <H4>O que protege o aparelho</H4>
+                    <H4>{t("O que protege o aparelho", "What protects the rig")}</H4>
                     <div className="mt-4">
                       <Bullets items={ligar.seguranca} icon={ShieldCheck} />
                     </div>
                   </div>
                   <div>
-                    <H4>USB e Monitor Serial</H4>
+                    <H4>{t("USB e Monitor Serial", "USB and Serial Monitor")}</H4>
                     <div className="mt-4">
                       <Bullets items={ligar.serial} />
                     </div>
                   </div>
                 </div>
                 <div>
-                  <H4>Ajustes no topo do código</H4>
+                  <H4>{t("Ajustes no topo do código", "Settings at the top of the code")}</H4>
                   <div className="mt-4 space-y-4">
                     <Code label="pendulo_controle.ino">{ligar.codigo}</Code>
                     <Table
-                      head={["Ajuste", "Valor", "Para que serve"]}
+                      head={[t("Ajuste", "Setting"), t("Valor", "Value"), t("Para que serve", "What it does")]}
                       rows={ligar.ajustes}
                       cell={(row, i) => (i < 2 ? <span className={cn("font-mono text-[13px]", i === 1 && "text-foreground")}>{row[i]}</span> : row[i])}
                     />
@@ -273,15 +278,15 @@ export default function BuildGuide() {
                 </div>
                 <div className="grid gap-6 xl:grid-cols-2">
                   <div>
-                    <H4>Se a subida não pegar</H4>
+                    <H4>{t("Se a subida não pegar", "If the swing-up doesn't catch")}</H4>
                     <div className="mt-4">
-                      <Table head={["Sintoma", "Ajuste"]} rows={ligar.subida} />
+                      <Table head={[t("Sintoma", "Symptom"), t("Ajuste", "Adjustment")]} rows={ligar.subida} />
                     </div>
                   </div>
                   <div>
-                    <H4>Se o equilíbrio der problema</H4>
+                    <H4>{t("Se o equilíbrio der problema", "If balancing goes wrong")}</H4>
                     <div className="mt-4">
-                      <Table head={["Sintoma", "O que fazer"]} rows={ligar.equilibrio} />
+                      <Table head={[t("Sintoma", "Symptom"), t("O que fazer", "What to do")]} rows={ligar.equilibrio} />
                     </div>
                   </div>
                 </div>
@@ -294,8 +299,8 @@ export default function BuildGuide() {
       {/* O que aprendi */}
       <section className="border-b border-border bg-background">
         <div className="rail py-16 md:py-20">
-          <p className="eyebrow">Lições</p>
-          <h2 className="font-display mt-5 text-display-lg font-medium">O que aprendi</h2>
+          <p className="eyebrow">{t("Lições", "Lessons")}</p>
+          <h2 className="font-display mt-5 text-display-lg font-medium">{t("O que aprendi", "What I learned")}</h2>
           <ol className="mt-10 grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
             {guia.licoes.map((l, i) => (
               <li key={l.title} className="border-t border-foreground pt-4">

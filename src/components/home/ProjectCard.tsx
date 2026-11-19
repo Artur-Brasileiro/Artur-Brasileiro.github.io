@@ -1,5 +1,6 @@
 import { ArrowUpRight, Play } from "lucide-react";
 import type { HomeProject } from "@/data/home";
+import { useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
  * que a coisa funciona — e o código fica a um link de distância.
  */
 const ProjectCard = ({ p, wide, onPlay }: { p: HomeProject; wide: boolean; onPlay: (p: HomeProject) => void }) => {
+  const t = useT();
   const playable = !!p.youtubeId;
   const card = cn(
     "group relative flex flex-col overflow-hidden rounded-[8px] border border-border bg-card transition-[transform,border-color] duration-500 hover:-translate-y-1 hover:border-foreground",
@@ -83,7 +85,7 @@ const ProjectCard = ({ p, wide, onPlay }: { p: HomeProject; wide: boolean; onPla
               rel="noreferrer"
               className="relative z-10 mt-4 inline-block font-mono text-[11px] text-muted-foreground underline decoration-border decoration-1 underline-offset-4 transition-colors hover:text-foreground"
             >
-              código no github ↗
+              {t("código no github ↗", "code on github ↗")}
             </a>
           )}
         </div>
@@ -91,7 +93,7 @@ const ProjectCard = ({ p, wide, onPlay }: { p: HomeProject; wide: boolean; onPla
         <button
           type="button"
           onClick={() => onPlay(p)}
-          aria-label={`Ver demonstração em vídeo: ${p.name}`}
+          aria-label={t(`Ver demonstração em vídeo: ${p.name}`, `Watch video demo: ${p.name}`)}
           className={cn(square, "after:absolute after:inset-0 after:content-['']")}
         >
           <Play className="ml-0.5 h-3.5 w-3.5" fill="currentColor" />

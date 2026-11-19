@@ -1,0 +1,11 @@
+<svg viewBox="0 0 360 230" aria-label="Identifying the motor coils">
+        <rect width="360" height="230" fill="#fff"/>
+        <circle cx="120" cy="115" r="62" fill="#f1f5f9" stroke="#1d1d1f" stroke-width="1.5"/>
+        <path d="M80 85 q14 -14 28 0 q14 14 28 0" fill="none" stroke="var(--c1)" stroke-width="3"/>
+        <path d="M80 145 q14 -14 28 0 q14 14 28 0" fill="none" stroke="var(--c2)" stroke-width="3"/>
+        <text x="120" y="120" text-anchor="middle" class="lbl-s">NEMA 17</text>
+        <g stroke-width="3" fill="none"><path d="M136 85 H250" stroke="var(--c1)"/><path d="M80 85 H62 V60 H250" stroke="var(--c1b)"/><path d="M136 145 H250" stroke="var(--c2)"/><path d="M80 145 H62 V170 H250" stroke="var(--c2b)"/></g>
+        <g class="mono"><text x="258" y="64">1A</text><text x="258" y="89">1B</text><text x="258" y="149">2B</text><text x="258" y="174">2A</text></g>
+        <text x="300" y="80" class="lbl-s">~1.5 Ω</text><text x="300" y="164" class="lbl-s">~1.5 Ω</text>
+        <path d="M292 62 q8 13 0 26" fill="none" stroke="#6b6b70"/><path d="M292 146 q8 13 0 26" fill="none" stroke="#6b6b70"/>
+      </svg>

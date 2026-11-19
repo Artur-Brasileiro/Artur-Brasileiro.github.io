@@ -5,6 +5,7 @@
  *
  * Sem three, sem DOM: a prévia em SVG, o G-code e os testes usam isto direto.
  */
+import { getLocale, tr, type Locale, type Tx } from "../../i18n/core.ts";
 import { X_MAX, Y_MAX, programFromPolylines, type Cmd, type Polyline } from "./machine.ts";
 
 export type StrokeFont = {
@@ -21,13 +22,37 @@ export type StrokeFont = {
 
 export const FONT_IDS = ["simples", "cursiva", "moderna"] as const;
 export type FontId = (typeof FONT_IDS)[number];
-export const FONT_LABEL: Record<FontId, string> = { simples: "Simples", cursiva: "Cursiva", moderna: "Moderna" };
-/** crédito curto na interface; o texto completo que as licenças pedem vai junto do JSON de cada fonte */
-export const FONT_CREDIT: Record<FontId, string> = {
-  simples: "Hershey Sans, do Dr. A. V. Hershey (U.S. National Bureau of Standards), em SVG por Windell H. Oskay",
-  cursiva: "Hershey Script, do Dr. A. V. Hershey (U.S. National Bureau of Standards), em SVG por Windell H. Oskay",
-  moderna: "EMS Readability, de Sheldon B. Michaels, em SVG por Windell H. Oskay (SIL Open Font License)",
+/** o nome gravado no JSON de cada fonte (é o rótulo em português) */
+const FONT_NAME: Record<FontId, string> = { simples: "Simples", cursiva: "Cursiva", moderna: "Moderna" };
+export const FONT_LABEL: Record<FontId, Tx> = {
+  simples: tr("Simples", "Simple"),
+  cursiva: tr("Cursiva", "Cursive"),
+  moderna: tr("Moderna", "Modern"),
 };
+/** crédito curto na interface; o texto completo que as licenças pedem vai junto do JSON de cada fonte */
+export const FONT_CREDIT: Record<FontId, Tx> = {
+  simples: tr(
+    "Hershey Sans, do Dr. A. V. Hershey (U.S. National Bureau of Standards), em SVG por Windell H. Oskay",
+    "Hershey Sans, by Dr. A. V. Hershey (U.S. National Bureau of Standards), SVG by Windell H. Oskay",
+  ),
+  cursiva: tr(
+    "Hershey Script, do Dr. A. V. Hershey (U.S. National Bureau of Standards), em SVG por Windell H. Oskay",
+    "Hershey Script, by Dr. A. V. Hershey (U.S. National Bureau of Standards), SVG by Windell H. Oskay",
+  ),
+  moderna: tr(
+    "EMS Readability, de Sheldon B. Michaels, em SVG por Windell H. Oskay (SIL Open Font License)",
+    "EMS Readability, by Sheldon B. Michaels, SVG by Windell H. Oskay (SIL Open Font License)",
+  ),
+};
+
+/** a fonte carregada é a do id? (compara pelo nome gravado no JSON) */
+export const isFont = (font: StrokeFont, id: FontId) => font.name === FONT_NAME[id];
+
+/** o rótulo da fonte na interface, no idioma; fonte desconhecida fica com o nome do JSON */
+function fontLabel(font: StrokeFont, locale: Locale): string {
+  const id = FONT_IDS.find((i) => isFont(font, i));
+  return id ? FONT_LABEL[id][locale] : font.name;
+}
 
 /** limite do campo: mais que isso vira letra miúda e minutos de máquina */
 export const MAX_CHARS = 48;
@@ -166,8 +191,11 @@ function orderStrokes(polys: Polyline[]): Polyline[] {
   });
 }
 
-export function textProgram(font: StrokeFont, text: string): { program: Cmd[]; layout: TextLayout } {
+export function textProgram(font: StrokeFont, text: string, locale: Locale = getLocale()): { program: Cmd[]; layout: TextLayout } {
   const layout = layoutText(font, text);
-  const program = programFromPolylines(layout.polys, [`; texto: "${normalizeText(text)}" · fonte ${font.name}`]);
+  const t = normalizeText(text);
+  const label = fontLabel(font, locale);
+  const note = locale === "pt" ? `; texto: "${t}" · fonte ${label}` : `; text: "${t}" · font ${label}`;
+  const program = programFromPolylines(layout.polys, [note], locale);
   return { program, layout };
 }

@@ -10,6 +10,8 @@
  * do modelo do FreeCAD. Mexer aqui é mexer na máquina: confira contra o CAD.
  */
 
+import { getLocale, tr, type Locale } from "../../i18n/core.ts";
+
 /* ---------- geometria da máquina ---------- */
 
 /** curso útil, em mm */
@@ -208,13 +210,21 @@ export type Polyline = [number, number][];
 
 const fmt = (v: number) => v.toFixed(2);
 
+/** os comentários do G-code saem no idioma da página: na listagem e no arquivo baixado */
+const NOTE = {
+  up: tr("M5        ; caneta ↑", "M5        ; pen ↑"),
+  down: tr("M3 S90    ; caneta ↓", "M3 S90    ; pen ↓"),
+  units: tr("G21 G90   ; mm, absoluto", "G21 G90   ; mm, absolute"),
+  end: tr("M2        ; fim", "M2        ; end"),
+};
+
 /** Polilinhas (coordenadas da máquina, mm) viram G-code: sobe, vai, desce, traça, sobe. */
-export function programFromPolylines(polys: Polyline[], header: string[]): Cmd[] {
+export function programFromPolylines(polys: Polyline[], header: string[], locale: Locale = getLocale()): Cmd[] {
   const P: Cmd[] = [];
-  const up = () => P.push({ t: "pen", down: false, g: "M5        ; caneta ↑" });
-  const down = () => P.push({ t: "pen", down: true, g: "M3 S90    ; caneta ↓" });
+  const up = () => P.push({ t: "pen", down: false, g: NOTE.up[locale] });
+  const down = () => P.push({ t: "pen", down: true, g: NOTE.down[locale] });
   for (const h of header) P.push({ t: "note", g: h });
-  P.push({ t: "note", g: "G21 G90   ; mm, absoluto" });
+  P.push({ t: "note", g: NOTE.units[locale] });
   up();
   for (const pts of polys) {
     if (pts.length < 2) continue;
@@ -227,7 +237,7 @@ export function programFromPolylines(polys: Polyline[], header: string[]): Cmd[]
     up();
   }
   P.push({ t: "mv", x: 0, y: 0, rapid: true, g: "G0 X0.00 Y0.00" });
-  P.push({ t: "note", g: "M2        ; fim" });
+  P.push({ t: "note", g: NOTE.end[locale] });
   return P;
 }
 
@@ -237,8 +247,10 @@ const curve = (f: (t: number) => [number, number], t0: number, t1: number, n: nu
   return a;
 };
 
+const DEMO_NOTE = tr("; demo · moldura + espirógrafo + rosa", "; demo · frame + spirograph + rose");
+
 /** o desenho de demonstração do artifact: moldura dupla, espirógrafo, lissajous e rosa */
-export function demoProgram(): Cmd[] {
+export function demoProgram(locale: Locale = getLocale()): Cmd[] {
   return programFromPolylines(
     [
       [[12, 12], [806, 12], [806, 390], [12, 390], [12, 12]],
@@ -253,7 +265,8 @@ export function demoProgram(): Cmd[] {
         return [605 + r * Math.cos(t), 201 + r * Math.sin(t)];
       }, 0, 6 * Math.PI, 1100),
     ],
-    ["; demo · moldura + espirógrafo + rosa"],
+    [DEMO_NOTE[locale]],
+    locale,
   );
 }
 

@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -25,13 +24,15 @@ import {
 } from "@/components/ui/dialog";
 import SiteFooter from "@/components/SiteFooter";
 import PolpadDownloads from "@/components/PolpadDownloads";
-import { macropad, type TimelineItem, type TimelineStatus } from "@/data/projects";
+import { macropad as macropadData, type TimelineItem, type TimelineStatus } from "@/data/macropad";
+import { tr, type Tx } from "@/i18n/core";
+import { Link, useLocalized, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 
-const statusLabel: Record<TimelineStatus, string> = {
-  completed: "Concluído",
-  current: "Em progresso",
-  planned: "Planejado",
+const statusLabel: Record<TimelineStatus, Tx> = {
+  completed: tr("Concluído", "Completed"),
+  current: tr("Em progresso", "In progress"),
+  planned: tr("Planejado", "Planned"),
 };
 
 /**
@@ -56,6 +57,9 @@ type Maximized = { type: "image"; urls: string[]; index: number } | { type: "mod
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`;
 
 const MacropadPage = () => {
+  const t = useT();
+  const macropad = useLocalized(macropadData);
+
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -71,9 +75,9 @@ const MacropadPage = () => {
       {/* Cabeçalho */}
       <div className="border-b border-border bg-surface">
         <div className="rail py-12 md:py-16">
-          <nav aria-label="Trilha de navegação" className="flex items-center gap-2 text-sm">
+          <nav aria-label={t("Trilha de navegação", "Breadcrumb")} className="flex items-center gap-2 text-sm">
             <Link to="/" className="text-muted-foreground transition-colors hover:text-primary">
-              Início
+              {t("Início", "Home")}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
             <Link
@@ -113,7 +117,7 @@ const MacropadPage = () => {
                 <img src={asset("macropadpage/polpad.svg")} alt="" width={64} height={64} className="h-12 w-12 shrink-0 md:h-16 md:w-16" />
                 <div className="min-w-0">
                   <h1 className="font-display text-display-xl font-medium leading-none">{macropad.title}</h1>
-                  <p className="mt-2 text-sm text-muted-foreground">antes {macropad.formerly}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{t("antes", "formerly")} {macropad.formerly}</p>
                 </div>
               </div>
 
@@ -130,14 +134,14 @@ const MacropadPage = () => {
                 className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
               >
                 <Github className="h-4 w-4" />
-                Código, placa e case no GitHub
+                {t("Código, placa e case no GitHub", "Code, PCB and case on GitHub")}
                 <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </a>
             </div>
 
             <div className="rounded-lg border border-border bg-background p-6">
               <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Especificações
+                {t("Especificações", "Specs")}
               </h2>
               <dl className="mt-5 divide-y divide-border">
                 {macropad.specs.map((spec) => (
@@ -163,9 +167,9 @@ const MacropadPage = () => {
       <div className="border-b border-border bg-background">
         <div className="rail grid gap-10 py-16 md:py-20 lg:grid-cols-[1fr_2fr] lg:gap-16">
           <div>
-            <p className="eyebrow">Contexto</p>
+            <p className="eyebrow">{t("Contexto", "Context")}</p>
             <h2 className="font-display mt-5 text-display-lg font-medium lg:sticky lg:top-24">
-              A ideia do projeto
+              {t("A ideia do projeto", "The idea behind the project")}
             </h2>
           </div>
 
@@ -181,16 +185,18 @@ const MacropadPage = () => {
 
       {/* Roadmap */}
       <div className="rail py-16 md:py-20">
-        <p className="eyebrow">Execução</p>
-        <h2 className="font-display mt-5 text-display-lg font-medium">Roadmap do projeto</h2>
+        <p className="eyebrow">{t("Execução", "Execution")}</p>
+        <h2 className="font-display mt-5 text-display-lg font-medium">{t("Roadmap do projeto", "Project roadmap")}</h2>
 
         <ol className="mt-12">
           {macropad.timeline.map((item, index) => {
             const isLast = index === macropad.timeline.length - 1;
             const hasMedia = Boolean(item.image || item.images || item.modelUrl || item.repository);
 
+            // a chave é a posição, não a data: "Fase 1" muda com o idioma, e trocar
+            // a chave remontaria a fase inteira, modelos 3D inclusive
             return (
-              <li key={item.date} className="flex gap-5 md:gap-8">
+              <li key={index} className="flex gap-5 md:gap-8">
                 {/* Trilho e marcador */}
                 <div className="flex w-9 shrink-0 flex-col items-center" aria-hidden>
                   <span
@@ -232,7 +238,7 @@ const MacropadPage = () => {
                               badgeClass[item.status],
                             )}
                           >
-                            {statusLabel[item.status]}
+                            {t(statusLabel[item.status])}
                           </span>
                         </div>
 
@@ -244,7 +250,7 @@ const MacropadPage = () => {
                         {item.modelUrl && (
                           <p className="mt-4 flex items-start gap-2 text-sm font-medium text-primary">
                             <Rotate3d className="mt-0.5 h-4 w-4 shrink-0" />
-                            {item.modelHint ?? "Expanda para girar o modelo em 3D."}
+                            {item.modelHint ?? t("Expanda para girar o modelo em 3D.", "Expand to rotate the model in 3D.")}
                           </p>
                         )}
                       </div>
@@ -314,7 +320,7 @@ const MacropadPage = () => {
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
           >
             <ArrowLeft className="h-4 w-4" />
-            Voltar para projetos
+            {t("Voltar para projetos", "Back to projects")}
           </Link>
         </div>
       </div>
@@ -328,8 +334,10 @@ const MacropadPage = () => {
             altura do diálogo e aparecia cortada, como um zoom travado */}
         <DialogContent className="flex h-[90svh] w-[95vw] max-w-6xl flex-col gap-0 overflow-hidden border-border bg-background p-0">
           <DialogHeader className="sr-only">
-            <DialogTitle>Mídia expandida</DialogTitle>
-            <DialogDescription>Visualização em tela cheia da etapa do projeto.</DialogDescription>
+            <DialogTitle>{t("Mídia expandida", "Expanded media")}</DialogTitle>
+            <DialogDescription>
+              {t("Visualização em tela cheia da etapa do projeto.", "Full-screen view of this project phase.")}
+            </DialogDescription>
           </DialogHeader>
 
           {maximizedMedia?.type === "image" && (
@@ -360,6 +368,7 @@ const PhotoViewer = ({
   media: Extract<Maximized, { type: "image" }>;
   onIndex: (index: number) => void;
 }) => {
+  const t = useT();
   const { urls, index } = media;
   const many = urls.length > 1;
 
@@ -380,13 +389,13 @@ const PhotoViewer = ({
 
   return (
     <div className="relative min-h-0 flex-1 bg-surface">
-      <ZoomableImage src={asset(urls[index])} alt={`Foto ${index + 1} de ${urls.length}`} />
+      <ZoomableImage src={asset(urls[index])} alt={t(`Foto ${index + 1} de ${urls.length}`, `Photo ${index + 1} of ${urls.length}`)} />
       {many && (
         <>
-          <button type="button" className={cn(nav, "left-3")} onClick={() => go(-1)} aria-label="Foto anterior">
+          <button type="button" className={cn(nav, "left-3")} onClick={() => go(-1)} aria-label={t("Foto anterior", "Previous photo")}>
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <button type="button" className={cn(nav, "right-3")} onClick={() => go(1)} aria-label="Próxima foto">
+          <button type="button" className={cn(nav, "right-3")} onClick={() => go(1)} aria-label={t("Próxima foto", "Next photo")}>
             <ChevronRight className="h-5 w-5" />
           </button>
           <span className="tabular absolute left-3 top-3 rounded-md border border-border bg-background/90 px-2 py-1 font-mono text-xs text-muted-foreground">
@@ -403,45 +412,48 @@ const PhotoViewer = ({
  * O cartão inteiro leva ao repositório (link esticado sobre ele); o download
  * da última versão é um segundo link, por cima, para não aninhar <a> em <a>.
  */
-const RepositoryCard = ({ repo }: { repo: NonNullable<TimelineItem["repository"]> }) => (
-  // min-w-0: o cartão é item de grid, e sem isso o nome comprido do repositório
-  // alargava a coluna para além da tela do celular
-  <div className="group/repo relative min-w-0 rounded-lg border border-border bg-background p-6 shadow-soft-sm transition-colors hover:border-primary/40">
-    <a
-      href={repo.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="absolute inset-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      aria-label={`Abrir o repositório ${repo.name} no GitHub`}
-    />
-    <div className="flex items-start justify-between gap-4">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-surface">
-          <Github className="h-5 w-5 text-foreground" aria-hidden />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Repositório no GitHub</p>
-          <p className="font-mono text-sm font-medium text-foreground [overflow-wrap:anywhere] group-hover/repo:text-primary">
-            {repo.name}
-          </p>
-        </div>
-      </div>
-      <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover/repo:text-primary" aria-hidden />
-    </div>
-    {repo.credit && <p className="mt-3 text-xs font-medium text-foreground">{repo.credit}</p>}
-    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{repo.description}</p>
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap gap-2">
-        {repo.stack.map((t) => (
-          <span key={t} className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs text-foreground">
-            {t}
+const RepositoryCard = ({ repo }: { repo: NonNullable<TimelineItem["repository"]> }) => {
+  const t = useT();
+  return (
+    // min-w-0: o cartão é item de grid, e sem isso o nome comprido do repositório
+    // alargava a coluna para além da tela do celular
+    <div className="group/repo relative min-w-0 rounded-lg border border-border bg-background p-6 shadow-soft-sm transition-colors hover:border-primary/40">
+      <a
+        href={repo.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute inset-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        aria-label={t(`Abrir o repositório ${repo.name} no GitHub`, `Open the ${repo.name} repository on GitHub`)}
+      />
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-surface">
+            <Github className="h-5 w-5 text-foreground" aria-hidden />
           </span>
-        ))}
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("Repositório no GitHub", "GitHub repository")}</p>
+            <p className="font-mono text-sm font-medium text-foreground [overflow-wrap:anywhere] group-hover/repo:text-primary">
+              {repo.name}
+            </p>
+          </div>
+        </div>
+        <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover/repo:text-primary" aria-hidden />
       </div>
-      {repo.releaseUrl && <PolpadDownloads compact />}
+      {repo.credit && <p className="mt-3 text-xs font-medium text-foreground">{repo.credit}</p>}
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{repo.description}</p>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {repo.stack.map((tech) => (
+            <span key={tech} className="rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs text-foreground">
+              {tech}
+            </span>
+          ))}
+        </div>
+        {repo.releaseUrl && <PolpadDownloads compact />}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /** Moldura de mídia com botão de expandir — mesma linguagem em foto e modelo 3D. */
 const MediaFrame = ({
@@ -452,23 +464,26 @@ const MediaFrame = ({
   ratio: string;
   onExpand: () => void;
   children: React.ReactNode;
-}) => (
-  <div
-    className={cn(
-      "group/media relative overflow-hidden rounded-lg border border-border bg-surface shadow-soft-sm",
-      ratio,
-    )}
-  >
-    {children}
-    <button
-      type="button"
-      onClick={onExpand}
-      aria-label="Expandir mídia"
-      className="absolute right-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground opacity-0 shadow-soft-sm backdrop-blur-sm transition-opacity hover:bg-background focus-visible:opacity-100 group-hover/media:opacity-100"
+}) => {
+  const t = useT();
+  return (
+    <div
+      className={cn(
+        "group/media relative overflow-hidden rounded-lg border border-border bg-surface shadow-soft-sm",
+        ratio,
+      )}
     >
-      <Maximize2 className="h-4 w-4" />
-    </button>
-  </div>
-);
+      {children}
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-label={t("Expandir mídia", "Expand media")}
+        className="absolute right-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground opacity-0 shadow-soft-sm backdrop-blur-sm transition-opacity hover:bg-background focus-visible:opacity-100 group-hover/media:opacity-100"
+      >
+        <Maximize2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+};
 
 export default MacropadPage;

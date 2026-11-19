@@ -14,6 +14,8 @@
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EL_LIMIT, type ExplodedState, type FitBox, type PartsConfig } from "@/components/three/explode";
 import { layoutFromScroll, prefersReducedMotion, usePlayback } from "@/components/home/playback";
+import { tr } from "@/i18n/core";
+import { useLocale, useT } from "@/i18n/react";
 import { recordRun } from "./run";
 import { loadScene, PENDULO_GLB, pickQuality } from "./preload";
 import type { HomeFraming, PenduloScene } from "./PenduloScene";
@@ -27,27 +29,36 @@ const FULL: FitBox = { x: 0, y: 0, w: 1, h: 1 };
 
 type Phase = "loading" | "ready" | "error" | "nowebgl";
 
-/** A corrida e o "carimbo" dela: cada momento vira uma linha da lista e uma etapa (na escala 0–1 da corrida). */
+/** a etapa antes do play */
+const OFF = tr("Desligado · carro no batente, haste pendurada", "Off · cart at the end stop, rod hanging");
+
+/**
+ * A corrida e o "carimbo" dela: cada momento vira uma linha da lista e uma etapa (na escala 0–1 da corrida).
+ * A corrida é simulada uma vez; os textos são refeitos quando o idioma troca (a página não remonta).
+ */
 function useRun() {
-  return useMemo(() => {
-    const run = recordRun();
+  const locale = useLocale();
+  const run = useMemo(() => recordRun(), []);
+  const cfg = useMemo(() => {
     const toU = (t: number) => t / run.duration;
+    const sec = (t: number) => (locale === "en" ? t.toFixed(1) : t.toFixed(1).replace(".", ","));
     const cfg: PartsConfig = {
       model: "",
       groups: run.marks.map((m, i) => ({
         id: `m${i}`,
-        ref: `T+${m.t.toFixed(1).replace(".", ",")}s`,
-        name: m.name,
-        spec: m.spec,
+        ref: `T+${sec(m.t)}s`,
+        name: m.name[locale],
+        spec: m.spec[locale],
         explode: [0, 0, 0],
         stage: [0, 0],
         // acende quando a corrida chega neste momento
         reveal: [toU(m.t), toU(m.t) + 0.004],
       })),
-      stages: [[0, "Desligado · carro no batente, haste pendurada"], ...run.marks.map((m): [number, string] => [toU(m.t), m.label])],
+      stages: [[0, OFF[locale]], ...run.marks.map((m): [number, string] => [toU(m.t), m.label[locale]])],
     };
-    return { run, cfg };
-  }, []);
+    return cfg;
+  }, [run, locale]);
+  return { run, cfg };
 }
 
 type Props = {
@@ -61,6 +72,8 @@ type Props = {
 
 const PenduloRunView = forwardRef<HTMLElement, Props>(function PenduloRunView({ trackVh = 160, className = "", fit, children }, ref) {
   const { run, cfg } = useRun();
+  const locale = useLocale();
+  const t = useT();
   const track = useRef<HTMLElement | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<PenduloScene | null>(null);
@@ -178,6 +191,11 @@ const PenduloRunView = forwardRef<HTMLElement, Props>(function PenduloRunView({ 
     };
   }, [run, framing, attempt]);
 
+  /* trocar de idioma não remonta: a cena só troca o aria-label do canvas */
+  useEffect(() => {
+    scene.current?.setLocale(locale);
+  }, [locale]);
+
   /* fora da tela: a cena não desenha e o vídeo pausa; de volta, continua */
   useEffect(() => {
     const t = track.current;
@@ -254,7 +272,10 @@ const PenduloRunView = forwardRef<HTMLElement, Props>(function PenduloRunView({ 
           >
             {phase === "loading" && (
               <div className="w-48 text-center">
-                <p>carregando o modelo 3D{loaded > 0 ? ` · ${loaded}%` : "…"}</p>
+                <p>
+                  {t("carregando o modelo 3D", "loading the 3D model")}
+                  {loaded > 0 ? ` · ${loaded}%` : "…"}
+                </p>
                 <div className="mt-2 h-[2px] overflow-hidden bg-border">
                   <div className="h-full origin-left bg-gold transition-transform duration-200" style={{ transform: `scaleX(${Math.max(0.04, loaded / 100)})` }} />
                 </div>
@@ -262,13 +283,20 @@ const PenduloRunView = forwardRef<HTMLElement, Props>(function PenduloRunView({ 
             )}
             {phase === "error" && (
               <p className="pointer-events-auto text-center">
-                não deu para carregar o modelo 3D.{" "}
+                {t("não deu para carregar o modelo 3D.", "couldn't load the 3D model.")}{" "}
                 <button type="button" onClick={() => setAttempt((a) => a + 1)} className="text-foreground underline underline-offset-4">
-                  tentar de novo
+                  {t("tentar de novo", "try again")}
                 </button>
               </p>
             )}
-            {phase === "nowebgl" && <p className="max-w-[34ch] text-center">este navegador não abriu o WebGL, então o pêndulo não aparece em 3D.</p>}
+            {phase === "nowebgl" && (
+              <p className="max-w-[34ch] text-center">
+                {t(
+                  "este navegador não abriu o WebGL, então o pêndulo não aparece em 3D.",
+                  "this browser couldn't start WebGL, so the pendulum can't show in 3D.",
+                )}
+              </p>
+            )}
           </div>
         )}
 

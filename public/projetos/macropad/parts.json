@@ -1,5 +1,6 @@
 {
   "_leia": "Toda a coreografia da explosao mora aqui. O GLB so carrega a geometria e a marcacao de grupo de cada peca; nenhum nome de componente esta escrito no codigo do visualizador. Para mudar a ordem, a distancia ou os textos, edite este arquivo e publique de novo - nao precisa reabrir o Blender. So precisa rebuildar o GLB (scripts/build_web.py) se voce ADICIONAR ou TROCAR geometria.",
+  "_idioma_nota": "Os textos que a pagina mostra estao nos dois idiomas: name e spec em portugues, name_en e spec_en em ingles, e cada etapa e [limiar, portugues, ingles]. Sem o ingles, a pagina em /en mostra o portugues. Numeros em ingles usam ponto decimal (1.50 mm, nao 1,50 mm).",
   "model": "macropad.glb",
   "_model_nota": "o GLB e servido com extensao .wasm porque .glb nao e um tipo servido na plataforma de artifacts; o GLTFLoader le os bytes e confere o cabecalho, nao o MIME",
   "groups": [
@@ -7,7 +8,9 @@
       "id": "keycap",
       "ref": "KC1-18",
       "name": "Keycaps",
+      "name_en": "Keycaps",
       "spec": "18 un. · perfil uniforme, impressas",
+      "spec_en": "18 pcs · uniform profile, 3D-printed",
       "explode": [
         0,
         0,
@@ -22,7 +25,9 @@
       "id": "case_top",
       "ref": "CT1",
       "name": "Moldura + placa",
+      "name_en": "Frame + plate",
       "spec": "placa de 1,50 mm · moldura da OLED",
+      "spec_en": "1.50 mm plate · OLED bezel",
       "explode": [
         0,
         0,
@@ -37,7 +42,9 @@
       "id": "switch",
       "ref": "SW1-18",
       "name": "Switches MX",
+      "name_en": "MX switches",
       "spec": "18 un. · passo 19,05 mm",
+      "spec_en": "18 pcs · 19.05 mm pitch",
       "explode": [
         0,
         0,
@@ -52,7 +59,9 @@
       "id": "oled",
       "ref": "DS1",
       "name": "Display OLED",
+      "name_en": "OLED display",
       "spec": "0,96\" · só o vidro à vista",
+      "spec_en": "0.96\" · only the glass shows",
       "explode": [
         0,
         0,
@@ -71,7 +80,9 @@
       "id": "pcb",
       "ref": "PCB1",
       "name": "Placa principal",
+      "name_en": "Main board",
       "spec": "FR-4 1,6 mm · 99,97 × 99,97 mm",
+      "spec_en": "FR-4 1.6 mm · 99.97 × 99.97 mm",
       "explode": [
         0,
         0,
@@ -90,7 +101,9 @@
       "id": "socket",
       "ref": "D19-D36",
       "name": "Soquetes e diodos",
+      "name_en": "Sockets and diodes",
       "spec": "18 un. · Kailh hotswap",
+      "spec_en": "18 pcs · Kailh hotswap",
       "explode": [
         0,
         0,
@@ -109,7 +122,9 @@
       "id": "mcu",
       "ref": "U1",
       "name": "ESP32-C3 SuperMini",
+      "name_en": "ESP32-C3 SuperMini",
       "spec": "com o USB-C da placa",
+      "spec_en": "with the board's USB-C",
       "explode": [
         0,
         0,
@@ -128,7 +143,9 @@
       "id": "case_bottom",
       "ref": "CB1",
       "name": "Bandeja inferior",
+      "name_en": "Bottom tray",
       "spec": "cunha de 7° · 4 × M3 por baixo",
+      "spec_en": "7° wedge · 4 × M3 from below",
       "explode": [
         0,
         0,
@@ -157,27 +174,33 @@
   "stages": [
     [
       0,
-      "Conjunto montado"
+      "Conjunto montado",
+      "Assembled"
     ],
     [
       0.07,
-      "Keycaps saindo das hastes"
+      "Keycaps saindo das hastes",
+      "Keycaps coming off the stems"
     ],
     [
       0.24,
-      "Switches saindo da placa"
+      "Switches saindo da placa",
+      "Switches coming out of the plate"
     ],
     [
       0.48,
-      "Moldura e placa de encaixe"
+      "Moldura e placa de encaixe",
+      "Frame and switch plate"
     ],
     [
       0.7,
-      "Bandeja inferior"
+      "Bandeja inferior",
+      "Bottom tray"
     ],
     [
       0.95,
-      "Vista explodida completa"
+      "Vista explodida completa",
+      "Full exploded view"
     ]
   ]
 }

@@ -4,6 +4,10 @@ import { X } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/react";
+
+/** o nome do botão de fechar, para leitor de tela, no idioma da página */
+const CloseText = () => <span className="sr-only">{useT()("Fechar", "Close")}</span>;
 
 const Sheet = SheetPrimitive.Root;
 
@@ -59,7 +63,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
         {children}
         <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
           <X className="h-4 w-4" />
-          <span className="sr-only">Fechar</span>
+          <CloseText />
         </SheetPrimitive.Close>
       </SheetPrimitive.Content>
     </SheetPortal>

@@ -12,6 +12,8 @@ import PageWrapper from "./components/PageWrapper";
 // 2. Importamos a Navbar
 import Navbar from "./components/Navbar";
 import SmoothScroll, { scrollToTop } from "./components/motion/SmoothScroll";
+import { stripLocale } from "./i18n/core";
+import { LocaleProvider } from "./i18n/react";
 
 // Lazy loading das páginas
 const Index = lazy(() => import("./pages/Index"));
@@ -25,21 +27,38 @@ const PageLoader = () => <div className="min-h-screen bg-background w-full" />;
 
 const queryClient = new QueryClient();
 
+/** As páginas do site; cada uma existe na raiz (português) e sob /en (inglês). */
+const pages: { path: string; Page: React.ComponentType }[] = [
+  { path: "", Page: Index },
+  { path: ":category", Page: ProjectsPage },
+  { path: "projeto/macropad", Page: MacropadPage },
+  // o nome novo do projeto também abre a página
+  { path: "projeto/polpad", Page: MacropadPage },
+  { path: "projeto/cnc-plotter", Page: CncPage },
+  { path: "projeto/pendulo-invertido", Page: PenduloPage },
+  { path: "*", Page: NotFound },
+];
+
+const page = (Page: React.ComponentType) => (
+  <Suspense fallback={<PageLoader />}>
+    <PageWrapper>
+      <Page />
+    </PageWrapper>
+  </Suspense>
+);
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
+  // A chave ignora o idioma: trocar de PT para EN não remonta a página nem volta
+  // ao topo, só troca os textos. Mudar de página continua com a transição.
   return (
     // 3. Adicionamos onExitComplete para voltar ao topo na troca de página
     <AnimatePresence mode="wait" onExitComplete={() => scrollToTop(true)}>
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Suspense fallback={<PageLoader />}><PageWrapper><Index /></PageWrapper></Suspense>} />
-        <Route path="/:category" element={<Suspense fallback={<PageLoader />}><PageWrapper><ProjectsPage /></PageWrapper></Suspense>} />
-        <Route path="/projeto/macropad" element={<Suspense fallback={<PageLoader />}><PageWrapper><MacropadPage /></PageWrapper></Suspense>} />
-        {/* o nome novo do projeto também abre a página */}
-        <Route path="/projeto/polpad" element={<Suspense fallback={<PageLoader />}><PageWrapper><MacropadPage /></PageWrapper></Suspense>} />
-        <Route path="/projeto/cnc-plotter" element={<Suspense fallback={<PageLoader />}><PageWrapper><CncPage /></PageWrapper></Suspense>} />
-        <Route path="/projeto/pendulo-invertido" element={<Suspense fallback={<PageLoader />}><PageWrapper><PenduloPage /></PageWrapper></Suspense>} />
-        <Route path="*" element={<Suspense fallback={<PageLoader />}><PageWrapper><NotFound /></PageWrapper></Suspense>} />
+      <Routes location={location} key={stripLocale(location.pathname)}>
+        {["/", "/en/"].flatMap((base) =>
+          pages.map(({ path, Page }) => <Route key={base + path} path={base + path} element={page(Page)} />),
+        )}
       </Routes>
     </AnimatePresence>
   );
@@ -55,9 +74,11 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            {/* 4. A Navbar fica aqui para aparecer por cima de todas as rotas */}
-            <Navbar />
-            <AnimatedRoutes />
+            <LocaleProvider>
+              {/* 4. A Navbar fica aqui para aparecer por cima de todas as rotas */}
+              <Navbar />
+              <AnimatedRoutes />
+            </LocaleProvider>
           </BrowserRouter>
         </SmoothScroll>
       </TooltipProvider>

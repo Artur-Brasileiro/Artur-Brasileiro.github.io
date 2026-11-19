@@ -17,6 +17,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { applyGaussianPrefilter } from "@/components/three/pmrem";
+import { getLocale, tr, txt, type Locale, type Tx } from "@/i18n/core";
 import { energy, PendulumSim, wrap, type Mode } from "./physics.ts";
 import { beltRibbon, cartOffset, IDLER, MOTOR_PULLEY, PIVOT, PULLEY_PITCH_R, XC0 } from "./rig.ts";
 import { RUN_HZ, sampleRun, type Run } from "./run.ts";
@@ -64,7 +65,8 @@ export type Snapshot = {
 
 export type SimEvent = { kind: "pegou" | "caiu"; t: number; after: number };
 
-type Label = [string, string];
+/** nome e detalhe da peça, nos dois idiomas (a dica escolhe o idioma na hora de aparecer) */
+type Label = [string | Tx, string | Tx];
 
 /* ---------- materiais ---------- */
 const MAT_DEFS: Record<string, { color: number; roughness: number; metalness: number; envMapIntensity?: number }> = {
@@ -91,25 +93,45 @@ const FUNC: Record<string, number> = {
   batente_trilho_b: 0xa24fc9,
 };
 
+const BATENTE: Label = [
+  tr("Batente", "End stop"),
+  tr("Nas pontas do trilho · o carro nunca chega nele", "At both ends of the rail · the cart never reaches it"),
+];
+
 const LABELS: Record<string, Label> = {
-  carro_encoder: ["Carro do encoder", "Impresso · 4 × M3 no bloco · flange com rasgos em arco para o encoder"],
-  garra_correia: ["Garra da correia", "Prende as duas pontas da GT2 por baixo do carro"],
-  cubo_pendulo: ["Cubo do pêndulo", "Trava no chato do eixo do encoder e segura a haste"],
-  suporte_motor: ["Suporte do motor", "A aba encosta no trilho e alinha a correia sem medir"],
-  polia_motor_gt2_30d: ["Polia GT2 de 30 dentes", "Impressa · 60 mm de correia por volta"],
-  esticador_base: ["Base do esticador", "Guia em rabo de andorinha a 45°"],
-  esticador_carro: ["Carrinho do esticador", "Um M5 puxa o carrinho e dá tensão na correia"],
-  rolo_esticador: ["Rolo do esticador", "Gira em 2 × rolamento 625ZZ"],
-  batente_trilho_a: ["Batente", "Nas pontas do trilho · o carro nunca chega nele"],
-  batente_trilho_b: ["Batente", "Nas pontas do trilho · o carro nunca chega nele"],
-  ref_trilho: ["Trilho MGN15 · 500 mm", "412 mm livres entre os batentes"],
-  ref_bloco: ["Bloco MGN15H", "Leva o carro, o encoder e o pêndulo"],
-  ref_encoder: ["Encoder LPD3806-1000BM", "1000 pulsos → 4000 contagens por volta (0,09°)"],
-  ref_motor: ["NEMA 17 · 17HS4401S", "Driver A4988 em 1/4 de passo: 13,3 passos por mm"],
-  ref_haste: ["Haste de inox Ø6 × 500 mm", "110 g · centro de massa a 215 mm do eixo"],
-  belt: ["Correia GT2 de 6 mm", "As duas pontas presas na garra, embaixo do carro"],
-  board: ["Base de pinus", "O eixo do trilho fica a 30 mm da borda: a haste passa por fora"],
+  carro_encoder: [
+    tr("Carro do encoder", "Encoder cart"),
+    tr("Impresso · 4 × M3 no bloco · flange com rasgos em arco para o encoder", "Printed · 4 × M3 into the block · flange with arc slots for the encoder"),
+  ],
+  garra_correia: [tr("Garra da correia", "Belt clamp"), tr("Prende as duas pontas da GT2 por baixo do carro", "Holds both ends of the GT2 belt under the cart")],
+  cubo_pendulo: [tr("Cubo do pêndulo", "Pendulum hub"), tr("Trava no chato do eixo do encoder e segura a haste", "Locks onto the flat of the encoder shaft and holds the rod")],
+  suporte_motor: [tr("Suporte do motor", "Motor mount"), tr("A aba encosta no trilho e alinha a correia sem medir", "Its tab rests against the rail and aligns the belt with no measuring")],
+  polia_motor_gt2_30d: [tr("Polia GT2 de 30 dentes", "30-tooth GT2 pulley"), tr("Impressa · 60 mm de correia por volta", "Printed · 60 mm of belt per revolution")],
+  esticador_base: [tr("Base do esticador", "Tensioner base"), tr("Guia em rabo de andorinha a 45°", "45° dovetail guide")],
+  esticador_carro: [tr("Carrinho do esticador", "Tensioner carriage"), tr("Um M5 puxa o carrinho e dá tensão na correia", "An M5 screw pulls the carriage and tensions the belt")],
+  rolo_esticador: [tr("Rolo do esticador", "Tensioner roller"), tr("Gira em 2 × rolamento 625ZZ", "Spins on 2 × 625ZZ bearings")],
+  batente_trilho_a: BATENTE,
+  batente_trilho_b: BATENTE,
+  ref_trilho: [tr("Trilho MGN15 · 500 mm", "MGN15 rail · 500 mm"), tr("412 mm livres entre os batentes", "412 mm clear between the end stops")],
+  ref_bloco: [tr("Bloco MGN15H", "MGN15H block"), tr("Leva o carro, o encoder e o pêndulo", "Carries the cart, the encoder and the pendulum")],
+  ref_encoder: [
+    tr("Encoder LPD3806-1000BM", "LPD3806-1000BM encoder"),
+    tr("1000 pulsos → 4000 contagens por volta (0,09°)", "1000 pulses → 4000 counts per revolution (0.09°)"),
+  ],
+  ref_motor: ["NEMA 17 · 17HS4401S", tr("Driver A4988 em 1/4 de passo: 13,3 passos por mm", "A4988 driver in 1/4-step mode: 13.3 steps per mm")],
+  ref_haste: [tr("Haste de inox Ø6 × 500 mm", "Stainless steel rod Ø6 × 500 mm"), tr("110 g · centro de massa a 215 mm do eixo", "110 g · center of mass 215 mm from the pivot")],
+  belt: [tr("Correia GT2 de 6 mm", "6 mm GT2 belt"), tr("As duas pontas presas na garra, embaixo do carro", "Both ends held in the clamp, under the cart")],
+  board: [
+    tr("Base de pinus", "Pine base"),
+    tr("O eixo do trilho fica a 30 mm da borda: a haste passa por fora", "The rail's centerline sits 30 mm from the edge: the rod swings past the board"),
+  ],
 };
+
+/** o canvas, para leitor de tela */
+const CANVAS_LABEL = tr(
+  "Modelo 3D interativo do pêndulo invertido. Arraste a haste para empurrar; arraste o fundo para girar.",
+  "Interactive 3D model of the inverted pendulum. Drag the rod to push it; drag the background to rotate.",
+);
 
 /** peças que andam com o carro, giram com a haste ou com a correia */
 const CART = new Set(["carro_encoder", "garra_correia", "ref_bloco", "ref_encoder"]);
@@ -245,6 +267,8 @@ export class PenduloScene {
   private opts: SceneOptions;
   private disposed = false;
   private resizeObs: ResizeObserver;
+  /** idioma dos textos da cena (aria-label, dicas); trocar não recria a cena */
+  private locale: Locale = getLocale();
 
   readonly sim = new PendulumSim();
 
@@ -335,7 +359,7 @@ export class PenduloScene {
     canvas.style.height = "100%";
     canvas.style.outline = "none";
     canvas.tabIndex = 0;
-    canvas.setAttribute("aria-label", "Modelo 3D interativo do pêndulo invertido. Arraste a haste para empurrar; arraste o fundo para girar.");
+    canvas.setAttribute("aria-label", CANVAS_LABEL[this.locale]);
     container.appendChild(canvas);
 
     // a mão tem prioridade sobre a órbita: este ouvinte é registrado antes dos controles
@@ -1277,6 +1301,14 @@ export class PenduloScene {
     this.controls.enableZoom = on;
   }
 
+  /** troca o idioma sem recriar a cena: o aria-label agora, as dicas na próxima vez que aparecerem */
+  setLocale(locale: Locale) {
+    if (locale === this.locale) return;
+    this.locale = locale;
+    this.renderer.domElement.setAttribute("aria-label", CANVAS_LABEL[locale]);
+    this.hideTip();
+  }
+
   get isRunning() {
     return this.running;
   }
@@ -1297,8 +1329,8 @@ export class PenduloScene {
     const tip = this.opts.tip;
     if (!tip) return;
     const [a, b] = label;
-    (tip.firstElementChild as HTMLElement).textContent = a;
-    (tip.lastElementChild as HTMLElement).textContent = b;
+    (tip.firstElementChild as HTMLElement).textContent = txt(a, this.locale);
+    (tip.lastElementChild as HTMLElement).textContent = txt(b, this.locale);
     const host = this.container.getBoundingClientRect();
     tip.style.opacity = "1";
     const x = Math.min(clientX - host.left + 14, host.width - tip.offsetWidth - 8);

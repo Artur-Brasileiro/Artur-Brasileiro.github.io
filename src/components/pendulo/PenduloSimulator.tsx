@@ -13,6 +13,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Maximize2, Minimize2, Pause, Play, RotateCcw } from "lucide-react";
 import { useLenisLock } from "@/components/motion/useLenisLock";
+import { LANG_TAG, tr, type Locale, type Tx } from "@/i18n/core";
+import { useLocale, useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { constrainedNetwork, loadScene, PENDULO_3D_KB, PENDULO_GLB, pickQuality } from "./preload";
 import { FW, type Mode } from "./physics";
@@ -20,12 +22,12 @@ import type { PenduloScene, SimEvent, Snapshot, ViewName } from "./PenduloScene"
 
 type Phase = "wait" | "loading" | "ready" | "error" | "nowebgl";
 
-const VIEWS: [ViewName, string][] = [
-  ["geral", "Geral"],
-  ["frente", "Frente"],
-  ["carro", "Carro"],
+const VIEWS: [ViewName, string | Tx][] = [
+  ["geral", tr("Geral", "Overview")],
+  ["frente", tr("Frente", "Front")],
+  ["carro", tr("Carro", "Cart")],
   ["motor", "Motor"],
-  ["esticador", "Esticador"],
+  ["esticador", tr("Esticador", "Tensioner")],
 ];
 const SPEEDS: [number, string][] = [
   [1, "1×"],
@@ -34,17 +36,38 @@ const SPEEDS: [number, string][] = [
 ];
 /** empurrões, em rad/s na haste: o leve o equilíbrio segura; o forte derruba */
 const PUSH = { leve: 0.55, forte: 1.6 } as const;
+const PUSH_LABEL: Record<keyof typeof PUSH, Tx> = { leve: tr("leve", "light"), forte: tr("forte", "hard") };
 
-const MODE_TEXT: Record<Mode, [string, string]> = {
-  conferindo: ["Conferindo o motor", "Um empurrãozinho de 6 mm para o centro: se a haste mexe, o motor tem os 12 V"],
-  subindo: ["Subindo", "O carro vai e volta e inverte quando a haste passa por baixo, como quem empurra um balanço"],
-  equilibrio: ["Equilibrando", "200 vezes por segundo o carro corre para baixo da haste, como a mão equilibrando uma vassoura"],
-  desligado: ["Controle desligado", "O carro freou e ficou parado; a haste está por conta própria"],
+const MODE_TEXT: Record<Mode, [Tx, Tx]> = {
+  conferindo: [
+    tr("Conferindo o motor", "Checking the motor"),
+    tr("Um empurrãozinho de 6 mm para o centro: se a haste mexe, o motor tem os 12 V", "A small 6 mm nudge toward the center: if the rod moves, the motor has its 12 V"),
+  ],
+  subindo: [
+    tr("Subindo", "Swinging up"),
+    tr("O carro vai e volta e inverte quando a haste passa por baixo, como quem empurra um balanço", "The cart moves back and forth and reverses as the rod passes the bottom, like pushing someone on a swing"),
+  ],
+  equilibrio: [
+    tr("Equilibrando", "Balancing"),
+    tr("200 vezes por segundo o carro corre para baixo da haste, como a mão equilibrando uma vassoura", "200 times per second the cart runs under the rod, like a hand balancing a broom"),
+  ],
+  desligado: [
+    tr("Controle desligado", "Control off"),
+    tr("O carro freou e ficou parado; a haste está por conta própria", "The cart braked and stopped; the rod is on its own"),
+  ],
 };
 
+/** os rótulos do gráfico, desenhados no canvas */
+const CHART_UP = tr("em pé", "upright"),
+  CHART_DOWN = tr("pendurada", "hanging");
+
 const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const nf1 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const nf0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+/** formatos de número por idioma (0,5 no português, 0.5 no inglês), criados uma vez: as leituras mudam a cada quadro */
+const numberFormats = (l: Locale) => ({
+  nf1: new Intl.NumberFormat(LANG_TAG[l], { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+  nf0: new Intl.NumberFormat(LANG_TAG[l], { maximumFractionDigits: 0 }),
+});
+const NF: Record<Locale, ReturnType<typeof numberFormats>> = { pt: numberFormats("pt"), en: numberFormats("en") };
 const deg = (r: number) => (r * 180) / Math.PI;
 
 /** as cores do site, para o canvas do gráfico */
@@ -77,7 +100,16 @@ export default function PenduloSimulator() {
   const [full, setFull] = useState(false);
   const [mode, setMode] = useState<Mode>("conferindo");
   const [interacted, setInteracted] = useState(false);
-  const [toast, setToast] = useState<{ text: string; key: number } | null>(null);
+  /** o aviso guarda o evento, não o texto: o texto sai no idioma da hora */
+  const [toast, setToast] = useState<{ kind: SimEvent["kind"]; after: number; key: number } | null>(null);
+  const locale = useLocale();
+  const t = useT();
+  const nf = NF[locale];
+  /** para o que é escrito fora do render (leituras no DOM, gráfico no canvas) */
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
+  /** a última leitura, para reescrever os textos ao trocar de idioma com a simulação parada */
+  const lastSnap = useRef<Snapshot | null>(null);
 
   const visible = useRef(false);
   const autoplay = useRef(true);
@@ -166,13 +198,17 @@ export default function PenduloSimulator() {
     line((j) => mid - (deg(h.th[j]) / 180) * (H * 0.5), INK, 1.6);
     g.fillStyle = MUTED;
     g.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
-    g.fillText("em pé", 4, mid - 4);
-    g.fillText("pendurada", 4, 11);
+    g.fillText(CHART_UP[localeRef.current], 4, mid - 4);
+    g.fillText(CHART_DOWN[localeRef.current], 4, 11);
   }, []);
 
   const onSnapshot = useCallback(
     (s: Snapshot) => {
+      lastSnap.current = s;
       const o = out;
+      const l = localeRef.current;
+      const { nf1, nf0 } = NF[l];
+      const tl = (pt: string, en: string) => (l === "en" ? en : pt);
       const th = deg(s.th);
       if (o.th.current) o.th.current.textContent = `${th >= 0 ? "+" : "−"}${nf1.format(Math.abs(th))}°`;
       if (o.x.current) o.x.current.textContent = `${s.x >= 0 ? "+" : "−"}${nf0.format(Math.abs(s.x * 1000))} mm`;
@@ -182,16 +218,20 @@ export default function PenduloSimulator() {
         const f = Math.max(0, Math.min(1, (s.E + 1) / 1.1));
         o.e.current.style.transform = `scaleX(${f})`;
       }
-      if (o.eTxt.current) o.eTxt.current.textContent = s.E > -0.02 ? "na do topo" : `${nf0.format(Math.max(0, (s.E + 1) * 100))}% da do topo`;
+      if (o.eTxt.current) {
+        const pct = nf0.format(Math.max(0, (s.E + 1) * 100));
+        o.eTxt.current.textContent = s.E > -0.02 ? tl("na do topo", "at top energy") : tl(`${pct}% da do topo`, `${pct}% of top energy`);
+      }
       if (o.t.current) o.t.current.textContent = `t = ${nf1.format(s.t)} s`;
       if (o.note.current) {
         const note =
           s.mode === "equilibrio" && s.pegouEm !== null
-            ? `Pegou ${nf1.format(s.pegouEm - s.subidaDesde)} s depois de começar a subir`
+            ? tl(`Pegou ${nf1.format(s.pegouEm - s.subidaDesde)} s depois de começar a subir`, `Caught ${nf1.format(s.pegouEm - s.subidaDesde)} s after starting the swing-up`)
             : s.mode === "subindo"
-              ? `Subindo há ${nf1.format(Math.max(0, s.t - s.subidaDesde))} s`
-              : MODE_TEXT[s.mode][1];
-        o.note.current.textContent = `${note}${s.quedas ? ` · ${s.quedas} ${s.quedas === 1 ? "queda" : "quedas"}` : ""}`;
+              ? tl(`Subindo há ${nf1.format(Math.max(0, s.t - s.subidaDesde))} s`, `Swinging up for ${nf1.format(Math.max(0, s.t - s.subidaDesde))} s`)
+              : MODE_TEXT[s.mode][1][l];
+        const quedas = s.quedas === 1 ? tl("queda", "fall") : tl("quedas", "falls");
+        o.note.current.textContent = `${note}${s.quedas ? ` · ${s.quedas} ${quedas}` : ""}`;
       }
       if (modeRef.current !== s.mode) {
         modeRef.current = s.mode;
@@ -205,8 +245,7 @@ export default function PenduloSimulator() {
   );
 
   const onEvent = useCallback((e: SimEvent) => {
-    if (e.kind === "pegou") setToast({ text: `Pegou no topo · ${nf1.format(e.after)} s de subida`, key: e.t });
-    else setToast({ text: "Caiu · voltando a subir", key: e.t });
+    setToast({ kind: e.kind, after: e.after, key: e.t });
   }, []);
 
   useEffect(() => {
@@ -257,6 +296,13 @@ export default function PenduloSimulator() {
       scene.current = null;
     };
   }, [want3d, attempt, onSnapshot, onEvent]);
+
+  /* trocar de idioma não remonta: o aria-label do canvas e os textos escritos fora do render */
+  useEffect(() => {
+    scene.current?.setLocale(locale);
+    if (lastSnap.current) onSnapshot(lastSnap.current);
+    else drawChart();
+  }, [locale, onSnapshot, drawChart]);
 
   /* fora da tela, a cena para (inclusive o relógio da simulação) */
   useEffect(() => {
@@ -364,9 +410,14 @@ export default function PenduloSimulator() {
   const coarse = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   const hint = coarse
     ? full
-      ? "Arraste a haste para empurrar · arraste o fundo para girar"
-      : "Deslize de lado para girar · use os botões para empurrar"
-    : "Pegue a haste com o mouse e empurre · arraste o fundo para girar";
+      ? t("Arraste a haste para empurrar · arraste o fundo para girar", "Drag the rod to push it · drag the background to rotate")
+      : t("Deslize de lado para girar · use os botões para empurrar", "Swipe sideways to rotate · use the buttons to push")
+    : t("Pegue a haste com o mouse e empurre · arraste o fundo para girar", "Grab the rod with your mouse and push · drag the background to rotate");
+  const toastText = toast
+    ? toast.kind === "pegou"
+      ? t(`Pegou no topo · ${nf.nf1.format(toast.after)} s de subida`, `Caught at the top · ${nf.nf1.format(toast.after)} s of swing-up`)
+      : t("Caiu · voltando a subir", "Fell · swinging back up")
+    : null;
 
   const modeDot = mode === "equilibrio" ? "bg-success" : mode === "desligado" ? "bg-muted-foreground" : "bg-gold";
 
@@ -379,7 +430,7 @@ export default function PenduloSimulator() {
       data-pendulo-sim=""
       role={full ? "dialog" : undefined}
       aria-modal={full || undefined}
-      aria-label={full ? "Simulador do pêndulo invertido em tela cheia" : undefined}
+      aria-label={full ? t("Simulador do pêndulo invertido em tela cheia", "Inverted pendulum simulator, full screen") : undefined}
     >
       {/* ---------- o 3D ---------- */}
       <div
@@ -398,7 +449,7 @@ export default function PenduloSimulator() {
             <div className="max-w-[320px] rounded-md border border-border bg-background/90 px-5 py-4 text-center font-mono text-[12px] text-muted-foreground shadow-soft-sm backdrop-blur-sm">
               {phase === "loading" && (
                 <>
-                  <p className="text-foreground">{progress > 0 ? "Carregando o modelo 3D" : "Preparando o 3D"}</p>
+                  <p className="text-foreground">{progress > 0 ? t("Carregando o modelo 3D", "Loading the 3D model") : t("Preparando o 3D", "Preparing the 3D view")}</p>
                   <div className="mt-3 h-[3px] w-56 max-w-full overflow-hidden rounded bg-border">
                     <div className="h-full origin-left bg-gold transition-transform duration-200" style={{ transform: `scaleX(${Math.max(0.04, progress / 100)})` }} />
                   </div>
@@ -407,28 +458,35 @@ export default function PenduloSimulator() {
               )}
               {phase === "wait" && (
                 <>
-                  <p className="text-foreground">Sua conexão está no modo econômico.</p>
+                  <p className="text-foreground">{t("Sua conexão está no modo econômico.", "Your connection is in data saver mode.")}</p>
                   <button type="button" onClick={() => setWant3d(true)} className="mt-3 rounded-md bg-primary px-4 py-2.5 text-[12px] font-medium text-primary-foreground hover:bg-primary-hover">
-                    Carregar a simulação 3D (~{nf0.format(PENDULO_3D_KB)} KB)
+                    {t("Carregar a simulação 3D", "Load the 3D simulation")} (~{nf.nf0.format(PENDULO_3D_KB)} KB)
                   </button>
                 </>
               )}
               {phase === "error" && (
                 <>
-                  <p className="text-foreground">Não foi possível carregar o modelo 3D.</p>
+                  <p className="text-foreground">{t("Não foi possível carregar o modelo 3D.", "Couldn't load the 3D model.")}</p>
                   <button type="button" onClick={() => setAttempt((a) => a + 1)} className="mt-3 rounded-md bg-primary px-4 py-2.5 text-[12px] font-medium text-primary-foreground hover:bg-primary-hover">
-                    Tentar de novo
+                    {t("Tentar de novo", "Try again")}
                   </button>
                 </>
               )}
-              {phase === "nowebgl" && <p className="text-foreground">Este navegador não abriu o WebGL. Ative a aceleração de hardware ou tente outro navegador para ver o pêndulo em 3D.</p>}
+              {phase === "nowebgl" && (
+                <p className="text-foreground">
+                  {t(
+                    "Este navegador não abriu o WebGL. Ative a aceleração de hardware ou tente outro navegador para ver o pêndulo em 3D.",
+                    "This browser couldn't start WebGL. Turn on hardware acceleration or try another browser to see the pendulum in 3D.",
+                  )}
+                </p>
+              )}
             </div>
           </div>
         )}
 
         {/* vistas e tela cheia */}
         <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-          <div role="group" aria-label="Vistas da câmera" className="flex max-w-full gap-0.5 overflow-x-auto rounded-md border border-border bg-background/85 p-0.5 backdrop-blur-sm [scrollbar-width:none]">
+          <div role="group" aria-label={t("Vistas da câmera", "Camera views")} className="flex max-w-full gap-0.5 overflow-x-auto rounded-md border border-border bg-background/85 p-0.5 backdrop-blur-sm [scrollbar-width:none]">
             {VIEWS.map(([id, label]) => (
               <button
                 key={id}
@@ -441,15 +499,15 @@ export default function PenduloSimulator() {
                   view === id ? "bg-foreground text-background" : "text-foreground hover:bg-foreground/5",
                 )}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
           <button
             type="button"
             onClick={() => setFull((f) => !f)}
-            aria-label={full ? "Sair da tela cheia" : "Abrir em tela cheia"}
-            title={full ? "Sair da tela cheia (Esc)" : "Tela cheia"}
+            aria-label={full ? t("Sair da tela cheia", "Exit full screen") : t("Abrir em tela cheia", "Open in full screen")}
+            title={full ? t("Sair da tela cheia (Esc)", "Exit full screen (Esc)") : t("Tela cheia", "Full screen")}
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-background/85 text-foreground backdrop-blur-sm transition-colors hover:bg-background"
           >
             {full ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -464,7 +522,7 @@ export default function PenduloSimulator() {
                 {running && mode !== "desligado" && <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 motion-reduce:animate-none", modeDot)} />}
                 <span className={cn("relative inline-flex h-2 w-2 rounded-full", modeDot)} />
               </span>
-              {running ? MODE_TEXT[mode][0] : "Pausado"}
+              {running ? t(MODE_TEXT[mode][0]) : t("Pausado", "Paused")}
             </span>
             <span
               aria-live="polite"
@@ -473,14 +531,14 @@ export default function PenduloSimulator() {
                 toast ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
               )}
             >
-              {toast?.text ?? " "}
+              {toastText ?? " "}
             </span>
           </div>
         )}
 
         {ready && (
           <p className={cn("pointer-events-none absolute bottom-3 left-3 right-3 font-mono text-[11px] text-muted-foreground transition-opacity duration-500", interacted && !wheelHint ? "opacity-0" : "opacity-100")}>
-            <span className="rounded bg-background/80 px-1.5 py-0.5 backdrop-blur-sm">{wheelHint ? "Use Ctrl + roda (ou a pinça do trackpad) para dar zoom" : hint}</span>
+            <span className="rounded bg-background/80 px-1.5 py-0.5 backdrop-blur-sm">{wheelHint ? t("Use Ctrl + roda (ou a pinça do trackpad) para dar zoom", "Use Ctrl + scroll wheel (or pinch on the trackpad) to zoom") : hint}</span>
           </p>
         )}
 
@@ -504,7 +562,7 @@ export default function PenduloSimulator() {
         <div className="border-b border-border p-4">
           <div className="flex items-center justify-between gap-3">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              modo · <span className="normal-case tracking-normal text-foreground">{MODE_TEXT[mode][0]}</span>
+              {t("modo", "mode")} · <span className="normal-case tracking-normal text-foreground">{t(MODE_TEXT[mode][0])}</span>
             </p>
             <span ref={out.t} className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground" />
           </div>
@@ -518,26 +576,26 @@ export default function PenduloSimulator() {
               className="inline-flex h-10 min-w-[112px] items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 font-mono text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {running ? "Pausar" : "Ligar"}
+              {running ? t("Pausar", "Pause") : t("Ligar", "Run")}
             </button>
             <button
               type="button"
               onClick={restart}
               disabled={!ready}
-              title="Carro no batente do motor, haste pendurada e parada — e liga"
+              title={t("Carro no batente do motor, haste pendurada e parada — e liga", "Cart at the motor-side end stop, rod hanging still — then it starts")}
               className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-border px-3 font-mono text-[12.5px] text-foreground transition-colors hover:bg-foreground/5 disabled:opacity-50"
             >
               <RotateCcw className="h-4 w-4" />
-              Do batente
+              {t("Do batente", "From end stop")}
             </button>
-            <div role="group" aria-label="Velocidade da simulação" className="ml-auto flex rounded-md border border-border p-0.5">
+            <div role="group" aria-label={t("Velocidade da simulação", "Simulation speed")} className="ml-auto flex rounded-md border border-border p-0.5">
               {SPEEDS.map(([s, label]) => (
                 <button
                   key={s}
                   type="button"
                   aria-pressed={speed === s}
                   onClick={() => chooseSpeed(s)}
-                  title={s === 1 ? "Tempo real" : `Câmera lenta (${label})`}
+                  title={s === 1 ? t("Tempo real", "Real time") : t(`Câmera lenta (${label})`, `Slow motion (${label})`)}
                   className={cn("h-9 min-w-[36px] rounded-[5px] px-2 font-mono text-[11.5px] tabular-nums transition-colors", speed === s ? "bg-foreground text-background" : "text-foreground hover:bg-foreground/5")}
                 >
                   {label}
@@ -550,8 +608,8 @@ export default function PenduloSimulator() {
         {/* empurrar */}
         <div className="border-b border-border p-4">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Empurrar a haste</h3>
-            <div role="group" aria-label="Força do empurrão" className="flex rounded-md border border-border p-0.5">
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{t("Empurrar a haste", "Push the rod")}</h3>
+            <div role="group" aria-label={t("Força do empurrão", "Push strength")} className="flex rounded-md border border-border p-0.5">
               {(["leve", "forte"] as const).map((f) => (
                 <button
                   key={f}
@@ -560,7 +618,7 @@ export default function PenduloSimulator() {
                   onClick={() => setForce(f)}
                   className={cn("h-9 rounded-[5px] px-3 font-mono text-[11.5px] transition-colors", force === f ? "bg-foreground text-background" : "text-foreground hover:bg-foreground/5")}
                 >
-                  {f}
+                  {t(PUSH_LABEL[f])}
                 </button>
               ))}
             </div>
@@ -572,7 +630,7 @@ export default function PenduloSimulator() {
               disabled={!ready}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border font-mono text-[12.5px] text-foreground transition-colors hover:bg-foreground/5 disabled:opacity-50"
             >
-              <ArrowLeft className="h-4 w-4" /> para o motor
+              <ArrowLeft className="h-4 w-4" /> {t("para o motor", "toward the motor")}
             </button>
             <button
               type="button"
@@ -580,16 +638,18 @@ export default function PenduloSimulator() {
               disabled={!ready}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border font-mono text-[12.5px] text-foreground transition-colors hover:bg-foreground/5 disabled:opacity-50"
             >
-              para o esticador <ArrowRight className="h-4 w-4" />
+              {t("para o esticador", "toward the tensioner")} <ArrowRight className="h-4 w-4" />
             </button>
           </div>
           <p className="mt-2.5 text-[12.5px] leading-snug text-muted-foreground">
-            {force === "leve" ? "Um peteleco: o equilíbrio segura sem a haste cair." : "Um tapa: a haste cai e o controle volta a subir sozinho, no mesmo instante."}
+            {force === "leve"
+              ? t("Um peteleco: o equilíbrio segura sem a haste cair.", "A flick: the balance holds and the rod stays up.")
+              : t("Um tapa: a haste cai e o controle volta a subir sozinho, no mesmo instante.", "A hard tap: the rod falls and the controller swings it back up on its own, right away.")}
           </p>
           <label className="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-md border border-border px-3 py-2.5">
             <span>
-              <span className="block text-[13.5px] font-medium text-foreground">Controle ligado</span>
-              <span className="block text-[12px] text-muted-foreground">Desligue para ver a haste sem ninguém segurando</span>
+              <span className="block text-[13.5px] font-medium text-foreground">{t("Controle ligado", "Control on")}</span>
+              <span className="block text-[12px] text-muted-foreground">{t("Desligue para ver a haste sem ninguém segurando", "Turn it off to see the rod with nothing holding it up")}</span>
             </span>
             <input type="checkbox" checked={control} onChange={toggleControl} disabled={!ready} className="h-4 w-4 shrink-0 accent-[#15171a]" />
           </label>
@@ -597,22 +657,22 @@ export default function PenduloSimulator() {
 
         {/* leituras */}
         <div className="border-b border-border p-4">
-          <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Leituras</h3>
+          <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{t("Leituras", "Readings")}</h3>
           <dl className="mt-3 grid grid-cols-3 gap-3">
             <div>
-              <dt className="text-[11.5px] text-muted-foreground">Ângulo</dt>
+              <dt className="text-[11.5px] text-muted-foreground">{t("Ângulo", "Angle")}</dt>
               <dd ref={out.th} className="font-mono text-[15px] tabular-nums text-foreground">
                 —
               </dd>
             </div>
             <div>
-              <dt className="text-[11.5px] text-muted-foreground">Carro</dt>
+              <dt className="text-[11.5px] text-muted-foreground">{t("Carro", "Cart")}</dt>
               <dd ref={out.x} className="font-mono text-[15px] tabular-nums text-foreground">
                 —
               </dd>
             </div>
             <div>
-              <dt className="text-[11.5px] text-muted-foreground">Velocidade</dt>
+              <dt className="text-[11.5px] text-muted-foreground">{t("Velocidade", "Speed")}</dt>
               <dd ref={out.v} className="font-mono text-[15px] tabular-nums text-foreground">
                 —
               </dd>
@@ -620,7 +680,7 @@ export default function PenduloSimulator() {
           </dl>
           <div className="mt-4">
             <div className="flex items-baseline justify-between text-[11.5px] text-muted-foreground">
-              <span>Energia da haste</span>
+              <span>{t("Energia da haste", "Rod energy")}</span>
               <span ref={out.eTxt} className="font-mono tabular-nums" />
             </div>
             <div className="relative mt-1.5 h-2 overflow-hidden rounded-full bg-border">
@@ -629,37 +689,37 @@ export default function PenduloSimulator() {
               <span className="absolute inset-y-0 w-px bg-foreground" style={{ left: `${((1 + FW.SW_EREF) / 1.1) * 100}%` }} aria-hidden />
             </div>
             <div className="mt-1 flex justify-between font-mono text-[10.5px] text-muted-foreground">
-              <span>pendurada</span>
-              <span>topo</span>
+              <span>{t("pendurada", "hanging")}</span>
+              <span>{t("topo", "top")}</span>
             </div>
           </div>
           <div className="mt-4">
             <div className="flex items-center gap-4 text-[11.5px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-0.5 w-3 bg-foreground" aria-hidden /> ângulo
+                <span className="h-0.5 w-3 bg-foreground" aria-hidden /> {t("ângulo", "angle")}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-0.5 w-3 bg-gold" aria-hidden /> carro
+                <span className="h-0.5 w-3 bg-gold" aria-hidden /> {t("carro", "cart")}
               </span>
-              <span className="ml-auto font-mono text-[10.5px]">últimos 12 s</span>
+              <span className="ml-auto font-mono text-[10.5px]">{t("últimos 12 s", "last 12 s")}</span>
             </div>
-            <canvas ref={chart} className="mt-2 block h-[112px] w-full rounded-md border border-border bg-card" aria-label="Gráfico do ângulo da haste e da posição do carro nos últimos 12 segundos" role="img" />
+            <canvas ref={chart} className="mt-2 block h-[112px] w-full rounded-md border border-border bg-card" aria-label={t("Gráfico do ângulo da haste e da posição do carro nos últimos 12 segundos", "Chart of the rod angle and cart position over the last 12 seconds")} role="img" />
           </div>
         </div>
 
         {/* exibir */}
         <div className="p-4">
-          <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Exibir</h3>
+          <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{t("Exibir", "Display")}</h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {(
               [
-                ["Rastro da ponta", trail, () => (setTrail(!trail), sc()?.setTrail(!trail))],
-                ["Cor por peça", colors, () => (setColors(!colors), sc()?.setColors(!colors))],
-                ["Raio-X", xray, () => (setXray(!xray), sc()?.setXray(!xray))],
-              ] as [string, boolean, () => void][]
-            ).map(([label, on, fn]) => (
+                ["trail", t("Rastro da ponta", "Tip trail"), trail, () => (setTrail(!trail), sc()?.setTrail(!trail))],
+                ["colors", t("Cor por peça", "Color by part"), colors, () => (setColors(!colors), sc()?.setColors(!colors))],
+                ["xray", t("Raio-X", "X-ray"), xray, () => (setXray(!xray), sc()?.setXray(!xray))],
+              ] as [string, string, boolean, () => void][]
+            ).map(([id, label, on, fn]) => (
               <button
-                key={label}
+                key={id}
                 type="button"
                 aria-pressed={on}
                 disabled={!ready}

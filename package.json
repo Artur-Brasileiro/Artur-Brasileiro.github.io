@@ -6,7 +6,7 @@
   "homepage": "https://arturbrasileiro.com.br",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/html-en.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "build:dev": "vite build --mode development",

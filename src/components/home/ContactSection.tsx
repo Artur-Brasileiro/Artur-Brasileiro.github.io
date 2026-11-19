@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Check, Copy } from "lucide-react";
 import { EMAIL, FORMSPREE_ENDPOINT, GITHUB_URL, LINKEDIN_URL, WHATSAPP, WHATSAPP_URL } from "@/data/profile";
+import { useT } from "@/i18n/react";
 import SectionLabel from "./SectionLabel";
 
 const field =
@@ -11,6 +12,7 @@ type Status = "idle" | "loading" | "success" | "error";
 
 /** 04 · contato — os canais diretos em linhas grandes e, abaixo, o formulário. */
 const ContactSection = () => {
+  const t = useT();
   const [status, setStatus] = useState<Status>("idle");
   const [copied, setCopied] = useState(false);
   // um timer de cada vez: um "volta ao normal" atrasado não pode reabilitar o
@@ -57,18 +59,18 @@ const ContactSection = () => {
   };
 
   const channels = [
-    { k: "e-mail", v: EMAIL, href: `mailto:${EMAIL}`, copy: true },
-    { k: "whatsapp", v: WHATSAPP, href: WHATSAPP_URL, external: true },
+    { id: "email", k: t("e-mail", "email"), v: EMAIL, href: `mailto:${EMAIL}`, copy: true },
+    { id: "whatsapp", k: "whatsapp", v: WHATSAPP, href: WHATSAPP_URL, external: true },
   ];
 
   return (
     <section id="contato" className="border-t border-border py-24">
-      <SectionLabel n="04">contato</SectionLabel>
+      <SectionLabel n="04">{t("contato", "contact")}</SectionLabel>
 
       {/* os dois canais diretos, em linhas de tabela como a ficha técnica */}
       <dl className="mt-8 border-b border-border">
         {channels.map((c) => (
-          <div key={c.k} className="grid items-baseline gap-2 border-t border-border py-6 md:grid-cols-[140px_1fr] md:gap-6">
+          <div key={c.id} className="grid items-baseline gap-2 border-t border-border py-6 md:grid-cols-[140px_1fr] md:gap-6">
             <dt className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">{c.k}</dt>
             <dd className="flex flex-wrap items-baseline gap-x-5 gap-y-2">
               <a
@@ -85,7 +87,7 @@ const ContactSection = () => {
                   className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  <span aria-live="polite">{copied ? "copiado" : "copiar"}</span>
+                  <span aria-live="polite">{copied ? t("copiado", "copied") : t("copiar", "copy")}</span>
                 </button>
               )}
             </dd>
@@ -95,9 +97,9 @@ const ContactSection = () => {
 
       <div className="mt-14 grid gap-10 lg:grid-cols-[260px_1fr]">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">ou escreva aqui</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{t("ou escreva aqui", "or write here")}</p>
           <p className="mt-3 max-w-[30ch] text-[14px] leading-relaxed text-muted-foreground">
-            A mensagem chega direto no meu e-mail.
+            {t("A mensagem chega direto no meu e-mail.", "The message goes straight to my email.")}
           </p>
           <div className="mt-6 flex flex-wrap gap-3 font-mono text-[12px]">
             <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="rounded-[7px] border border-border px-4 py-2.5 transition-colors hover:border-foreground">
@@ -113,19 +115,19 @@ const ContactSection = () => {
           <div className="grid gap-5 md:grid-cols-2">
             <div>
               <label htmlFor="contato-nome" className={label}>
-                nome
+                {t("nome", "name")}
               </label>
               <input id="contato-nome" name="name" type="text" required autoComplete="name" className={`${field} h-11`} />
             </div>
             <div>
               <label htmlFor="contato-email" className={label}>
-                e-mail
+                {t("e-mail", "email")}
               </label>
               <input id="contato-email" name="email" type="email" required autoComplete="email" className={`${field} h-11`} />
             </div>
             <div className="md:col-span-2">
               <label htmlFor="contato-mensagem" className={label}>
-                mensagem
+                {t("mensagem", "message")}
               </label>
               <textarea id="contato-mensagem" name="message" required rows={5} className={`${field} resize-none py-2.5 leading-relaxed`} />
             </div>
@@ -133,15 +135,21 @@ const ContactSection = () => {
 
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p aria-live="polite" className="min-h-5 font-mono text-[12px]">
-              {status === "success" && <span className="text-success">mensagem enviada — respondo por e-mail.</span>}
-              {status === "error" && <span className="text-destructive">não foi possível enviar — escreva direto para o e-mail acima.</span>}
+              {status === "success" && (
+                <span className="text-success">{t("mensagem enviada — respondo por e-mail.", "message sent — I'll reply by email.")}</span>
+              )}
+              {status === "error" && (
+                <span className="text-destructive">
+                  {t("não foi possível enviar — escreva direto para o e-mail acima.", "couldn't send it — write straight to the email above.")}
+                </span>
+              )}
             </p>
             <button
               type="submit"
               disabled={status === "loading"}
               className="shrink-0 rounded-[7px] bg-primary px-5 py-3 font-mono text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:pointer-events-none disabled:opacity-60"
             >
-              {status === "loading" ? "enviando…" : "enviar mensagem →"}
+              {status === "loading" ? t("enviando…", "sending…") : t("enviar mensagem →", "send message →")}
             </button>
           </div>
         </form>

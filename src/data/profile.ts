@@ -3,6 +3,8 @@
  * a pessoa — os componentes só apresentam.
  */
 
+import { tr } from "@/i18n/core";
+
 const DEVICON = "https://cdn.jsdelivr.net/gh/devicons/devicon/icons";
 
 export const GITHUB_URL = "https://github.com/Artur-Brasileiro";
@@ -15,17 +17,20 @@ export const FORMSPREE_ENDPOINT = "https://formspree.io/f/xyzokkee";
 export const profile = {
   name: "Artur Brasileiro",
   initials: "AB",
-  role: "Engenheiro da Computação",
-  availability: "Disponível para novas oportunidades",
+  role: tr("Engenheiro da Computação", "Computer Engineer"),
+  availability: tr("Disponível para novas oportunidades", "Open to new opportunities"),
 
   headline: {
-    lead: "Construindo",
-    accent: "Soluções Sólidas.",
+    lead: tr("Construindo", "Building"),
+    accent: tr("Soluções Sólidas.", "Solid Solutions."),
   },
 
-  summary:
+  summary: tr(
     "Especialista em software web moderno e sistemas embarcados. Transformo " +
-    "problemas complexos em produtos eficientes, escaláveis e orientados a resultados.",
+      "problemas complexos em produtos eficientes, escaláveis e orientados a resultados.",
+    "Specialized in modern web software and embedded systems. I turn complex " +
+      "problems into efficient, scalable, results-driven products.",
+  ),
 
   /** Período atual do curso — alimenta a bio, a ficha técnica e a faixa de métricas. */
   currentSemester: 10,
@@ -33,27 +38,45 @@ export const profile = {
   graduationYear: "2026",
 
   bio: [
-    "Sou estudante do 10º período de Engenharia da Computação, movido pelo desafio de " +
-      "transformar problemas complexos em soluções elegantes. Minha trajetória é marcada " +
-      "pela intersecção entre o software de alto nível e as raízes da computação no hardware.",
-    "Tenho sólida experiência prática na concepção de sistemas embarcados e no desenvolvimento " +
-      "de aplicações web modernas. Acredito que um bom produto nasce da atenção meticulosa " +
-      "aos detalhes, desde a arquitetura da informação até o último pixel renderizado na tela.",
-    "Atualmente, busco aplicar boas práticas de engenharia de software para entregar " +
-      "produtos com alto padrão de qualidade corporativa, garantindo não apenas que o código " +
-      "funcione, mas que seja escalável, legível e seguro.",
+    tr(
+      "Sou estudante do 10º período de Engenharia da Computação, movido pelo desafio de " +
+        "transformar problemas complexos em soluções elegantes. Minha trajetória é marcada " +
+        "pela intersecção entre o software de alto nível e as raízes da computação no hardware.",
+      "I'm a final-semester Computer Engineering student, driven by the challenge of " +
+        "turning complex problems into elegant solutions. My path sits at the intersection " +
+        "of high-level software and the hardware roots of computing.",
+    ),
+    tr(
+      "Tenho sólida experiência prática na concepção de sistemas embarcados e no desenvolvimento " +
+        "de aplicações web modernas. Acredito que um bom produto nasce da atenção meticulosa " +
+        "aos detalhes, desde a arquitetura da informação até o último pixel renderizado na tela.",
+      "I have solid hands-on experience designing embedded systems and building modern web " +
+        "applications. I believe a good product comes from meticulous attention to detail, " +
+        "from the information architecture down to the last pixel rendered on screen.",
+    ),
+    tr(
+      "Atualmente, busco aplicar boas práticas de engenharia de software para entregar " +
+        "produtos com alto padrão de qualidade corporativa, garantindo não apenas que o código " +
+        "funcione, mas que seja escalável, legível e seguro.",
+      "Today I focus on applying sound software engineering practices to ship products " +
+        "with enterprise-grade quality, making sure the code not only works but is " +
+        "scalable, readable and secure.",
+    ),
   ],
 
   /** Ficha técnica — pares chave/valor da seção Sobre. */
   facts: [
-    { label: "Formação", value: "Engenharia da Computação" },
-    { label: "Instituição", value: "UEMG — Universidade do Estado de Minas Gerais" },
-    { label: "Período", value: "10º de 10 · conclusão em 2026" },
-    { label: "Localização", value: "Ituiutaba, MG — Brasil" },
+    { label: tr("Formação", "Degree"), value: tr("Engenharia da Computação", "Computer Engineering") },
+    {
+      label: tr("Instituição", "Institution"),
+      value: tr("UEMG — Universidade do Estado de Minas Gerais", "UEMG — Minas Gerais State University"),
+    },
+    { label: tr("Período", "Semester"), value: tr("10º de 10 · conclusão em 2026", "10th of 10 · graduating in 2026") },
+    { label: tr("Localização", "Location"), value: tr("Ituiutaba, MG — Brasil", "Ituiutaba, MG — Brazil") },
   ],
 
-  location: "Ituiutaba, MG - Brasil",
-  university: "UEMG (Universidade do Estado de Minas Gerais)",
+  location: tr("Ituiutaba, MG - Brasil", "Ituiutaba, MG - Brazil"),
+  university: tr("UEMG (Universidade do Estado de Minas Gerais)", "UEMG (Minas Gerais State University)"),
 
   /**
    * Stack exibida na faixa rolante da seção Sobre. Ícones vêm do devicon

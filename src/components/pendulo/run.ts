@@ -8,9 +8,11 @@
  *
  * Lógica pura, sem three: roda no Node (npm test).
  */
+import { tr, type Tx } from "../../i18n/core.ts";
 import { PendulumSim } from "./physics.ts";
 
-export type RunMark = { t: number; label: string; name: string; spec: string };
+/** textos nos dois idiomas: quem mostra escolhe o idioma na hora (a corrida é gravada uma vez só) */
+export type RunMark = { t: number; label: Tx; name: Tx; spec: Tx };
 
 export type Run = {
   /** amostras a 120 Hz */
@@ -65,14 +67,53 @@ export function recordRun(): Run {
   }
   if (tPegou2 < 0) throw new Error("a corrida da home não reergueu: confira a física");
   const f1 = (v: number) => v.toFixed(1).replace(".", ",");
+  /** em inglês, ponto decimal */
+  const e1 = (v: number) => v.toFixed(1);
+  const subida = tPegou1 - tSubida,
+    reergueu = tPegou2 - tTapa;
   const marks: RunMark[] = [
-    { t: 0, label: "Ligado no batente do motor", name: "Conferência do 12 V", spec: "empurrãozinho de 6 mm para o centro" },
-    { t: tSubida, label: "Subindo: empurra o balanço", name: "Subida por energia", spec: "inverte quando a haste passa por baixo" },
-    { t: tPegou1, label: `Pegou no topo · ${f1(tPegou1 - tSubida)} s de subida`, name: "Pegou no topo", spec: `${f1(tPegou1 - tSubida)} s depois de sair do batente` },
-    { t: tPegou1 + 0.15, label: "Equilibrando a 200 Hz", name: "Equilíbrio (LQR)", spec: "o carro corre para baixo da haste" },
-    { t: tTapa, label: "Um tapa na haste", name: "Tapa", spec: "1,6 rad/s, de propósito" },
-    { t: tCaiu, label: "Caiu · volta a subir no mesmo ciclo", name: "Queda", spec: "passou de 30°" },
-    { t: tPegou2, label: `Reergueu em ${f1(tPegou2 - tTapa)} s`, name: "Reergueu sozinho", spec: `${f1(tPegou2 - tTapa)} s depois do tapa` },
+    {
+      t: 0,
+      label: tr("Ligado no batente do motor", "Powered on at the motor-side end stop"),
+      name: tr("Conferência do 12 V", "12 V check"),
+      spec: tr("empurrãozinho de 6 mm para o centro", "a small 6 mm nudge toward the center"),
+    },
+    {
+      t: tSubida,
+      label: tr("Subindo: empurra o balanço", "Swinging up: pumping the swing"),
+      name: tr("Subida por energia", "Energy-based swing-up"),
+      spec: tr("inverte quando a haste passa por baixo", "reverses as the rod passes the bottom"),
+    },
+    {
+      t: tPegou1,
+      label: tr(`Pegou no topo · ${f1(subida)} s de subida`, `Caught at the top · ${e1(subida)} s of swing-up`),
+      name: tr("Pegou no topo", "Caught at the top"),
+      spec: tr(`${f1(subida)} s depois de sair do batente`, `${e1(subida)} s after leaving the end stop`),
+    },
+    {
+      t: tPegou1 + 0.15,
+      label: tr("Equilibrando a 200 Hz", "Balancing at 200 Hz"),
+      name: tr("Equilíbrio (LQR)", "Balance (LQR)"),
+      spec: tr("o carro corre para baixo da haste", "the cart runs under the rod"),
+    },
+    {
+      t: tTapa,
+      label: tr("Um tapa na haste", "A tap on the rod"),
+      name: tr("Tapa", "Tap"),
+      spec: tr("1,6 rad/s, de propósito", "1.6 rad/s, on purpose"),
+    },
+    {
+      t: tCaiu,
+      label: tr("Caiu · volta a subir no mesmo ciclo", "Fell · swings back up in the same cycle"),
+      name: tr("Queda", "Fall"),
+      spec: tr("passou de 30°", "past 30°"),
+    },
+    {
+      t: tPegou2,
+      label: tr(`Reergueu em ${f1(reergueu)} s`, `Back up in ${e1(reergueu)} s`),
+      name: tr("Reergueu sozinho", "Back up on its own"),
+      spec: tr(`${f1(reergueu)} s depois do tapa`, `${e1(reergueu)} s after the tap`),
+    },
   ];
   return {
     t: Float32Array.from(T),

@@ -8,6 +8,7 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { AlertTriangle, Check, Lightbulb } from "lucide-react";
+import { useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { fmt } from "./fmt";
 import { goTo, LG, useMatch } from "./nav";
@@ -201,13 +202,14 @@ function useActiveChapter(ids: string[], on: boolean) {
 
 /** índice parado ao lado no desktop; `ids` precisa ser estável (fora do componente) */
 export function Toc({ chapters, ids, hidden }: { chapters: ChapterInfo[]; ids: string[]; hidden?: boolean }) {
+  const t = useT();
   const lg = useMatch(LG);
   const active = useActiveChapter(ids, lg);
   // a coluna do índice continua no grid; só o conteúdo dele espera o lg
   if (!lg) return <div aria-hidden className="hidden" />;
   return (
     <nav
-      aria-label="Capítulos do guia"
+      aria-label={t("Capítulos do guia", "Guide chapters")}
       aria-hidden={hidden || undefined}
       className={cn("hidden transition-opacity duration-300 lg:block", hidden && "pointer-events-none opacity-0")}
     >

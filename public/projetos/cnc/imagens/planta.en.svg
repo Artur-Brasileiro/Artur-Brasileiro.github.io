@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 600" role="img" aria-label="Top view of the CNC Plotter">
+  <style>
+    .t{font:600 12.5px system-ui,-apple-system,Segoe UI,sans-serif;fill:#1d1d1f}
+    .s{font:500 11px system-ui,-apple-system,Segoe UI,sans-serif;fill:#6b6b70}
+    .m{font:600 11px ui-monospace,Consolas,monospace;fill:#1d1d1f}
+  </style>
+  <rect width="990" height="600" fill="#fff"/>
+  <!-- mesa 1200 x 700 (0,62 px/mm) -->
+  <rect x="60" y="50" width="744" height="434" rx="22" fill="#f3e6cf" stroke="#b08a52" stroke-width="1.5"/>
+  <text x="74" y="72" class="s" fill="#8a6a3a">pine tabletop 1200 × 700 × 18 mm</text>
+  <!-- eletrônica -->
+  <rect x="404" y="56" width="56" height="34" rx="4" fill="#2563a8"/>
+  <text x="432" y="77" text-anchor="middle" class="s" fill="#fff" style="fill:#fff">Uno</text>
+  <text x="468" y="72" class="s">electronics (middle of the back edge)</text>
+  <!-- barras 12 -->
+  <rect x="122" y="128" width="620" height="8" rx="4" fill="#9aa3ad"/>
+  <rect x="122" y="448" width="620" height="8" rx="4" fill="#9aa3ad"/>
+  <g fill="#1d1d1f"><rect x="122" y="118" width="25" height="28" rx="3"/><rect x="717" y="118" width="25" height="28" rx="3"/><rect x="122" y="438" width="25" height="28" rx="3"/><rect x="717" y="438" width="25" height="28" rx="3"/></g>
+  <text x="155" y="114" class="t">Ø12 rod · BACK (51.4 mm above the table)</text>
+  <text x="155" y="478" class="t">Ø12 rod · FRONT (80 mm above the table)</text>
+  <!-- área útil -->
+  <rect x="184" y="168" width="502" height="242" fill="rgba(194,65,12,.06)" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+  <text x="435" y="290" text-anchor="middle" class="t" style="fill:#c2410c">WORK AREA 810 × 390 mm</text>
+  <!-- origem -->
+  <circle cx="184" cy="410" r="6" fill="#c2410c"/>
+  <text x="192" y="428" class="m" style="fill:#c2410c">(0,0) paper origin</text>
+  <!-- eixos -->
+  <g stroke="#1d1d1f" stroke-width="2" fill="#1d1d1f">
+    <line x1="210" y1="390" x2="262" y2="390"/><path d="M262 385 L272 390 L262 395Z"/>
+    <line x1="210" y1="390" x2="210" y2="342"/><path d="M205 342 L210 332 L215 342Z"/>
+  </g>
+  <text x="276" y="394" class="m">X+</text><text x="200" y="326" class="m">Y+</text>
+  <!-- ponte em home (direita) -->
+  <rect x="680" y="120" width="56" height="30" rx="4" fill="#1d1d1f"/>
+  <text x="708" y="139" text-anchor="middle" class="s" style="fill:#fff">motors</text>
+  <rect x="680" y="440" width="56" height="24" rx="4" fill="#4b5563"/>
+  <rect x="692" y="150" width="5" height="290" fill="#9aa3ad"/><rect x="719" y="150" width="5" height="290" fill="#9aa3ad"/>
+  <rect x="686" y="160" width="44" height="30" rx="4" fill="#fff" stroke="#1d1d1f" stroke-width="1.5"/>
+  <circle cx="708" cy="175" r="4" fill="#c2410c"/>
+  <text x="758" y="132" class="t">Main Base</text><text x="758" y="147" class="s">+ Base Support (2 × LM12UU)</text>
+  <text x="758" y="178" class="t">Carriage + pen</text><text x="758" y="193" class="s">HOME: far right, carriage at back</text>
+  <text x="758" y="300" class="t">Gantry</text><text x="758" y="315" class="s">2 Ø6 × 500 mm rods</text><text x="758" y="330" class="s">(64 mm apart)</text>
+  <text x="758" y="452" class="t">Secondary Support</text><text x="758" y="467" class="s">1 × LM12UU + Y idler pulley</text>
+  <!-- cotas -->
+  <g stroke="#6b6b70" stroke-width="1">
+    <line x1="60" y1="512" x2="804" y2="512"/><line x1="60" y1="506" x2="60" y2="518"/><line x1="804" y1="506" x2="804" y2="518"/>
+    <line x1="38" y1="132" x2="38" y2="452"/><line x1="32" y1="132" x2="44" y2="132"/><line x1="32" y1="452" x2="44" y2="452"/>
+  </g>
+  <text x="432" y="530" text-anchor="middle" class="s">1200 mm</text>
+  <text x="30" y="296" text-anchor="middle" class="s" transform="rotate(-90 30 296)">516 mm between the rods</text>
+  <!-- operador -->
+  <g transform="translate(432,566)"><circle cx="0" cy="-8" r="7" fill="#1d1d1f"/><rect x="-11" y="1" width="22" height="16" rx="7" fill="#1d1d1f"/></g>
+  <text x="452" y="570" class="s">operator (front)</text>
+</svg>

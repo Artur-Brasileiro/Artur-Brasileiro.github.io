@@ -11,6 +11,7 @@ import { Camera, Maximize2 } from "lucide-react";
 import ZoomableImage from "@/components/ZoomableImage";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useLenisLock } from "@/components/motion/useLenisLock";
+import { useT } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { closePhoto, HALF, openPhoto, useShownPhoto } from "./photos";
 
@@ -28,6 +29,7 @@ export type PhotoInfo = {
 
 export function PhotoViewer() {
   const { cur, last } = useShownPhoto();
+  const t = useT();
   // sem isso o Lenis rola a página por trás do visualizador
   useLenisLock(!!cur);
   // a última foto continua desenhada enquanto o modal anima a saída
@@ -38,7 +40,7 @@ export function PhotoViewer() {
         {p && (
           <>
             <div className="flex items-baseline gap-3 border-b border-border py-3.5 pl-5 pr-12 font-mono">
-              {p.n && <span className="text-[11px] tracking-[0.08em] text-gold">foto {p.n}</span>}
+              {p.n && <span className="text-[11px] tracking-[0.08em] text-gold">{t("foto", "photo")} {p.n}</span>}
               <DialogTitle className="text-[15px] font-medium leading-tight tracking-tight">{p.title}</DialogTitle>
             </div>
             <ZoomableImage src={p.src} alt={p.alt} className="min-h-0 flex-1 bg-surface" />
@@ -74,6 +76,7 @@ export function PhotoFrame({
   /** o que mostrar enquanto a foto não chega (uma prévia digital, por exemplo) */
   fallback?: React.ReactNode;
 }) {
+  const t = useT();
   if (info.src) {
     const src = `${dir}/${info.src}`;
     const text = alt ?? info.caption;
@@ -86,7 +89,7 @@ export function PhotoFrame({
           className,
         )}
         style={ratioStyle(info.ratio)}
-        aria-label={`Ampliar: ${info.title}`}
+        aria-label={`${t("Ampliar", "Enlarge")}: ${info.title}`}
       >
         <img
           src={src}
@@ -112,14 +115,14 @@ export function PhotoFrame({
       )}
       style={ratioStyle(info.ratio)}
       role="img"
-      aria-label={`Espaço para a foto: ${info.title} (em breve)`}
+      aria-label={t(`Espaço para a foto: ${info.title} (em breve)`, `Photo placeholder: ${info.title} (coming soon)`)}
     >
-      <span className="absolute left-3 top-2.5 font-mono text-[11px] tracking-[0.08em] text-gold">foto {info.n}</span>
+      <span className="absolute left-3 top-2.5 font-mono text-[11px] tracking-[0.08em] text-gold">{t("foto", "photo")} {info.n}</span>
       <span className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background shadow-soft-sm">
         <Camera className="h-5 w-5 text-muted-foreground" aria-hidden />
       </span>
       <span className="px-4 text-[13.5px] font-medium leading-snug text-foreground">{info.title}</span>
-      <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">foto em breve</span>
+      <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{t("foto em breve", "photo coming soon")}</span>
     </div>
   );
 }

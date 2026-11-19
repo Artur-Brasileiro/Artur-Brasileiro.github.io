@@ -1,0 +1,204 @@
+<svg viewBox="0 0 1220 820" role="img" aria-label="CNC Plotter wiring diagram">
+    <defs>
+      <pattern id="cncf-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#efede6" stroke-width="1"/></pattern>
+    </defs>
+    <rect width="1220" height="820" fill="url(#cncf-grid)"/>
+
+    <!-- ===================== COMPONENTES ===================== -->
+    <!-- Fonte -->
+    <g class="comp" data-g="p12" data-tip="12 V / 5 A switching power supply. Both of its output wires are black: check the polarity with the multimeter before powering on.">
+      <rect x="40" y="55" width="170" height="70" rx="8" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="125" y="84" text-anchor="middle" class="lbl">Supply 12 V · 5 A</text>
+      <text x="125" y="102" text-anchor="middle" class="lbl-s">P4 plug output</text>
+    </g>
+    <!-- Divisor Y -->
+    <g class="comp" data-g="p12" data-tip="P4 Y splitter: splits the supply output into two cables. Since both sides come from the same supply, GND is common to the whole system.">
+      <circle cx="275" cy="90" r="13" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="275" y="94" text-anchor="middle" class="mono">Y</text>
+      <text x="275" y="122" text-anchor="middle" class="lbl-s">P4 Y splitter</text>
+    </g>
+    <!-- Jack A -->
+    <g class="comp" data-g="p12" data-tip="Female P4 jack with screw terminal (A): carries the 12 V to the CNC Shield.">
+      <rect x="340" y="25" width="130" height="60" rx="7" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="400" y="50" text-anchor="middle" class="lbl">P4 jack (A)</text>
+      <text x="400" y="67" text-anchor="middle" class="lbl-s">terminal → shield</text>
+      <text x="462" y="41" text-anchor="end" class="mono">−</text>
+      <text x="462" y="70" text-anchor="end" class="mono">+</text>
+    </g>
+    <!-- Jack B -->
+    <g class="comp" data-g="p12" data-tip="Female P4 jack with screw terminal (B): carries the 12 V to the step-down module that powers the servo.">
+      <rect x="340" y="110" width="130" height="50" rx="7" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="405" y="132" text-anchor="middle" class="lbl">P4 jack (B)</text>
+      <text x="405" y="148" text-anchor="middle" class="lbl-s">terminal → step-down</text>
+      <text x="395" y="174" text-anchor="middle" class="mono">+</text>
+      <text x="435" y="174" text-anchor="middle" class="mono">−</text>
+    </g>
+    <!-- Buck -->
+    <g class="comp" data-g="p5" data-tip="12 V → 5 V step-down module (18 × 12 mm). Powers only the servo. The servo must NOT be connected to the Arduino's 5 V: the current spike drags down the USB and resets the board mid-drawing.">
+      <rect x="360" y="230" width="140" height="70" rx="7" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="430" y="261" text-anchor="middle" class="lbl">Step-down</text>
+      <text x="430" y="278" text-anchor="middle" class="lbl-s">12 V → 5 V</text>
+      <text x="395" y="244" text-anchor="middle" class="mono">IN+</text>
+      <text x="438" y="244" text-anchor="middle" class="mono">IN−</text>
+      <text x="492" y="259" text-anchor="end" class="mono">−</text>
+      <text x="492" y="284" text-anchor="end" class="mono">+</text>
+    </g>
+    <!-- PC -->
+    <g class="comp" data-g="usb" data-tip="Windows PC running LaserGRBL (COM, 115200 baud). USB powers only the Arduino's logic and carries the communication.">
+      <rect x="700" y="40" width="180" height="80" rx="8" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="790" y="74" text-anchor="middle" class="lbl">PC · LaserGRBL</text>
+      <text x="790" y="92" text-anchor="middle" class="lbl-s">115200 baud</text>
+    </g>
+
+    <!-- Arduino (atrás) + Shield -->
+    <g class="comp" data-g="usb" data-tip="Arduino Uno with GRBL 1.1h (vankesteren/grbl-servo fork). It sits under the CNC Shield, plugged into its pins.">
+      <rect x="546" y="212" width="342" height="402" rx="10" fill="#eef4ff" stroke="#2563a8" stroke-width="1.4" stroke-dasharray="6 5"/>
+      <text x="548" y="630" class="lbl-s" fill="#2563a8">Arduino Uno (under the shield)</text>
+    </g>
+    <g class="comp" data-g="none" data-tip="CNC Shield V3 with HR4988 drivers (A4988 clones).">
+      <rect x="560" y="200" width="340" height="392" rx="10" fill="#fff" stroke="#1d1d1f" stroke-width="1.8"/>
+      <text x="575" y="290" class="lbl">CNC Shield V3</text>
+      <text x="575" y="306" class="lbl-s">GRBL 1.1h + servo</text>
+    </g>
+    <!-- terminal 12V -->
+    <g class="comp" data-g="p12" data-tip="Shield power screw terminal (12–36 V). + on the left, − on the right, as marked on the board. Reversed polarity fries the drivers.">
+      <rect x="575" y="215" width="80" height="40" rx="5" fill="#e8f1ff" stroke="#2563a8"/>
+      <circle cx="595" cy="235" r="8" fill="#fff" stroke="#1d1d1f"/><text x="595" y="239" text-anchor="middle" class="mono">+</text>
+      <circle cx="635" cy="235" r="8" fill="#fff" stroke="#1d1d1f"/><text x="635" y="239" text-anchor="middle" class="mono">−</text>
+      <text x="615" y="268" text-anchor="middle" class="lbl-s">12 V</text>
+    </g>
+    <!-- USB port -->
+    <g class="comp" data-g="usb" data-tip="Arduino USB port. Opening the serial port restarts the Uno: every reconnect needs a new $H.">
+      <rect x="770" y="200" width="40" height="16" rx="3" fill="#d1d5db" stroke="#1d1d1f"/>
+      <text x="790" y="230" text-anchor="middle" class="lbl-s">USB</text>
+    </g>
+    <!-- Drivers -->
+    <g class="comp" data-g="mot" data-tip="X driver (HR4988): LONG axis. 3 jumpers M0/M1/M2 closed under it = 1/16 microstepping ($100=80). Measured Vref ≈ 0.60 V (≈ 1.5 A).">
+      <rect x="690" y="275" width="140" height="70" rx="6" fill="#f1f5f9" stroke="#1d1d1f"/>
+      <text x="760" y="300" text-anchor="middle" class="lbl">X driver</text>
+      <text x="760" y="316" text-anchor="middle" class="lbl-s">long axis · 1/16</text>
+      <g fill="#1d1d1f"><rect x="733" y="325" width="9" height="9" rx="1.5"/><rect x="747" y="325" width="9" height="9" rx="1.5"/><rect x="761" y="325" width="9" height="9" rx="1.5"/></g>
+      <text x="778" y="333" class="lbl-s">M0 M1 M2</text>
+    </g>
+    <g class="comp" data-g="mot" data-tip="Y driver (HR4988): SHORT axis. 3 jumpers M0/M1/M2 closed = 1/16 ($101=80).">
+      <rect x="690" y="365" width="140" height="70" rx="6" fill="#f1f5f9" stroke="#1d1d1f"/>
+      <text x="760" y="390" text-anchor="middle" class="lbl">Y driver</text>
+      <text x="760" y="406" text-anchor="middle" class="lbl-s">short axis · 1/16</text>
+      <g fill="#1d1d1f"><rect x="733" y="415" width="9" height="9" rx="1.5"/><rect x="747" y="415" width="9" height="9" rx="1.5"/><rect x="761" y="415" width="9" height="9" rx="1.5"/></g>
+      <text x="778" y="423" class="lbl-s">M0 M1 M2</text>
+    </g>
+    <g class="comp" data-g="none" data-tip="Z slot: no driver. The pen is moved by the servo on pin D11, not by a stepper motor.">
+      <rect x="690" y="455" width="140" height="44" rx="6" fill="#fafafa" stroke="#9ca3af" stroke-dasharray="4 4"/>
+      <text x="760" y="482" text-anchor="middle" class="lbl-s">Z slot (empty)</text>
+    </g>
+    <!-- motor headers -->
+    <g class="comp" data-g="mot" data-tip="X motor output (4 pins: 2B 2A 1A 1B). Each pair (1A-1B, 2A-2B) is one motor coil.">
+      <rect x="860" y="282" width="20" height="58" rx="3" fill="#fff" stroke="#1d1d1f"/>
+      <g class="mono" font-size="9"><text x="856" y="293" text-anchor="end">2B</text><text x="856" y="307" text-anchor="end">2A</text><text x="856" y="321" text-anchor="end">1A</text><text x="856" y="335" text-anchor="end">1B</text></g>
+      <g fill="#1d1d1f"><circle cx="870" cy="290" r="3"/><circle cx="870" cy="304" r="3"/><circle cx="870" cy="318" r="3"/><circle cx="870" cy="332" r="3"/></g>
+    </g>
+    <g class="comp" data-g="mot" data-tip="Y motor output (4 pins: 2B 2A 1A 1B).">
+      <rect x="860" y="372" width="20" height="58" rx="3" fill="#fff" stroke="#1d1d1f"/>
+      <g class="mono" font-size="9"><text x="856" y="383" text-anchor="end">2B</text><text x="856" y="397" text-anchor="end">2A</text><text x="856" y="411" text-anchor="end">1A</text><text x="856" y="425" text-anchor="end">1B</text></g>
+      <g fill="#1d1d1f"><circle cx="870" cy="380" r="3"/><circle cx="870" cy="394" r="3"/><circle cx="870" cy="408" r="3"/><circle cx="870" cy="422" r="3"/></g>
+    </g>
+    <!-- END STOPS header -->
+    <g class="comp" data-g="end" data-tip="END STOPS header. Each position has a signal pin (white) and a GND pin (black). In GRBL, X− and X+ are the same pin (D9), and so are Y− and Y+ (D10). Z+ is used by the servo (D11).">
+      <rect x="590" y="530" width="300" height="46" rx="6" fill="#fafaf7" stroke="#1d1d1f"/>
+      <text x="598" y="525" class="lbl-s">END STOPS</text>
+      <g class="mono" font-size="10" text-anchor="middle">
+        <text x="615" y="545">X−</text><text x="665" y="545">X+</text><text x="715" y="545">Y−</text><text x="765" y="545">Y+</text><text x="815" y="545">Z−</text><text x="865" y="545">Z+</text>
+      </g>
+      <g stroke="#1d1d1f" stroke-width="1">
+        <circle cx="606" cy="560" r="5" fill="#fff"/><circle cx="624" cy="560" r="5" fill="#1d1d1f"/>
+        <circle cx="656" cy="560" r="5" fill="#fff"/><circle cx="674" cy="560" r="5" fill="#1d1d1f"/>
+        <circle cx="706" cy="560" r="5" fill="#fff"/><circle cx="724" cy="560" r="5" fill="#1d1d1f"/>
+        <circle cx="756" cy="560" r="5" fill="#fff"/><circle cx="774" cy="560" r="5" fill="#1d1d1f"/>
+        <circle cx="806" cy="560" r="5" fill="#fff"/><circle cx="824" cy="560" r="5" fill="#1d1d1f"/>
+        <circle cx="856" cy="560" r="5" fill="#fff"/><circle cx="874" cy="560" r="5" fill="#1d1d1f"/>
+      </g>
+    </g>
+
+    <!-- Motores -->
+    <g class="comp" data-g="mot" data-tip="X axis motor (LONG): NEMA 17 US-17HS4401S, 1.7 A/phase, ~1.5 Ω. It sits on top of the Main Base and climbs the fixed belt (omega drive).">
+      <rect x="1000" y="270" width="180" height="80" rx="8" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="1090" y="303" text-anchor="middle" class="lbl">X motor · long axis</text>
+      <text x="1090" y="321" text-anchor="middle" class="lbl-s">NEMA 17 · 17HS4401S</text>
+    </g>
+    <g class="comp" data-g="mot" data-tip="Y axis motor (SHORT): NEMA 17 US-17HS4401S. Mounted under the Main Base, shaft pointing up.">
+      <rect x="1000" y="360" width="180" height="80" rx="8" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="1090" y="393" text-anchor="middle" class="lbl">Y motor · short axis</text>
+      <text x="1090" y="411" text-anchor="middle" class="lbl-s">NEMA 17 · 17HS4401S</text>
+    </g>
+    <!-- Fins de curso -->
+    <g class="comp" data-g="end" data-tip="X limit switch: roller microswitch, triggered with the gantry all the way right (X+). COM to GND, NO to signal (D9). $5=0.">
+      <rect x="610" y="680" width="110" height="60" rx="7" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <g class="mono" font-size="9" text-anchor="middle"><text x="656" y="694">NO</text><text x="674" y="694">C</text><text x="694" y="694">NC</text></g>
+      <text x="665" y="716" text-anchor="middle" class="lbl">X limit switch</text>
+      <text x="665" y="731" text-anchor="middle" class="lbl-s">roller microswitch</text>
+    </g>
+    <g class="comp" data-g="end" data-tip="Y limit switch: under the Main Base, between the 6 mm rods, triggered by the carriage 'finger' (Y+). COM to GND, NO to signal (D10).">
+      <rect x="728" y="680" width="100" height="60" rx="7" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <g class="mono" font-size="9" text-anchor="middle"><text x="756" y="694">NO</text><text x="774" y="694">C</text><text x="794" y="694">NC</text></g>
+      <text x="778" y="716" text-anchor="middle" class="lbl">Y limit switch</text>
+      <text x="778" y="731" text-anchor="middle" class="lbl-s">microswitch</text>
+    </g>
+    <!-- Servo -->
+    <g class="comp" data-g="srv" data-tip="MG90S servo (or SG90) that lifts the pen. M5 = pen up; M3 S220 = pen down. Cable: brown/black = GND, red = 5 V, yellow/orange = signal.">
+      <rect x="836" y="680" width="140" height="70" rx="8" fill="#fff" stroke="#1d1d1f" stroke-width="1.6"/>
+      <text x="920" y="708" text-anchor="middle" class="lbl">Servo MG90S</text>
+      <text x="920" y="724" text-anchor="middle" class="lbl-s">lifts the pen</text>
+      <g class="mono" font-size="9" text-anchor="middle"><text x="884" y="676">SIGNAL</text><text x="918" y="768">GND</text><text x="956" y="768">5V</text></g>
+    </g>
+
+    <!-- Legenda -->
+    <g transform="translate(1000,470)">
+      <rect width="190" height="186" rx="8" fill="#fff" stroke="#e2e0d8"/>
+      <text x="14" y="24" class="lbl">Wire colors</text>
+      <g class="lbl-s">
+        <line x1="14" y1="42" x2="40" y2="42" stroke="var(--v12)" stroke-width="3"/><text x="48" y="46">+12 V</text>
+        <line x1="14" y1="62" x2="40" y2="62" stroke="var(--gnd)" stroke-width="3"/><text x="48" y="66">GND (0 V)</text>
+        <line x1="14" y1="82" x2="40" y2="82" stroke="var(--v5)" stroke-width="3"/><text x="48" y="86">+5 V (servo)</text>
+        <line x1="14" y1="102" x2="40" y2="102" stroke="var(--sig)" stroke-width="3"/><text x="48" y="106">servo PWM signal</text>
+        <line x1="14" y1="122" x2="40" y2="122" stroke="var(--c1)" stroke-width="3"/><text x="48" y="126">coil 1 (1A/1B)</text>
+        <line x1="14" y1="142" x2="40" y2="142" stroke="var(--c2)" stroke-width="3"/><text x="48" y="146">coil 2 (2A/2B)</text>
+        <line x1="14" y1="162" x2="40" y2="162" stroke="var(--end)" stroke-width="3"/><text x="48" y="166">limit switch signal</text>
+      </g>
+    </g>
+
+    <!-- ===================== FIOS ===================== -->
+    <!-- P4 -->
+    <path class="w" data-g="p12" stroke="var(--p4)" stroke-width="7" d="M210 90 H262" data-tip="P4 cable from the supply (12 V)."/>
+    <path class="w" data-g="p12" stroke="var(--p4)" stroke-width="7" d="M288 90 H310 V55 H340" data-tip="P4 cable → Jack A (shield)."/>
+    <path class="w" data-g="p12" stroke="var(--p4)" stroke-width="7" d="M288 90 H310 V135 H340" data-tip="P4 cable → Jack B (servo step-down)."/>
+    <!-- Jack A -> shield -->
+    <path class="w" data-g="p12" stroke="var(--gnd)" stroke-width="3" d="M470 45 H635 V227" data-tip="GND: Jack A − terminal → shield − terminal."/>
+    <path class="w" data-g="p12" stroke="var(--v12)" stroke-width="3" d="M470 65 H595 V227" data-tip="+12 V: Jack A + terminal → shield + terminal."/>
+    <!-- Jack B -> buck -->
+    <path class="w" data-g="p12" stroke="var(--v12)" stroke-width="3" d="M395 160 V230" data-tip="+12 V: Jack B → step-down IN+."/>
+    <path class="w" data-g="p12" stroke="var(--gnd)" stroke-width="3" d="M435 160 V230" data-tip="GND: Jack B → step-down IN−. It's shared with the shield's GND because both come from the same supply."/>
+    <!-- buck -> servo -->
+    <path class="w" data-g="p5" stroke="var(--gnd)" stroke-width="3" d="M500 255 H535 V775 H900 V750" data-tip="Servo GND (brown/black wire) ← step-down OUT−."/>
+    <path class="w" data-g="p5" stroke="var(--v5)" stroke-width="3" d="M500 280 H520 V790 H940 V750" data-tip="Servo +5 V (red wire) ← step-down OUT+. Set the module's trimpot to 5.0 V BEFORE connecting the servo."/>
+    <!-- servo signal -->
+    <path class="w" data-g="srv" stroke="var(--sig)" stroke-width="3" d="M856 565 V680" data-tip="Servo signal (yellow/orange wire) → Z+, WHITE pin (D11, spindle PWM output in GRBL 1.1)."/>
+    <!-- USB -->
+    <path class="w" data-g="usb" stroke="var(--usb)" stroke-width="6" d="M790 120 V200" data-tip="USB cable: PC ↔ Arduino."/>
+    <!-- Motor X wires -->
+    <path class="w" data-g="mot" stroke="var(--c2)"  stroke-width="2.6" d="M873 290 H1000" data-tip="X motor · 2B (coil 2)"/>
+    <path class="w" data-g="mot" stroke="var(--c2b)" stroke-width="2.6" d="M873 304 H1000" data-tip="X motor · 2A (coil 2)"/>
+    <path class="w" data-g="mot" stroke="var(--c1b)" stroke-width="2.6" d="M873 318 H1000" data-tip="X motor · 1A (coil 1)"/>
+    <path class="w" data-g="mot" stroke="var(--c1)"  stroke-width="2.6" d="M873 332 H1000" data-tip="X motor · 1B (coil 1)"/>
+    <!-- Motor Y wires -->
+    <path class="w" data-g="mot" stroke="var(--c2)"  stroke-width="2.6" d="M873 380 H1000" data-tip="Y motor · 2B (coil 2)"/>
+    <path class="w" data-g="mot" stroke="var(--c2b)" stroke-width="2.6" d="M873 394 H1000" data-tip="Y motor · 2A (coil 2)"/>
+    <path class="w" data-g="mot" stroke="var(--c1b)" stroke-width="2.6" d="M873 408 H1000" data-tip="Y motor · 1A (coil 1)"/>
+    <path class="w" data-g="mot" stroke="var(--c1)"  stroke-width="2.6" d="M873 422 H1000" data-tip="Y motor · 1B (coil 1)"/>
+    <!-- Endstops -->
+    <path class="w" data-g="end" stroke="var(--end)" stroke-width="3" d="M656 565 V680" data-tip="X limit switch: NO → X+ WHITE pin (D9)."/>
+    <path class="w" data-g="end" stroke="var(--gnd)" stroke-width="3" d="M674 565 V680" data-tip="X limit switch: COM → X+ BLACK pin (GND)."/>
+    <path class="w" data-g="end" stroke="var(--end)" stroke-width="3" d="M756 565 V680" data-tip="Y limit switch: NO → Y+ WHITE pin (D10)."/>
+    <path class="w" data-g="end" stroke="var(--gnd)" stroke-width="3" d="M774 565 V680" data-tip="Y limit switch: COM → Y+ BLACK pin (GND)."/>
+    <!-- solder dots -->
+    <g fill="#1d1d1f"><circle cx="656" cy="680" r="3"/><circle cx="674" cy="680" r="3"/><circle cx="756" cy="680" r="3"/><circle cx="774" cy="680" r="3"/><circle cx="856" cy="680" r="3"/><circle cx="900" cy="750" r="3"/><circle cx="940" cy="750" r="3"/></g>
+  </svg>

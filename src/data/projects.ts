@@ -328,6 +328,7 @@ export const projectData: {
         ),
         image: "projetos/pendulo/poster-800.webp",
         internalLink: "/projeto/pendulo-invertido",
+        technicalLink: "https://github.com/Artur-Brasileiro/pendulo-invertido",
         longDescription: tr(
           "Uma haste de inox de 500 mm, em pé sobre um carrinho num trilho MGN15H levado por um NEMA 17. Ao ligar, o carro balança a haste até ela subir e depois a segura em pé com um controle LQR a 200 Hz num Arduino UNO, lendo um encoder de 4000 contagens por volta. A página do projeto roda o mesmo firmware sobre a física medida da haste (dá para empurrar, desligar o controle e ver em câmera lenta) e traz o guia completo para montar o seu, com firmware, peças e ligações.",
           "A 500 mm stainless steel rod standing upright on a cart, on an MGN15H rail driven by a NEMA 17. At power-on, the cart swings the rod until it comes up, then holds it upright with an LQR controller at 200 Hz on an Arduino UNO, reading a 4,000-count-per-revolution encoder. The project page runs the same firmware on the rod's measured physics (you can push it, turn off the controller and watch in slow motion) and includes the complete guide to build your own, with firmware, parts and wiring.",

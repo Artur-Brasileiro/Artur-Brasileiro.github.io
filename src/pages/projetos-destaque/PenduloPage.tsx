@@ -1,5 +1,5 @@
 import { lazy, useLayoutEffect } from "react";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, ExternalLink, Github } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
 import { getLenis } from "@/components/motion/SmoothScroll";
 import SiteFooter from "@/components/SiteFooter";
@@ -109,6 +109,16 @@ const PenduloPage = () => {
                   className="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-background px-5 font-mono text-[13px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
                 >
                   {t("Monte o seu ↓", "Build your own ↓")}
+                </a>
+                <a
+                  href="https://github.com/Artur-Brasileiro/pendulo-invertido"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-background px-5 font-mono text-[13px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  <Github className="h-4 w-4" aria-hidden />
+                  GitHub
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                 </a>
               </div>
             </div>
